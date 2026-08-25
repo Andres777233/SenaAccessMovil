@@ -18,7 +18,7 @@ object RetrofitClient {
     // Celular físico por WiFi (misma red). Si el DHCP cambia la IP del PC, actualizar aquí.
     private const val BASE_URL_WIFI = "http://192.168.1.8:8000/api/"
     // Backend desplegado en Railway (URL pública, HTTPS). CAMBIAR por el dominio real tras el deploy.
-    private const val BASE_URL_REMOTE = "https://CAMBIA-POR-TU-DOMINIO.railway.app/api/"
+    private const val BASE_URL_REMOTE = "https://senaaccessweb-production.up.railway.app/api/"
 
     // 1. Interceptor de logs: registra cada petición y respuesta HTTP con su cuerpo.
     //    El nivel BODY sirve para depurar; en producción convendría reducirlo o quitarlo.
