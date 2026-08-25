@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
+import com.example.sennaccess.data.AprendizInstructor
 import com.example.sennaccess.data.Notificacion
 import com.example.sennaccess.data.Novedad
 import com.example.sennaccess.data.UsuarioApi
@@ -36,8 +37,8 @@ import com.example.sennaccess.ui.theme.LocalAppColors
  *  - Fondo con patrón SENA + GlowSpheres.
  *  - Top bar de vidrio (AdminTopBar) con menú de perfil / cerrar sesión.
  *  - Contenido que cambia según la pestaña activa del dock.
- *  - Dock flotante de vidrio con las 5 funciones: Inicio, Novedades,
- *    Usuarios, Reportes e Historial.
+ *  - Dock flotante de vidrio con las 6 funciones: Inicio, Novedades,
+ *    Usuarios, Equipos, Asignaciones e Historial.
  *
  * Las sub-pantallas (crear/actualizar usuario, perfil) son estados internos
  * para mantener el dock siempre visible.
@@ -69,6 +70,7 @@ fun AdminDashboard(
     val equipos by viewModel.equipos.collectAsState()
     val notificaciones by viewModel.notificaciones.collectAsState()
     val novedades by viewModel.novedades.collectAsState()
+    val asignaciones by viewModel.asignaciones.collectAsState()
 
     // No leídas para el badge de la campana (0 si el estado no trae datos).
     val noLeidas = (notificaciones as? CargaUiState.Success<List<Notificacion>>)?.datos
@@ -81,6 +83,7 @@ fun AdminDashboard(
         when (subScreen) {
             AdminScreen.EQUIPOS -> viewModel.cargarEquipos()
             AdminScreen.NOTIFICACIONES -> viewModel.cargarNotificaciones()
+            AdminScreen.ASIGNACIONES -> { viewModel.cargarAsignaciones(); viewModel.cargarUsuarios() }
             else -> when (currentTab) {
                 "INICIO" -> viewModel.cargarResumen()
                 "NOVEDADES" -> viewModel.cargarNovedades()
@@ -105,7 +108,7 @@ fun AdminDashboard(
     // garantizando que al cambiar de pestaña se vuelva al contenido principal.
     fun irATab(tab: String) {
         currentTab = tab
-        subScreen = null
+        subScreen = if (tab == "ASIGNACIONES") AdminScreen.ASIGNACIONES else null
     }
 
     // Traduce cada destino del admin a una pestaña del dock o a una sub-pantalla.
@@ -125,6 +128,7 @@ fun AdminDashboard(
             AdminScreen.ACCESO_INSTRUCTORES -> subScreen = AdminScreen.ACCESO_INSTRUCTORES
             AdminScreen.EQUIPOS -> subScreen = AdminScreen.EQUIPOS
             AdminScreen.NOTIFICACIONES -> subScreen = AdminScreen.NOTIFICACIONES
+            AdminScreen.ASIGNACIONES -> subScreen = AdminScreen.ASIGNACIONES
         }
     }
 
@@ -212,6 +216,15 @@ fun AdminDashboard(
                         onMarcarTodasLeidas = viewModel::marcarTodasLeidas,
                         onBack = { subScreen = null }
                     )
+                    AdminScreen.ASIGNACIONES -> AsignacionesView(
+                        estado = asignaciones,
+                        instructores = instructores,
+                        aprendices = aprendices,
+                        onReintentar = viewModel::cargarAsignaciones,
+                        onCrear = { viewModel.crearAsignacion(it) { subScreen = null } },
+                        onEliminar = { viewModel.eliminarAsignacion(it) },
+                        onBack = { subScreen = null }
+                    )
                     else -> when (currentTab) {
                         // INICIO: resumen del día con el historial de ingresos del centro.
                         "INICIO" -> AdminPanelResumen(resumen = resumen, onReintentar = viewModel::cargarResumen)
@@ -242,7 +255,7 @@ fun AdminDashboard(
             }
         }
 
-        // Dock flotante de vidrio: define las 5 pestañas del admin y su ícono.
+        // Dock flotante de vidrio: define las 6 pestañas del admin y su ícono.
         // La pestaña activa se resalta y al tocar otra se dispara irATab.
         GlassDock(
             items = listOf(
@@ -250,6 +263,7 @@ fun AdminDashboard(
                 GlassDockItem("NOVEDADES", Icons.Default.WarningAmber, "Novedades"),
                 GlassDockItem("USUARIOS", Icons.Default.People, "Usuarios"),
                 GlassDockItem("EQUIPOS", Icons.Default.Devices, "Equipos"),
+                GlassDockItem("ASIGNACIONES", Icons.Default.SupervisorAccount, "Asignar"),
                 GlassDockItem("HISTORIAL", Icons.Default.History, "Historial")
             ),
             selectedKey = currentTab,

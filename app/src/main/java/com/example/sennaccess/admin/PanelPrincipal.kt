@@ -31,7 +31,7 @@ import com.example.sennaccess.ui.theme.SenaGreen
 // Catálogo de pantallas del módulo admin; usado por la navegación interna.
 enum class AdminScreen { PANEL, USUARIOS, CREAR_USUARIO, ACTUALIZAR_USUARIO,
     ACCESO_APRENDICES, ACCESO_INSTRUCTORES, REPORTE_NOVEDADES, PERFIL,
-    EQUIPOS, NOTIFICACIONES }
+    EQUIPOS, NOTIFICACIONES, ASIGNACIONES }
 
 /**
  * Panel de inicio del ADMINISTRADOR (contenido de la pestaña INICIO).

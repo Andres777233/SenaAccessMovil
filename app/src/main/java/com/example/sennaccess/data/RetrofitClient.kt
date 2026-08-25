@@ -1,8 +1,8 @@
 package com.example.sennaccess.data
 
 // Punto único de configuración de Retrofit para toda la app.
-// Construye el cliente HTTP (OkHttp) y dos instancias de ApiService: una que apunta
-// al backend por USB (mediante adb reverse) y otra por la IP del PC en la red WiFi.
+// Construye el cliente HTTP (OkHttp) y tres instancias de ApiService: Railway (nube,
+// ruta primaria), el backend por USB (adb reverse) y por la IP del PC en la red WiFi.
 
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -52,28 +52,28 @@ object RetrofitClient {
 
     // Recuerda cuál ruta respondió la última llamada exitosa; la usa raizServidor().
     @Volatile
-    private var rutaActivaEsUsb: Boolean = true
+    private var rutaActivaEsUsb: Boolean = false
     @Volatile
-    private var rutaActivaEsRemota: Boolean = false
+    private var rutaActivaEsRemota: Boolean = true
 
-    // 5. Flujo de fallback: USB -> WiFi (misma red) -> Railway (remoto/HTTPS).
-    //    El remoto es el último recurso cuando no hay cable ni misma red que el PC.
+    // 5. Flujo de fallback: Railway (remoto/HTTPS) -> USB -> WiFi (misma red).
+    //    La nube es la primaria para que la app funcione sin depender del PC encendido.
     suspend fun <T> conServicio(bloque: suspend (ApiService) -> T): T {
         try {
-            val resultado = bloque(servicioUsb)
-            rutaActivaEsUsb = true
-            rutaActivaEsRemota = false
+            val resultado = bloque(servicioRemoto)
+            rutaActivaEsUsb = false
+            rutaActivaEsRemota = true
             return resultado
         } catch (e: IOException) {
             try {
-                val resultado = bloque(servicioWifi)
-                rutaActivaEsUsb = false
+                val resultado = bloque(servicioUsb)
+                rutaActivaEsUsb = true
                 rutaActivaEsRemota = false
                 return resultado
             } catch (e2: IOException) {
-                val resultado = bloque(servicioRemoto)
+                val resultado = bloque(servicioWifi)
                 rutaActivaEsUsb = false
-                rutaActivaEsRemota = true
+                rutaActivaEsRemota = false
                 return resultado
             }
         }
