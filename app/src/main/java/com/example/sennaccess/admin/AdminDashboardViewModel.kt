@@ -7,9 +7,6 @@ package com.example.sennaccess.admin
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.sennaccess.data.AsignacionRepository
-import com.example.sennaccess.data.AprendizInstructor
-import com.example.sennaccess.data.AsignacionRequest
 import com.example.sennaccess.data.EquipoRepository
 import com.example.sennaccess.data.Ingreso
 import com.example.sennaccess.data.IngresoEquipo
@@ -52,7 +49,6 @@ class AdminDashboardViewModel : ViewModel() {
     private val equipoRepo = EquipoRepository()
     private val notificacionRepo = NotificacionRepository()
     private val novedadRepo = NovedadRepository()
-    private val asignacionRepo = AsignacionRepository()
 
     // Estados de la UI como StateFlow: la pantalla observa estas propiedades
     // y reacciona ante Loading/Success/Error sin acoplar la lógica de red a Compose.
@@ -80,9 +76,6 @@ class AdminDashboardViewModel : ViewModel() {
     private val _novedades = MutableStateFlow<CargaUiState<List<Novedad>>>(CargaUiState.Loading)
     val novedades: StateFlow<CargaUiState<List<Novedad>>> = _novedades.asStateFlow()
 
-    private val _asignaciones = MutableStateFlow<CargaUiState<List<AprendizInstructor>>>(CargaUiState.Loading)
-    val asignaciones: StateFlow<CargaUiState<List<AprendizInstructor>>> = _asignaciones.asStateFlow()
-
     init {
         // Al crear el ViewModel se disparan las cargas iniciales en paralelo.
         cargarResumen()
@@ -93,7 +86,6 @@ class AdminDashboardViewModel : ViewModel() {
         cargarEquipos()
         cargarNotificaciones()
         cargarNovedades()
-        cargarAsignaciones()
     }
 
     // Carga el resumen de ingresos del día; si no hay sesión o la API falla,
@@ -185,34 +177,6 @@ class AdminDashboardViewModel : ViewModel() {
     fun cargarNovedades() {
         cargarConFallback(fallback = { MockData.novedades }, setState = { _novedades.value = it }) {
             novedadRepo.getNovedades(SessionManager.token!!)
-        }
-    }
-
-    fun cargarAsignaciones() {
-        cargarConFallback(fallback = { MockData.asignaciones }, setState = { _asignaciones.value = it }) {
-            asignacionRepo.listar(SessionManager.token!!)
-        }
-    }
-
-    fun crearAsignacion(body: AsignacionRequest, onExito: () -> Unit) {
-        val token = SessionManager.token ?: return
-        viewModelScope.launch {
-            try {
-                asignacionRepo.crear(token, body)
-                cargarAsignaciones()
-                cargarUsuarios()
-                onExito()
-            } catch (_: Exception) {}
-        }
-    }
-
-    fun eliminarAsignacion(id: Int) {
-        val token = SessionManager.token ?: return
-        viewModelScope.launch {
-            try {
-                asignacionRepo.eliminar(token, id)
-                cargarAsignaciones()
-            } catch (_: Exception) {}
         }
     }
 

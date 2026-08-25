@@ -1,6 +1,5 @@
 package com.example.sennaccess.data.mock
 
-import com.example.sennaccess.data.AprendizInstructor
 import com.example.sennaccess.data.Ingreso
 import com.example.sennaccess.data.IngresoEquipo
 import com.example.sennaccess.data.Novedad
@@ -108,10 +107,4 @@ object MockData {
 
     // Conteo de no leídas de ejemplo (2 de las 3 notificaciones de arriba).
     val unreadCountDemo = UnreadCount(unread = 2)
-
-    // Asignaciones aprendiz→instructor de ejemplo.
-    val asignaciones = listOf(
-        AprendizInstructor(1, 5, 2, null, "Mañana", aprendices[0], instructores[0]),
-        AprendizInstructor(2, 6, 3, null, "Tarde", aprendices[1], instructores[1])
-    )
 }

@@ -261,26 +261,6 @@ data class HorarioRequest(
     @SerializedName("fk_id_instructor") val fk_id_instructor: Int
 )
 
-// Asignación aprendiz -> instructor, con ambiente y jornada opcionales.
-data class AprendizInstructor(
-    @SerializedName("id_asignacion") val id_asignacion: Int? = null,
-    @SerializedName("fk_id_aprendiz") val fk_id_aprendiz: Int? = null,
-    @SerializedName("fk_id_instructor") val fk_id_instructor: Int? = null,
-    @SerializedName("fk_id_ambiente") val fk_id_ambiente: Int? = null,
-    @SerializedName("jornada") val jornada: String? = null,
-    val aprendiz: UsuarioApi? = null,
-    val instructor: UsuarioApi? = null,
-    val ambiente: Ambiente? = null
-)
-
-// Cuerpo para asignar (o actualizar) un instructor a un aprendiz.
-data class AsignacionRequest(
-    @SerializedName("fk_id_aprendiz") val fk_id_aprendiz: Int,
-    @SerializedName("fk_id_instructor") val fk_id_instructor: Int,
-    @SerializedName("fk_id_ambiente") val fk_id_ambiente: Int? = null,
-    @SerializedName("jornada") val jornada: String? = null
-)
-
 // Notificación in-app dirigida a un usuario: título, cuerpo, tipo y estado de lectura.
 data class Notificacion(
     @SerializedName("id_notificacion") val id_notificacion: Int? = null,

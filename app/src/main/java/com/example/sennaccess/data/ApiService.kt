@@ -209,22 +209,6 @@ interface ApiService {
     @DELETE("admin/ambiente-horarios/{id}")
     suspend fun deleteHorario(@Header("Authorization") auth: String, @Path("id") id: Int): MessageResponse
 
-    // ---- Asignaciones aprendiz -> instructor (solo admin) ----
-    @GET("admin/aprendiz-instructores")
-    suspend fun getAprendizInstructores(@Header("Authorization") auth: String): List<AprendizInstructor>
-
-    @POST("admin/aprendiz-instructores")
-    suspend fun createAprendizInstructor(
-        @Header("Authorization") auth: String,
-        @Body body: AsignacionRequest
-    ): AprendizInstructor
-
-    @DELETE("admin/aprendiz-instructores/{id}")
-    suspend fun deleteAprendizInstructor(
-        @Header("Authorization") auth: String,
-        @Path("id") id: Int
-    ): MessageResponse
-
     // ---- Novedades: crear y eliminar (el propietario o un admin) ----
     @POST("novedades")
     suspend fun createNovedad(@Header("Authorization") auth: String, @Body body: NovedadRequest): Novedad
