@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Padre AppCompat obligatorio: MainActivity extiende AppCompatActivity
+         (requisito del BiometricPrompt para la huella). Con un tema del framework
+         la actividad crasheaba al arrancar con IllegalStateException. -->
+    <style name="Theme.Sennaccess" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowBackground">@color/splash_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/transparent</item>
+        <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+    </style>
+</resources>
