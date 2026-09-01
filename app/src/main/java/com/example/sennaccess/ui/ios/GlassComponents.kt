@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
+import androidx.compose.ui.graphics.luminance
 
 /**
  * Sistema de diseño Glassmorphism (vidrio esmerilado) estilo iOS.
@@ -123,12 +124,25 @@ fun Modifier.glassSurface(
 ): Modifier {
     val colors = LocalAppColors.current
     val shape = RoundedCornerShape(cornerRadius)
+    // Detecta tema claro por luminancia del fondo (claro > 0.5).
+    val isLight = colors.background.luminance() > 0.5f
 
-    // Fondo semitransparente: usa el cardBackground del tema pero más translúcido.
-    val base = colors.cardBackground.copy(alpha = 0.5f)
+    // Fondo: en claro la tarjeta debe ser casi opaca para que el texto oscuro
+    // contraste bien y no se vea como "caja blanca fantasma" bajo el texto.
+    val base = if (isLight) colors.cardBackground.copy(alpha = 0.92f)
+    else colors.cardBackground.copy(alpha = 0.5f)
 
-    // Highlight superior (luz que cae sobre el vidrio).
-    val highlight = Brush.linearGradient(
+    // Highlight superior: en claro necesita brillo más marcado (blanco sobre blanco
+    // al 0.10 era invisible); en oscuro se mantiene sutil.
+    val highlight = if (isLight) Brush.linearGradient(
+        colors = listOf(
+            Color.White.copy(alpha = 0.55f),
+            Color.White.copy(alpha = 0.18f),
+            Color.Transparent
+        ),
+        start = Offset(0f, 0f),
+        end = Offset(0f, Float.POSITIVE_INFINITY)
+    ) else Brush.linearGradient(
         colors = listOf(
             Color.White.copy(alpha = 0.10f),
             Color.White.copy(alpha = 0.02f),
@@ -140,16 +154,24 @@ fun Modifier.glassSurface(
 
     return this
         .shadow(
-            elevation = if (elevated) 24.dp else 14.dp,
+            elevation = if (isLight) {
+                if (elevated) 16.dp else 8.dp
+            } else {
+                if (elevated) 24.dp else 14.dp
+            },
             shape = shape,
             clip = false,
-            ambientColor = Color.Black.copy(alpha = 0.4f),
-            spotColor = Color.Black.copy(alpha = 0.5f)
+            ambientColor = if (isLight) Color.Black.copy(alpha = 0.10f) else Color.Black.copy(alpha = 0.4f),
+            spotColor = if (isLight) Color.Black.copy(alpha = 0.14f) else Color.Black.copy(alpha = 0.5f)
         )
         .clip(shape)
         .background(base)
         .background(highlight)
-        .border(1.dp, colors.borderLight.copy(alpha = 0.15f), shape)
+        .border(
+            1.dp,
+            if (isLight) colors.border.copy(alpha = 0.9f) else colors.borderLight.copy(alpha = 0.15f),
+            shape
+        )
 }
 
 /**

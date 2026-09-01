@@ -32,6 +32,7 @@ import com.example.sennaccess.data.NovedadRequest
 import com.example.sennaccess.data.NovedadRepository
 import com.example.sennaccess.data.SessionManager
 import com.example.sennaccess.data.mock.MockData
+import com.example.sennaccess.ui.fechaRelativa
 import com.example.sennaccess.ui.ios.GlassCornerRadius
 import com.example.sennaccess.ui.ios.IosCollapsibleHeader
 import com.example.sennaccess.ui.ios.glassSurface
@@ -188,9 +189,11 @@ fun NovedadesView(
         } else {
             EstadoContenido(estado = estado, onReintentar = onReintentar) { items ->
                 if (items.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
-                        Text("No hay novedades registradas.", color = colors.textSecondary, fontSize = 14.sp)
-                    }
+                    EstadoVacio(
+                        icono = Icons.Default.ReportProblem,
+                        titulo = "No hay novedades registradas",
+                        mensaje = "Los avisos y reportes del centro aparecerán aquí."
+                    )
                 } else {
                     items.forEach { n ->
                         TarjetaNovedad(
@@ -261,7 +264,7 @@ fun NovedadesView(
 // Tarjeta glassmorphism que muestra una novedad con su detalle y estado pendiente;
 // si onEliminar no es null, añade un botón para borrarla (autor o admin).
 @Composable
-private fun TarjetaNovedad(n: Novedad, onEliminar: (() -> Unit)?) {
+fun TarjetaNovedad(n: Novedad, onEliminar: (() -> Unit)?) {
     val colors = LocalAppColors.current
     Row(
         modifier = Modifier
@@ -283,7 +286,7 @@ private fun TarjetaNovedad(n: Novedad, onEliminar: (() -> Unit)?) {
         Spacer(modifier = Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(n.novedad_title ?: "Novedad", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-            Text(n.novedad_datetime ?: "—", color = colors.textSecondary, fontSize = 12.sp)
+            Text(fechaRelativa(n.novedad_datetime), color = colors.textSecondary, fontSize = 12.sp)
             Spacer(modifier = Modifier.height(4.dp))
             Text(n.novedad_body ?: "—", color = colors.textSecondary, fontSize = 12.sp, lineHeight = 16.sp)
         }

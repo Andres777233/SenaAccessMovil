@@ -36,6 +36,7 @@ import kotlinx.coroutines.launch
 import com.example.sennaccess.data.UsuarioApi
 import com.example.sennaccess.ui.CargaUiState
 import com.example.sennaccess.ui.EstadoContenido
+import com.example.sennaccess.ui.EstadoVacio
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
 import com.example.sennaccess.ui.UsuariosViewModel
@@ -110,12 +111,13 @@ fun UsuariosContent(
             )
         }
 
-        // Overlay de confirmación de eliminación; al confirmar llama a DELETE y recarga.
+        // Diálogo de confirmación antes de eliminar: pregunta explícitamente
+        // antes de llamar al DELETE y refrescar la lista.
         if (usuarioAEliminar != null) {
-            EliminarUsuarioOverlay(
+            EliminarUsuarioDialog(
                 usuario = usuarioAEliminar!!,
                 onConfirmar = {
-                    val id = usuarioAEliminar!!.id_usuario ?: return@EliminarUsuarioOverlay
+                    val id = usuarioAEliminar!!.id_usuario ?: return@EliminarUsuarioDialog
                     borrando = true
                     scope.launch {
                         try {
@@ -275,9 +277,15 @@ private fun VistaListaUsuarios(
 
             if (filtrados.isEmpty()) {
                 // Sin resultados para el filtro/búsqueda actual.
-                Box(modifier = Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
-                    Text("Sin $titulo registrados", color = colors.textSecondary, fontSize = 14.sp)
-                }
+                EstadoVacio(
+                    icono = icono,
+                    titulo = "Sin $titulo registrados",
+                    mensaje = if (busqueda.isBlank()) {
+                        "Usa el botón para agregar el primer $titulo."
+                    } else {
+                        "No hay $titulo que coincidan con \"$busqueda\"."
+                    }
+                )
             } else {
                 // Tarjetas de usuarios filtrados en fila horizontal deslizable.
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -291,78 +299,41 @@ private fun VistaListaUsuarios(
     }
 }
 
-// Overlay modal de confirmación de eliminación de un usuario.
+// Diálogo de confirmación real: pregunta si se desea eliminar al usuario y
+// permite cancelar antes de ejecutar el DELETE /admin/users/{id}.
 @Composable
-private fun EliminarUsuarioOverlay(
+private fun EliminarUsuarioDialog(
     usuario: UsuarioApi,
     onConfirmar: () -> Unit,
     onCancelar: () -> Unit,
     borrando: Boolean = false
 ) {
     val colors = LocalAppColors.current
-    // Capa oscura que oscurece el fondo y centra el diálogo de confirmación.
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.5f)),
-        contentAlignment = Alignment.Center
-    ) {
-        // Tarjeta de vidrio con el resumen del usuario que se elimina.
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .glassSurface(cornerRadius = GlassCornerRadius)
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Ícono de advertencia de eliminación.
-            Icon(Icons.Default.Delete, null, tint = Color.Red, modifier = Modifier.size(80.dp))
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Usuario Eliminado", color = SenaGreen, fontWeight = FontWeight.Bold, fontSize = 22.sp)
-            Spacer(modifier = Modifier.height(20.dp))
-            // Detalle del usuario afectado (datos personales).
-            detalLeUsuario(usuario)
-            Spacer(modifier = Modifier.height(24.dp))
-            // Botón que confirma y ejecuta la eliminación (llama a DELETE /admin/users).
+    AlertDialog(
+        onDismissRequest = onCancelar,
+        containerColor = colors.cardBackground.copy(alpha = 0.98f),
+        shape = RoundedCornerShape(24.dp),
+        icon = { Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red, modifier = Modifier.size(36.dp)) },
+        title = { Text("Eliminar usuario", color = colors.textPrimary, fontWeight = FontWeight.Bold) },
+        text = {
+            Text(
+                "¿Seguro que deseas eliminar a ${usuario.nombreCompleto}? " +
+                    "Esta acción no se puede deshacer.",
+                color = colors.textSecondary
+            )
+        },
+        confirmButton = {
             Button(
                 onClick = onConfirmar,
                 enabled = !borrando,
-                modifier = Modifier.fillMaxWidth().height(50.dp).pressScale(pressedScale = 0.97f),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = colors.textPrimary)
-            ) { Text(if (borrando) "Eliminando..." else "Aceptar", fontWeight = FontWeight.Bold, fontSize = 16.sp) }
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.White),
+                shape = RoundedCornerShape(12.dp)
+            ) { Text(if (borrando) "Eliminando..." else "Eliminar", fontWeight = FontWeight.Bold) }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancelar) { Text("Cancelar", color = colors.textSecondary) }
         }
-    }
-}
-
-// Detalle informativo del usuario afectado (nombre, rol, cédula, ficha, programa).
-@Composable
-private fun detalLeUsuario(usuario: UsuarioApi) {
-    val colors = LocalAppColors.current
-    // Contenedor con borde que lista los campos del usuario.
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(1.dp, colors.border, RoundedCornerShape(8.dp))
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        filaDetalle("Nombre", usuario.nombreCompleto)
-        filaDetalle("Rol", usuario.role?.rol_name ?: "")
-        filaDetalle("Cédula", usuario.user_identification ?: "")
-        filaDetalle("Ficha", "Ficha ${usuario.user_coursenumber ?: 0}")
-        filaDetalle("Programa", usuario.user_program ?: "")
-    }
-}
-
-// Fila genérica de detalle: etiqueta en verde y valor en color primario.
-@Composable
-private fun filaDetalle(label: String, valor: String) {
-    val colors = LocalAppColors.current
-    Row {
-        Text("$label: ", color = SenaGreen, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-        Text(valor, color = colors.textPrimary, fontSize = 14.sp)
-    }
+    )
 }
 
 // Tarjeta compacta de usuario con datos principales y acciones editar/eliminar.

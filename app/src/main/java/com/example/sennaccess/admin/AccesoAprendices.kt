@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.sennaccess.ui.CargaUiState
 import com.example.sennaccess.ui.EstadoContenido
+import com.example.sennaccess.ui.EstadoVacio
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
 import com.example.sennaccess.ui.ios.GlassCornerRadius
@@ -72,16 +73,11 @@ fun AccesoAprendicesContent(
             val registros = data.aprendices
 
             if (registros.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        "No hay registros de aprendices.",
-                        color = colors.textSecondary,
-                        fontSize = 14.sp
-                    )
-                }
+                EstadoVacio(
+                    icono = Icons.Default.School,
+                    titulo = "No hay registros de aprendices",
+                    mensaje = "Los accesos de los aprendices aparecerán aquí."
+                )
             } else {
                 registros.forEach { registro ->
                     TarjetaAccesoAdmin(

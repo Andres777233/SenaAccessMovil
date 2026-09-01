@@ -14,6 +14,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -21,6 +23,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.HowToReg
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.School
@@ -70,6 +73,7 @@ fun RegisterScreen(onBackToLogin: () -> Unit, isDark: Boolean = true, onToggleTh
     // Contexto de la actividad para lanzar el diálogo biométrico del sistema.
     val context = LocalContext.current
     // Variables locales solo para que la vista interactúe visualmente (no guarda nada)
+    var documentoTipo by remember { mutableStateOf("CC") }
     var identification by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
     var lastname by remember { mutableStateOf("") }
@@ -77,6 +81,7 @@ fun RegisterScreen(onBackToLogin: () -> Unit, isDark: Boolean = true, onToggleTh
     var email by remember { mutableStateOf("") }
     var courseNumber by remember { mutableStateOf("") }
     var program by remember { mutableStateOf("") }
+    var telefono by remember { mutableStateOf("") }
 
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
@@ -150,7 +155,54 @@ fun RegisterScreen(onBackToLogin: () -> Unit, isDark: Boolean = true, onToggleTh
 
                     // --- SECCIÓN 1: INFORMACIÓN PERSONAL ---
                     SectionHeader(icon = Icons.Default.Person, title = "Información Personal")
+                    // Tipo de documento con su significado entre paréntesis (dropdown).
+                    var docDropdownAbierto by remember { mutableStateOf(false) }
+                    val tiposDoc = listOf(
+                        "CC" to "Cédula de Ciudadanía",
+                        "CE" to "Cédula de Extranjería",
+                        "TI" to "Tarjeta de Identidad",
+                        "PAS" to "Pasaporte"
+                    )
+                    val docSeleccionado = tiposDoc.firstOrNull { it.first == documentoTipo } ?: tiposDoc.first()
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedTextField(
+                            value = "${docSeleccionado.first}: ${docSeleccionado.second}",
+                            onValueChange = {},
+                            readOnly = true,
+                            singleLine = true,
+                            label = { Text("Tipo de Documento", color = colors.textSecondary, fontSize = 14.sp) },
+                            modifier = Modifier.fillMaxWidth(),
+                            trailingIcon = {
+                                IconButton(onClick = { docDropdownAbierto = true }) {
+                                    Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = colors.textSecondary)
+                                }
+                            },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = SenaGreen, unfocusedBorderColor = colors.divider,
+                                focusedTextColor = colors.textPrimary, unfocusedTextColor = colors.textPrimary,
+                                focusedContainerColor = colors.surfaceVariant.copy(alpha = 0.5f), unfocusedContainerColor = colors.surfaceVariant.copy(alpha = 0.5f)
+                            )
+                        )
+                        DropdownMenu(
+                            expanded = docDropdownAbierto,
+                            onDismissRequest = { docDropdownAbierto = false },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            tiposDoc.forEach { (codigo, significado) ->
+                                DropdownMenuItem(
+                                    text = { Text("$codigo: $significado", color = colors.textPrimary, fontSize = 14.sp) },
+                                    onClick = {
+                                        documentoTipo = codigo
+                                        docDropdownAbierto = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
                     NeonTextField(value = identification, onValueChange = { identification = it }, label = "Número de Identificación")
+                    Spacer(modifier = Modifier.height(12.dp))
+                    NeonTextField(value = telefono, onValueChange = { telefono = it }, label = "Teléfono de contacto (opcional)")
                     Spacer(modifier = Modifier.height(12.dp))
                     NeonTextField(value = name, onValueChange = { name = it }, label = "Nombres")
                     Spacer(modifier = Modifier.height(12.dp))
@@ -160,7 +212,7 @@ fun RegisterScreen(onBackToLogin: () -> Unit, isDark: Boolean = true, onToggleTh
 
                     // --- SECCIÓN 2: FORMACIÓN ACADÉMICA ---
                     SectionHeader(icon = Icons.Default.School, title = "Formación Académica")
-                    NeonTextField(value = email, onValueChange = { email = it }, label = "Correo Electrónico Institucional")
+                    NeonTextField(value = email, onValueChange = { email = it }, label = "Correo Electrónico")
                     Spacer(modifier = Modifier.height(12.dp))
                     NeonTextField(value = courseNumber, onValueChange = { courseNumber = it }, label = "Número de Ficha")
                     Spacer(modifier = Modifier.height(12.dp))
@@ -238,7 +290,9 @@ fun RegisterScreen(onBackToLogin: () -> Unit, isDark: Boolean = true, onToggleTh
                                                     user_password = password,
                                                     user_password_confirmation = confirmPassword,
                                                     user_coursenumber = ficha,
-                                                    user_program = program.trim()
+                                                    user_program = program.trim(),
+                                                    user_documento_tipo = documentoTipo,
+                                                    user_telefono = telefono.trim().ifBlank { null }
                                                 )
                                             )
                                             enviando = false
@@ -292,7 +346,7 @@ fun RegisterScreen(onBackToLogin: () -> Unit, isDark: Boolean = true, onToggleTh
                 },
                 text = {
                     Text(
-                        "Tu solicitud de registro se ha enviado correctamente. Un administrador del SENA validará tu cuenta y recibirás un correo cuando esté activa.",
+                        "¡Cuenta creada correctamente! Tu cuenta de aprendiz quedó activa. Ya puedes iniciar sesión con tu correo y contraseña.",
                         color = colors.textSecondary
                     )
                 },
@@ -392,7 +446,7 @@ fun GlowOutlinedButtonRegister(text: String, icon: ImageVector? = null, onClick:
     OutlinedButton(
         onClick = onClick, modifier = modifier.pressScale(pressedScale = 0.97f),
         border = BorderStroke(2.dp, SenaGreen.copy(alpha = 0.5f)),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = ThemeText),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = LocalAppColors.current.textPrimary),
         shape = RoundedCornerShape(12.dp), contentPadding = PaddingValues(vertical = 14.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {

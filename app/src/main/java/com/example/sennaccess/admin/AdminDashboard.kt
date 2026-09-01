@@ -10,6 +10,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -18,9 +20,15 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
+import com.example.sennaccess.aprendiz.EditarPerfilView
 import com.example.sennaccess.data.Notificacion
 import com.example.sennaccess.data.Novedad
 import com.example.sennaccess.data.UsuarioApi
+import com.example.sennaccess.admin.ambientes.AmbientesAdminView
+import com.example.sennaccess.excusas.ValidarExcusaView
+import com.example.sennaccess.jornada.AutorizarSalidaView
+import com.example.sennaccess.jornada.GenerarQrAulaView
+import com.example.sennaccess.ui.AcercaDeView
 import com.example.sennaccess.ui.CargaUiState
 import com.example.sennaccess.ui.NotificacionesView
 import com.example.sennaccess.ui.NovedadesView
@@ -28,6 +36,8 @@ import com.example.sennaccess.ui.ios.GlassDock
 import com.example.sennaccess.ui.ios.GlassDockItem
 import com.example.sennaccess.ui.ios.GlowSpheres
 import com.example.sennaccess.ui.theme.LocalAppColors
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Contenedor principal del rol ADMINISTRADOR.
@@ -52,9 +62,14 @@ fun AdminDashboard(
     // y la sub-pantalla superpuesta (subScreen), que tiene prioridad sobre la pestaña.
     var currentTab by rememberSaveable { mutableStateOf("INICIO") }
     var subScreen by rememberSaveable { mutableStateOf<AdminScreen?>(null) }
+    // True cuando el perfil está abierto en modo edición (EditarPerfilView).
+    var editandoPerfil by rememberSaveable { mutableStateOf(false) }
     // Usuario seleccionado para edicion; proviene del GET /admin/users de UsuariosViewModel.
     var usuarioAEditar by remember { mutableStateOf<com.example.sennaccess.data.UsuarioApi?>(null) }
     val colors = LocalAppColors.current
+    val scope = rememberCoroutineScope()
+    // Estado del indicador de pull-to-refresh.
+    var refrescando by remember { mutableStateOf(false) }
     // ViewModel compartido que expone resumen, historial y perfil como
     // CargaUiState; la UI solo observa y reacciona ante carga/error/datos.
     val viewModel: AdminDashboardViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
@@ -69,15 +84,14 @@ fun AdminDashboard(
     val equipos by viewModel.equipos.collectAsState()
     val notificaciones by viewModel.notificaciones.collectAsState()
     val novedades by viewModel.novedades.collectAsState()
+    val presentes by viewModel.presentes.collectAsState()
 
     // No leídas para el badge de la campana (0 si el estado no trae datos).
     val noLeidas = (notificaciones as? CargaUiState.Success<List<Notificacion>>)?.datos
         ?.count { it.is_read != true } ?: 0
 
-    // Al cambiar de pestaña o sub-pantalla se refrescan los datos de esa sección
-    // desde la API, para que el admin vea los registros más recientes (equipos,
-    // novedades, historial) aunque se hayan creado después de abrir la app.
-    LaunchedEffect(currentTab, subScreen) {
+    // Refresca los datos de la sección visible; lo usan el cambio de pestaña y el pull-to-refresh.
+    fun cargarActual() {
         when (subScreen) {
             AdminScreen.EQUIPOS -> viewModel.cargarEquipos()
             AdminScreen.NOTIFICACIONES -> viewModel.cargarNotificaciones()
@@ -85,14 +99,21 @@ fun AdminDashboard(
                 "INICIO" -> viewModel.cargarResumen()
                 "NOVEDADES" -> viewModel.cargarNovedades()
                 "HISTORIAL" -> viewModel.cargarHistorial()
+                "PRESENTES" -> viewModel.cargarPresentes()
             }
         }
     }
+
+    // Al cambiar de pestaña o sub-pantalla se refrescan los datos de esa sección
+    // desde la API, para que el admin vea los registros más recientes (equipos,
+    // novedades, historial) aunque se hayan creado después de abrir la app.
+    LaunchedEffect(currentTab, subScreen) { cargarActual() }
 
     // Selecciona una pestaña del dock y limpia la sub-pantalla abierta,
     // garantizando que al cambiar de pestaña se vuelva al contenido principal.
     fun irATab(tab: String) {
         currentTab = tab
+        editandoPerfil = false
         subScreen = if (tab == "EQUIPOS") AdminScreen.EQUIPOS else null
     }
 
@@ -104,7 +125,7 @@ fun AdminDashboard(
             // Los formularios de usuario y el perfil se abren como sub-pantallas superpuestas.
             AdminScreen.CREAR_USUARIO -> subScreen = AdminScreen.CREAR_USUARIO
             AdminScreen.ACTUALIZAR_USUARIO -> subScreen = AdminScreen.ACTUALIZAR_USUARIO
-            AdminScreen.PERFIL -> subScreen = AdminScreen.PERFIL
+            AdminScreen.PERFIL -> { subScreen = AdminScreen.PERFIL; editandoPerfil = false }
             AdminScreen.USUARIOS -> { currentTab = "USUARIOS"; subScreen = null }
             AdminScreen.REPORTE_NOVEDADES -> { currentTab = "NOVEDADES"; subScreen = null }
             // Los accesos de aprendices/instructores se muestran como sub-pantallas
@@ -113,6 +134,11 @@ fun AdminDashboard(
             AdminScreen.ACCESO_INSTRUCTORES -> subScreen = AdminScreen.ACCESO_INSTRUCTORES
             AdminScreen.EQUIPOS -> subScreen = AdminScreen.EQUIPOS
             AdminScreen.NOTIFICACIONES -> subScreen = AdminScreen.NOTIFICACIONES
+            AdminScreen.ACERCA_DE -> subScreen = AdminScreen.ACERCA_DE
+            AdminScreen.QR_AULA -> subScreen = AdminScreen.QR_AULA
+            AdminScreen.AUTORIZAR_SALIDA -> subScreen = AdminScreen.AUTORIZAR_SALIDA
+            AdminScreen.AMBIENTES -> subScreen = AdminScreen.AMBIENTES
+            AdminScreen.VALIDAR_EXCUSA -> subScreen = AdminScreen.VALIDAR_EXCUSA
         }
     }
 
@@ -147,7 +173,17 @@ fun AdminDashboard(
             )
 
             // Área central de contenido; deja espacio inferior para que el dock no tape nada.
-            Box(
+            // Envuelto en PullToRefreshBox: deslizar hacia abajo recarga la sección visible.
+            PullToRefreshBox(
+                isRefreshing = refrescando,
+                onRefresh = {
+                    scope.launch {
+                        refrescando = true
+                        cargarActual()
+                        delay(600)
+                        refrescando = false
+                    }
+                },
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp)
@@ -171,11 +207,26 @@ fun AdminDashboard(
                             )
                         }
                     }
-                    AdminScreen.PERFIL -> PerfilContent(
-                        perfil = perfil,
-                        onBack = { subScreen = null },
-                        onReintentar = viewModel::cargarPerfil
-                    )
+                    AdminScreen.PERFIL -> if (editandoPerfil) {
+                        // Edición del perfil: datos + cambio de foto (sin ficha/programa).
+                        EditarPerfilView(
+                            estado = perfil,
+                            onBack = { editandoPerfil = false },
+                            onGuardado = {
+                                editandoPerfil = false
+                                viewModel.cargarPerfil()
+                            },
+                            onReintentar = viewModel::cargarPerfil,
+                            mostrarFichaPrograma = false
+                        )
+                    } else {
+                        PerfilContent(
+                            perfil = perfil,
+                            onBack = { subScreen = null },
+                            onReintentar = viewModel::cargarPerfil,
+                            onEditar = { editandoPerfil = true }
+                        )
+                    }
                     AdminScreen.ACCESO_APRENDICES -> AccesoAprendicesContent(
                         estado = historial,
                         onReintentar = viewModel::cargarHistorial,
@@ -200,6 +251,11 @@ fun AdminDashboard(
                         onMarcarTodasLeidas = viewModel::marcarTodasLeidas,
                         onBack = { subScreen = null }
                     )
+                    AdminScreen.ACERCA_DE -> AcercaDeView(onBack = { subScreen = null })
+                    AdminScreen.QR_AULA -> GenerarQrAulaView(onBack = { subScreen = null })
+                    AdminScreen.AUTORIZAR_SALIDA -> AutorizarSalidaView(onBack = { subScreen = null })
+                    AdminScreen.AMBIENTES -> AmbientesAdminView(onBack = { subScreen = null })
+                    AdminScreen.VALIDAR_EXCUSA -> ValidarExcusaView(onBack = { subScreen = null })
                     else -> when (currentTab) {
                         // INICIO: resumen del día con el historial de ingresos del centro.
                         "INICIO" -> AdminPanelResumen(resumen = resumen, onReintentar = viewModel::cargarResumen)
@@ -225,17 +281,23 @@ fun AdminDashboard(
                             onVerAprendices = { onNavigate(AdminScreen.ACCESO_APRENDICES) },
                             onVerInstructores = { onNavigate(AdminScreen.ACCESO_INSTRUCTORES) }
                         )
+                        // PRESENTES: quiénes están dentro ahora.
+                        "PRESENTES" -> PresentesView(
+                            estado = presentes,
+                            onReintentar = viewModel::cargarPresentes
+                        )
                     }
                 }
             }
         }
 
-        // Dock flotante de vidrio: define las 5 pestañas del admin y su ícono.
+        // Dock flotante de vidrio: define las 6 pestañas del admin y su ícono.
         // La pestaña activa se resalta y al tocar otra se dispara irATab.
         GlassDock(
             items = listOf(
                 GlassDockItem("INICIO", Icons.Default.Home, "Inicio"),
                 GlassDockItem("NOVEDADES", Icons.Default.WarningAmber, "Novedades"),
+                GlassDockItem("PRESENTES", Icons.Default.Groups, "Presentes"),
                 GlassDockItem("USUARIOS", Icons.Default.People, "Usuarios"),
                 GlassDockItem("EQUIPOS", Icons.Default.Devices, "Equipos"),
                 GlassDockItem("HISTORIAL", Icons.Default.History, "Historial")

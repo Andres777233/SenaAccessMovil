@@ -15,6 +15,7 @@ import com.example.sennaccess.data.Notificacion
 import com.example.sennaccess.data.NotificacionRepository
 import com.example.sennaccess.data.Novedad
 import com.example.sennaccess.data.NovedadRepository
+import com.example.sennaccess.data.Presente
 import com.example.sennaccess.data.Role
 import com.example.sennaccess.data.SessionManager
 import com.example.sennaccess.data.UsuarioApi
@@ -76,6 +77,10 @@ class AdminDashboardViewModel : ViewModel() {
     private val _novedades = MutableStateFlow<CargaUiState<List<Novedad>>>(CargaUiState.Loading)
     val novedades: StateFlow<CargaUiState<List<Novedad>>> = _novedades.asStateFlow()
 
+    // Quiénes están DENTRO ahora (GET /admin/presentes).
+    private val _presentes = MutableStateFlow<CargaUiState<List<Presente>>>(CargaUiState.Loading)
+    val presentes: StateFlow<CargaUiState<List<Presente>>> = _presentes.asStateFlow()
+
     init {
         // Al crear el ViewModel se disparan las cargas iniciales en paralelo.
         cargarResumen()
@@ -86,6 +91,7 @@ class AdminDashboardViewModel : ViewModel() {
         cargarEquipos()
         cargarNotificaciones()
         cargarNovedades()
+        cargarPresentes()
     }
 
     // Carga el resumen de ingresos del día; si no hay sesión o la API falla,
@@ -177,6 +183,14 @@ class AdminDashboardViewModel : ViewModel() {
     fun cargarNovedades() {
         cargarConFallback(fallback = { MockData.novedades }, setState = { _novedades.value = it }) {
             novedadRepo.getNovedades(SessionManager.token!!)
+        }
+    }
+
+    // Quiénes están DENTRO ahora (GET /admin/presentes). Sin sesión (demo) se
+    // entrega una lista vacía porque no hay forma real de saber quién está dentro.
+    fun cargarPresentes() {
+        cargarConFallback(fallback = { emptyList() }, setState = { _presentes.value = it }) {
+            ingresoRepo.getPresentes(SessionManager.token!!)
         }
     }
 

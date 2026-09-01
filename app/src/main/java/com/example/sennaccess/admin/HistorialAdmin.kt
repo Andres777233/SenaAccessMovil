@@ -30,6 +30,8 @@ import com.example.sennaccess.data.IngresoRepository
 import com.example.sennaccess.data.SessionManager
 import com.example.sennaccess.ui.CargaUiState
 import com.example.sennaccess.ui.EstadoContenido
+import com.example.sennaccess.ui.EstadoVacio
+import com.example.sennaccess.ui.horaCorta
 import com.example.sennaccess.ui.theme.ErrorRed
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
@@ -176,9 +178,12 @@ private fun SeccionHistorial(
         Spacer(modifier = Modifier.height(12.dp))
         if (registros.isEmpty()) {
             // Sin registros para este rol.
-            Box(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
-                Text("Sin registros", color = colors.textSecondary, fontSize = 13.sp)
-            }
+            EstadoVacio(
+                icono = icono,
+                titulo = "Sin registros",
+                mensaje = "Los accesos de este rol aparecerán aquí.",
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
         } else {
             // Lista los registros de acceso como tarjetas individuales.
             registros.forEach { registro ->
@@ -231,7 +236,7 @@ internal fun TarjetaAccesoAdmin(nombre: String, rol: String, hora: String, tipo:
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp
             )
-            Text(hora, color = colors.textSecondary, fontSize = 12.sp)
+            Text(horaCorta(hora), color = colors.textSecondary, fontSize = 12.sp)
         }
     }
 }

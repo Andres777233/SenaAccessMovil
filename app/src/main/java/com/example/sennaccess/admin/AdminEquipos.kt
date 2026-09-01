@@ -31,6 +31,7 @@ import com.example.sennaccess.data.IngresoEquipo
 import com.example.sennaccess.data.SessionManager
 import com.example.sennaccess.ui.CargaUiState
 import com.example.sennaccess.ui.EstadoContenido
+import com.example.sennaccess.ui.EstadoVacio
 import com.example.sennaccess.ui.ios.GlassCornerRadius
 import com.example.sennaccess.ui.ios.IosCollapsibleHeader
 import com.example.sennaccess.ui.ios.pressScale
@@ -113,9 +114,11 @@ fun AdminEquiposContent(
 
             EstadoContenido(estado = estado, onReintentar = onReintentar) { items ->
                 if (items.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
-                        Text("No hay equipos registrados.", color = colors.textSecondary, fontSize = 14.sp)
-                    }
+                    EstadoVacio(
+                        icono = Icons.Default.Devices,
+                        titulo = "No hay equipos registrados",
+                        mensaje = "Los equipos que se registren en el centro aparecerán aquí."
+                    )
                 } else {
                     items.forEach { eq ->
                         HorizontalDivider(color = colors.border)

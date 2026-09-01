@@ -4,14 +4,18 @@ package com.example.sennaccess.ui
 // decide entre CargandoBox (Loading), ErrorBox (Error con reintento) o el
 // contenido real (Success), centralizando el renderizado de estados en la app.
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -51,6 +55,36 @@ fun CargandoBox() {
             CircularProgressIndicator(color = SenaGreen, modifier = Modifier.size(32.dp))
             Spacer(modifier = Modifier.height(12.dp))
             Text("Cargando...", color = colors.textSecondary, fontSize = 13.sp)
+        }
+    }
+}
+
+// Estado vacío amable: ícono en círculo verde, título y mensaje de apoyo.
+@Composable
+fun EstadoVacio(
+    icono: ImageVector,
+    titulo: String,
+    mensaje: String,
+    modifier: Modifier = Modifier
+) {
+    val colors = LocalAppColors.current
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 32.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(horizontal = 24.dp)) {
+            Box(
+                modifier = Modifier.size(64.dp).clip(CircleShape).background(SenaGreen.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icono, contentDescription = null, tint = SenaGreen, modifier = Modifier.size(30.dp))
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(titulo, color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp, textAlign = TextAlign.Center)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(mensaje, color = colors.textSecondary, fontSize = 13.sp, textAlign = TextAlign.Center)
         }
     }
 }

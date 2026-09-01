@@ -2,6 +2,10 @@ package com.example.sennaccess.data
 
 // Guarda en memoria los datos de la sesión activa (token y perfil del usuario).
 // No persiste en disco: la sesión se pierde al reiniciar la app, por diseño.
+// Además persiste la lista de correos usados en el login (SharedPreferences
+// "login_prefs") para sugerir autocompletado en el campo de correo.
+
+import android.content.Context
 
 object SessionManager {
     // Datos de la sesión actual. Los setters son privados: solo pueden modificarse a
@@ -60,5 +64,26 @@ object SessionManager {
         if (path.startsWith("http")) return path
         val base = RetrofitClient.raizServidor()
         return base.trimEnd('/') + (if (path.startsWith("/")) "" else "/") + path
+    }
+
+    // Guarda el correo usado en preferencias para autocompletado del login.
+    // Mantiene hasta 5 correos, el más reciente primero, sin duplicados.
+    fun guardarCorreoUsado(context: Context, email: String) {
+        val limpio = email.trim()
+        if (limpio.isBlank()) return
+        val prefs = context.getSharedPreferences("login_prefs", Context.MODE_PRIVATE)
+        val actual = prefs.getString("correos_guardados", "")?.split("|")?.filter { it.isNotBlank() }?.toMutableList() ?: mutableListOf()
+        actual.removeAll { it.equals(limpio, ignoreCase = true) }
+        actual.add(0, limpio)
+        while (actual.size > 5) actual.removeAt(actual.lastIndex)
+        prefs.edit().putString("correos_guardados", actual.joinToString("|")).apply()
+    }
+
+    // Devuelve la lista de correos guardados para el autocompletado.
+    fun obtenerCorreosUsados(context: Context): List<String> {
+        val prefs = context.getSharedPreferences("login_prefs", Context.MODE_PRIVATE)
+        val raw = prefs.getString("correos_guardados", "") ?: ""
+        if (raw.isBlank()) return emptyList()
+        return raw.split("|").filter { it.isNotBlank() }
     }
 }

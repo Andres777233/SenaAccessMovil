@@ -35,7 +35,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.sennaccess.BuildConfig
 import com.example.sennaccess.ui.ios.IosSpring
+import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
 import kotlinx.coroutines.delay
 
@@ -77,10 +79,8 @@ fun SplashScreen(isDark: Boolean = true, onFinished: () -> Unit) {
     )
 
     LaunchedEffect(Unit) {
-        // Secuencia temporal: controla el orden y los tiempos de la animación completa.
-        // Resplandor aparece primero (suave).
-        glowAlpha.animateTo(1f, animationSpec = tween(500))
-        // Logo entra con rebote elástico (Spring physics).
+        // Secuencia temporal: resplandor + entrada elástica, pausa corta y salida.
+        glowAlpha.animateTo(1f, animationSpec = tween(420))
         logoAlpha.animateTo(1f, animationSpec = tween(250))
         logoScale.animateTo(
             targetValue = 1f,
@@ -90,14 +90,13 @@ fun SplashScreen(isDark: Boolean = true, onFinished: () -> Unit) {
             )
         )
         showSubtitle = true
-        delay(650)
-        // Inicia salida: Fade + Scale.
+        delay(450)
         exiting = true
-        delay(320)
+        delay(280)
         onFinished()
     }
 
-    val bg = if (isDark) Color(0xFF07090D) else Color(0xFFF5F5F5)
+    val bg = if (isDark) Color(0xFF07090D) else Color(0xFFF0F2F5)
 
     // Contenedor de la pantalla: aplica la transición de salida y centra el contenido.
     Box(
@@ -116,16 +115,20 @@ fun SplashScreen(isDark: Boolean = true, onFinished: () -> Unit) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.size(260.dp)) {
 
-                // Resplandor radial verde SENA detrás del logo.
+                // Resplandor radial verde SENA detrás del logo (más intenso en claro).
                 Box(
                     modifier = Modifier
                         .size(260.dp)
                         .alpha(glowAlpha.value)
                         .background(
                             Brush.radialGradient(
-                                colors = listOf(
+                                colors = if (isDark) listOf(
                                     SenaGreen.copy(alpha = 0.55f),
                                     SenaGreen.copy(alpha = 0.18f),
+                                    Color.Transparent
+                                ) else listOf(
+                                    SenaGreen.copy(alpha = 0.72f),
+                                    SenaGreen.copy(alpha = 0.28f),
                                     Color.Transparent
                                 )
                             )
@@ -150,6 +153,14 @@ fun SplashScreen(isDark: Boolean = true, onFinished: () -> Unit) {
                 color = SenaGreen,
                 fontWeight = FontWeight.Bold,
                 fontSize = 28.sp,
+                modifier = Modifier.alpha(subtitleAlpha)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                "v${BuildConfig.VERSION_NAME}",
+                color = LocalAppColors.current.textSecondary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
                 modifier = Modifier.alpha(subtitleAlpha)
             )
         }

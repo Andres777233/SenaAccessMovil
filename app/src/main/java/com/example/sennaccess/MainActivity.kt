@@ -56,7 +56,7 @@ class MainActivity : AppCompatActivity() {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(if (isDark) Color(0xFF07090D) else Color(0xFFF5F5F5))
+                            .background(appColors.background)
                     ) {
                         // Transición suave entre pantallas (Crossfade) sin alterar
                         // rutas, estado ni callbacks de navegación.

@@ -1,23 +1,18 @@
 package com.example.sennaccess.data
 
 // Punto único de configuración de Retrofit para toda la app.
-// Construye el cliente HTTP (OkHttp) y tres instancias de ApiService: Railway (nube,
-// ruta primaria), el backend por USB (adb reverse) y por la IP del PC en la red WiFi.
+// La app habla SIEMPRE con el backend desplegado en Railway (HTTPS); sin
+// fallbacks locales para no caer en servidores desactualizados.
 
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
 
-    // Celular físico por USB: adb reverse tcp:8000 tcp:8000 redirige 127.0.0.1 del celular al PC
-    private const val BASE_URL_USB = "http://127.0.0.1:8000/api/"
-    // Celular físico por WiFi (misma red). Si el DHCP cambia la IP del PC, actualizar aquí.
-    private const val BASE_URL_WIFI = "http://192.168.1.8:8000/api/"
-    // Backend desplegado en Railway (URL pública, HTTPS). CAMBIAR por el dominio real tras el deploy.
+    // Backend desplegado en Railway (URL pública, HTTPS). Único destino de la app.
     private const val BASE_URL_REMOTE = "https://senaaccessweb-production.up.railway.app/api/"
 
     // 1. Interceptor de logs: registra cada petición y respuesta HTTP con su cuerpo.
@@ -26,11 +21,11 @@ object RetrofitClient {
         level = HttpLoggingInterceptor.Level.BODY
     }
 
-    // 2. Cliente HTTP compartido por ambas rutas. El timeout de conexión es corto (3s)
-    //    para que el fallback a la otra ruta sea rápido; el de lectura es más amplio.
+    // 2. Cliente HTTP con tiempos holgados: la conexión tarda hasta 10s (arranque
+    //    en frío de Railway) y la lectura hasta 60s (subidas a Cloudinary incluidas).
     private val okHttpClient = OkHttpClient.Builder()
-        .connectTimeout(3, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
         .addInterceptor(loggingInterceptor)
         .build()
 
@@ -44,49 +39,13 @@ object RetrofitClient {
             .build()
             .create(ApiService::class.java)
 
-    // 4. Tres instancias de ApiService creadas con lazy: se construyen una sola vez,
-    //    en el momento en que se usan por primera vez.
-    private val servicioUsb: ApiService by lazy { construir(BASE_URL_USB) }
-    private val servicioWifi: ApiService by lazy { construir(BASE_URL_WIFI) }
+    // 4. Instancia única del servicio remoto, creada una sola vez (lazy).
     private val servicioRemoto: ApiService by lazy { construir(BASE_URL_REMOTE) }
 
-    // Recuerda cuál ruta respondió la última llamada exitosa; la usa raizServidor().
-    @Volatile
-    private var rutaActivaEsUsb: Boolean = false
-    @Volatile
-    private var rutaActivaEsRemota: Boolean = true
+    // Entrega el servicio para ejecutar una llamada contra Railway.
+    suspend fun <T> conServicio(bloque: suspend (ApiService) -> T): T = bloque(servicioRemoto)
 
-    // 5. Flujo de fallback: Railway (remoto/HTTPS) -> USB -> WiFi (misma red).
-    //    La nube es la primaria para que la app funcione sin depender del PC encendido.
-    suspend fun <T> conServicio(bloque: suspend (ApiService) -> T): T {
-        try {
-            val resultado = bloque(servicioRemoto)
-            rutaActivaEsUsb = false
-            rutaActivaEsRemota = true
-            return resultado
-        } catch (e: IOException) {
-            try {
-                val resultado = bloque(servicioUsb)
-                rutaActivaEsUsb = true
-                rutaActivaEsRemota = false
-                return resultado
-            } catch (e2: IOException) {
-                val resultado = bloque(servicioWifi)
-                rutaActivaEsUsb = false
-                rutaActivaEsRemota = false
-                return resultado
-            }
-        }
-    }
-
-    // 6. Raíz del servidor activo (sin "api/"): sirve para resolver rutas relativas del
-    // backend, como las fotos de perfil "/avatars/x.jpg", según la ruta que funcione.
-    fun raizServidor(): String {
-        val base = when {
-            rutaActivaEsRemota -> BASE_URL_REMOTE
-            rutaActivaEsUsb -> BASE_URL_USB
-            else -> BASE_URL_WIFI
-        }
-        return base.removeSuffix("api/")
-    }
+    // 6. Raíz del servidor activo (sin "api/"): sirve para resolver rutas relativas
+    //    del backend, como las fotos de perfil "/avatars/x.jpg".
+    fun raizServidor(): String = BASE_URL_REMOTE.removeSuffix("api/")
 }

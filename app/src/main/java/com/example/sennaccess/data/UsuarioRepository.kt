@@ -27,6 +27,8 @@ class UsuarioRepository {
     // Actualiza el perfil incluyendo la foto elegida (POST my-profile multipart con
     // _method=PUT). Los campos de texto viajan como partes de texto y la imagen como
     // parte "image"; el backend la sube y guarda su URL en profile_photo_path.
+    // ficha y programa son opcionales: si vienen null no se envían, lo que permite
+    // usar este mismo método para el administrador (que no tiene ficha ni programa).
     suspend fun actualizarConFoto(
         token: String,
         imagen: okhttp3.MultipartBody.Part,
@@ -34,8 +36,8 @@ class UsuarioRepository {
         nombre: String,
         apellido: String,
         correo: String,
-        ficha: Int,
-        programa: String
+        ficha: Int? = null,
+        programa: String? = null
     ): UsuarioApi {
         fun parte(valor: String): okhttp3.RequestBody =
             valor.toRequestBody("text/plain".toMediaType())
@@ -48,8 +50,8 @@ class UsuarioRepository {
                 parte(nombre),
                 parte(apellido),
                 parte(correo),
-                parte(ficha.toString()),
-                parte(programa)
+                ficha?.toString()?.toRequestBody("text/plain".toMediaType()),
+                programa?.toRequestBody("text/plain".toMediaType())
             )
         }
     }

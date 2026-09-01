@@ -38,6 +38,8 @@ data class User(
     @SerializedName("user_email") val user_email: String? = null,
     @SerializedName("user_coursenumber") val user_coursenumber: Int? = null,
     @SerializedName("user_program") val user_program: String? = null,
+    @SerializedName("user_documento_tipo") val user_documento_tipo: String? = null,
+    @SerializedName("user_telefono") val user_telefono: String? = null,
     @SerializedName("fk_id_rol") val fk_id_rol: Int? = null,
     @SerializedName("profile_photo_path") val profile_photo_path: String? = null
 )
@@ -74,6 +76,8 @@ data class UsuarioApi(
     @SerializedName("user_email") val user_email: String? = null,
     @SerializedName("user_coursenumber") val user_coursenumber: Int? = null,
     @SerializedName("user_program") val user_program: String? = null,
+    @SerializedName("user_documento_tipo") val user_documento_tipo: String? = null,
+    @SerializedName("user_telefono") val user_telefono: String? = null,
     @SerializedName("fk_id_rol") val fk_id_rol: Int? = null,
     @SerializedName("profile_photo_path") val profile_photo_path: String? = null,
     val role: Role? = null
@@ -92,6 +96,8 @@ data class UserRequest(
     @SerializedName("user_password") val user_password: String? = null,
     @SerializedName("user_coursenumber") val user_coursenumber: Int? = null,
     @SerializedName("user_program") val user_program: String? = null,
+    @SerializedName("user_documento_tipo") val user_documento_tipo: String? = null,
+    @SerializedName("user_telefono") val user_telefono: String? = null,
     @SerializedName("fk_id_rol") val fk_id_rol: Int
 )
 
@@ -111,6 +117,18 @@ data class Ingreso(
 data class IngresosResponse(
     @SerializedName("data") val data: List<Ingreso>? = null
 )
+
+// Usuario que está DENTRO ahora (GET /admin/presentes): identificación, nombre
+// y apellido, rol y la hora en que entró. entrada_hora viene en ISO del backend.
+data class Presente(
+    @SerializedName("id_usuario") val id_usuario: Int? = null,
+    @SerializedName("user_name") val user_name: String? = null,
+    @SerializedName("user_lastname") val user_lastname: String? = null,
+    val rol: String? = null,
+    @SerializedName("entrada_hora") val entrada_hora: String? = null
+) {
+    val nombreCompleto: String get() = listOfNotNull(user_name, user_lastname).joinToString(" ").ifBlank { "Usuario" }
+}
 
 // Registro de entrada de un equipo tecnológico: datos del dispositivo (tipo, marca,
 // modelo, color, serial), observaciones, accesorios que lleva y el usuario que lo registró.
@@ -187,7 +205,9 @@ data class RegisterRequest(
     @SerializedName("user_password") val user_password: String,
     @SerializedName("user_password_confirmation") val user_password_confirmation: String,
     @SerializedName("user_coursenumber") val user_coursenumber: Int,
-    @SerializedName("user_program") val user_program: String
+    @SerializedName("user_program") val user_program: String,
+    @SerializedName("user_documento_tipo") val user_documento_tipo: String,
+    @SerializedName("user_telefono") val user_telefono: String? = null
 )
 
 // Respuesta del registro de cuenta: mensaje de confirmación y el usuario creado.
@@ -209,18 +229,20 @@ data class ResetRequest(
 )
 
 // Cuerpo para actualizar el perfil propio (PUT /my-profile). La contraseña es
-// opcional: solo se cambia cuando viene llena.
+// opcional: solo se cambia cuando viene llena. ficha y programa son opcionales
+// porque solo el Aprendiz los tiene; admin e instructor los envían null.
 data class UpdateProfileRequest(
     @SerializedName("user_identification") val user_identification: String,
     @SerializedName("user_name") val user_name: String,
     @SerializedName("user_lastname") val user_lastname: String,
     @SerializedName("user_email") val user_email: String,
     @SerializedName("user_password") val user_password: String? = null,
-    @SerializedName("user_coursenumber") val user_coursenumber: Int,
-    @SerializedName("user_program") val user_program: String
+    @SerializedName("user_coursenumber") val user_coursenumber: Int? = null,
+    @SerializedName("user_program") val user_program: String? = null
 )
 
-// Ambiente de formación: datos generales, responsable y los instructores asignados.
+// Ambiente de formación: datos generales, responsable y los instructores/asignados.
+// El backend expone `aprendices` (matriculados) y `aprendices_count` para el conteo rápido.
 data class Ambiente(
     @SerializedName("id_ambiente") val id_ambiente: Int? = null,
     @SerializedName("ambiente_nombre") val ambiente_nombre: String? = null,
@@ -229,8 +251,12 @@ data class Ambiente(
     @SerializedName("ambiente_estado") val ambiente_estado: String? = null,
     @SerializedName("ambiente_jornada") val ambiente_jornada: String? = null,
     @SerializedName("fk_id_instructor") val fk_id_instructor: Int? = null,
+    @SerializedName("hora_inicio") val hora_inicio: String? = null,
+    @SerializedName("hora_fin") val hora_fin: String? = null,
+    @SerializedName("aprendices_count") val aprendices_count: Int? = null,
     val instructor: UsuarioApi? = null,
-    val instructores: List<UsuarioApi>? = null
+    val instructores: List<UsuarioApi>? = null,
+    val aprendices: List<UsuarioApi>? = null
 )
 
 // Cuerpo para crear/editar un ambiente: datos generales más los instructores asignados.
@@ -240,8 +266,20 @@ data class AmbienteRequest(
     @SerializedName("ambiente_ubicacion") val ambiente_ubicacion: String? = null,
     @SerializedName("ambiente_estado") val ambiente_estado: String? = null,
     @SerializedName("ambiente_jornada") val ambiente_jornada: String? = null,
+    @SerializedName("hora_inicio") val hora_inicio: String? = null,
+    @SerializedName("hora_fin") val hora_fin: String? = null,
     @SerializedName("fk_id_instructor") val fk_id_instructor: Int? = null,
     val instructores: List<Int>? = null
+)
+
+// Petición para asignar/añadir un aprendiz a un ambiente (POST /mis-ambientes/{id}/aprendices).
+data class AmbienteAprendizRequest(
+    @SerializedName("fk_id_usuario") val fk_id_usuario: Int
+)
+
+// Sincronización de instructores de un ambiente (POST /admin/ambientes/{id}/instructores).
+data class AmbienteInstructoresRequest(
+    val instructores: List<Int>
 )
 
 // Horario de un ambiente: día, jornada e instructor asignado a esa celda.

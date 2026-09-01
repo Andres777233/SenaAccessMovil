@@ -94,6 +94,8 @@ interface ApiService {
     // 4c. POST /api/my-profile con _method=PUT y multipart/form-data: misma actualización
     //     del perfil pero incluyendo la foto (campo "image") para subirla al servidor.
     //     Laravel interpreta el campo "_method" como PUT real sobre la ruta my-profile.
+    //     ficha y programa son opcionales (null): Retrofit omite esas partes, lo que
+    //     permite subir foto a roles que no tienen ficha, como el administrador.
     @Multipart
     @POST("my-profile")
     suspend fun updateMyProfileWithPhoto(
@@ -104,8 +106,8 @@ interface ApiService {
         @Part("user_name") nombre: okhttp3.RequestBody,
         @Part("user_lastname") apellido: okhttp3.RequestBody,
         @Part("user_email") correo: okhttp3.RequestBody,
-        @Part("user_coursenumber") ficha: okhttp3.RequestBody,
-        @Part("user_program") programa: okhttp3.RequestBody
+        @Part("user_coursenumber") ficha: okhttp3.RequestBody? = null,
+        @Part("user_program") programa: okhttp3.RequestBody? = null
     ): UsuarioApi
 
     // ---- Admin / Instructor ----
@@ -135,6 +137,11 @@ interface ApiService {
     // 7. GET /api/admin/roles: catálogo de roles, útil para filtros y desplegables.
     @GET("admin/roles")
     suspend fun getRoles(@Header("Authorization") auth: String): List<Role>
+
+    // 7a. GET /api/admin/presentes: usuarios que están DENTRO ahora (su último
+    //     registro es una Entrada sin Salida). Solo admin.
+    @GET("admin/presentes")
+    suspend fun getPresentes(@Header("Authorization") auth: String): List<Presente>
 
     // 8. GET /api/my-novedades: novedades publicadas por el usuario logueado.
     @GET("my-novedades")
@@ -180,6 +187,31 @@ interface ApiService {
     // 12. GET /api/ambientes: catálogo de ambientes para cualquier rol autenticado.
     @GET("ambientes")
     suspend fun getAmbientes(@Header("Authorization") auth: String): List<Ambiente>
+
+    // 12a. GET /api/mis-ambientes: ambientes donde el instructor/aprendiz está asignado.
+    @GET("mis-ambientes")
+    suspend fun getMisAmbientes(@Header("Authorization") auth: String): List<Ambiente>
+
+    @GET("mis-ambientes/{id}/aprendices")
+    suspend fun getMisAprendices(@Header("Authorization") auth: String, @Path("id") id: Int): List<UsuarioApi>
+
+    @POST("mis-ambientes/{id}/aprendices")
+    suspend fun addMisAprendiz(@Header("Authorization") auth: String, @Path("id") id: Int, @Body body: AmbienteAprendizRequest): MessageResponse
+
+    @DELETE("mis-ambientes/{id}/aprendices/{userId}")
+    suspend fun removeMisAprendiz(@Header("Authorization") auth: String, @Path("id") id: Int, @Path("userId") userId: Int): MessageResponse
+
+    @GET("admin/ambientes/{id}/aprendices")
+    suspend fun getAprendicesDeAmbiente(@Header("Authorization") auth: String, @Path("id") id: Int): List<UsuarioApi>
+
+    @POST("admin/ambientes/{id}/aprendices")
+    suspend fun addAprendizAAmbiente(@Header("Authorization") auth: String, @Path("id") id: Int, @Body body: AmbienteAprendizRequest): MessageResponse
+
+    @DELETE("admin/ambientes/{id}/aprendices/{userId}")
+    suspend fun removeAprendizDeAmbiente(@Header("Authorization") auth: String, @Path("id") id: Int, @Path("userId") userId: Int): MessageResponse
+
+    @POST("admin/ambientes/{id}/instructores")
+    suspend fun syncInstructores(@Header("Authorization") auth: String, @Path("id") id: Int, @Body body: AmbienteInstructoresRequest): Ambiente
 
     // ---- Ambientes (solo admin) ----
     // 13. CRUD de ambientes: crear, editar, eliminar y consultar horarios.
@@ -232,4 +264,59 @@ interface ApiService {
     // ---- Exportación de historial a CSV (solo admin) ----
     @GET("admin/ingresos/export")
     suspend fun exportIngresos(@Header("Authorization") auth: String): ResponseBody
+
+    // ---- Jornada / Presencia física (FSM) ----
+    // El servidor valida ventana NTP (configurable por ambiente), TOTP
+    // y geolocalización/BSSID; la app solo recolecta la prueba y orquesta la UI.
+    @GET("jornada/estado")
+    suspend fun getJornadaEstado(@Header("Authorization") auth: String): JornadaEstadoResponse
+
+    @POST("jornada/en-aula")
+    suspend fun postEnAula(@Header("Authorization") auth: String, @Body body: JornadaEnAulaRequest): JornadaEstadoResponse
+
+    @POST("jornada/descanso")
+    suspend fun postDescanso(@Header("Authorization") auth: String, @Body body: JornadaTransicionRequest): JornadaEstadoResponse
+
+    @POST("jornada/regreso-aula")
+    suspend fun postRegresoAula(@Header("Authorization") auth: String, @Body body: JornadaTransicionRequest): JornadaEstadoResponse
+
+    @POST("jornada/finalizar")
+    suspend fun postFinalizar(@Header("Authorization") auth: String, @Body body: JornadaTransicionRequest): JornadaEstadoResponse
+
+    @POST("jornada/salida-anticipada")
+    suspend fun postSalidaAnticipada(@Header("Authorization") auth: String, @Body body: SalidaAnticipadaRequest): JornadaEstadoResponse
+
+    @POST("jornada/emitir-permiso")
+    suspend fun emitirPermiso(@Header("Authorization") auth: String, @Body body: EmitirPermisoRequest): EmitirPermisoResponse
+
+    @GET("jornada/qr/{ambienteId}")
+    suspend fun getQrAula(@Header("Authorization") auth: String, @Path("ambienteId") ambienteId: Int): JornadaQrResponse
+
+    @GET("jornada/qr-actual")
+    suspend fun getQrActual(@Header("Authorization") auth: String, @Query("ambiente_id") ambienteId: Int? = null): JornadaQrResponse
+
+    @GET("jornada/auditoria")
+    suspend fun getAuditoria(@Header("Authorization") auth: String): List<AuditoriaSalida>
+
+    @GET("jornada/presentes")
+    suspend fun getJornadaPresentes(@Header("Authorization") auth: String): List<Presente>
+
+    // ---- Excusas con PIN (instructor crea, admin valida) ----
+    @POST("instructor/excusas")
+    suspend fun crearExcusa(@Header("Authorization") auth: String, @Body body: CrearExcusaRequest): Excusa
+
+    @GET("instructor/excusas")
+    suspend fun getExcusasInstructor(@Header("Authorization") auth: String): List<Excusa>
+
+    @DELETE("instructor/excusas/{id}")
+    suspend fun anularExcusa(@Header("Authorization") auth: String, @Path("id") id: Int): MessageResponse
+
+    @GET("mis-excusas")
+    suspend fun getMisExcusas(@Header("Authorization") auth: String): List<Excusa>
+
+    @POST("excusas/validar")
+    suspend fun validarExcusa(@Header("Authorization") auth: String, @Body body: ValidarExcusaRequest): ValidarExcusaResponse
+
+    @GET("admin/excusas")
+    suspend fun getExcusasAdmin(@Header("Authorization") auth: String): List<Excusa>
 }

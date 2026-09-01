@@ -16,4 +16,8 @@ class IngresoRepository {
     // Descarga el historial completo en formato CSV (solo admin).
     suspend fun exportarCsv(token: String): okhttp3.ResponseBody =
         RetrofitClient.conServicio { it.exportIngresos("Bearer $token") }
+
+    // Usuarios que están DENTRO ahora (solo admin): su último registro es Entrada.
+    suspend fun getPresentes(token: String): List<Presente> =
+        RetrofitClient.conServicio { it.getPresentes("Bearer $token") }
 }

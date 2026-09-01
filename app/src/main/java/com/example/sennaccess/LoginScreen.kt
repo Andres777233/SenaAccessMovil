@@ -1,5 +1,5 @@
-// Pantalla de inicio de sesión: permite autenticarse con correo y contraseña,
-// entrar como invitado, y navegar al registro o a la recuperación de contraseña.
+// Pantalla de inicio de sesión: permite autenticarse con correo y contraseña
+// y navegar al registro o a la recuperación de contraseña.
 // Además ofrece ingreso con huella real (biometría local): el sistema pide el
 // dedo y solo entonces se descifran las credenciales guardadas en el dispositivo
 // (HuellaCredentialStore) para hacer el login contra el backend.
@@ -19,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -45,6 +46,7 @@ import coil.compose.rememberAsyncImagePainter
 import kotlinx.coroutines.launch
 import com.example.sennaccess.R
 import com.example.sennaccess.data.HuellaCredentialStore
+import com.example.sennaccess.data.SessionManager
 import com.example.sennaccess.ui.BiometricAuth
 import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
@@ -90,8 +92,14 @@ fun LoginScreen(
 
     // Si el login con huella falla (credenciales guardadas inválidas), borra lo
     // guardado para forzar un nuevo registro en el próximo login manual.
+    // Si tiene éxito, guarda el correo usado para el autocompletado del login.
     LaunchedEffect(uiState) {
         val estado = uiState
+        if (estado is LoginUiState.Success) {
+            estado.response.user?.user_email?.takeIf { it.isNotBlank() }?.let {
+                SessionManager.guardarCorreoUsado(context, it.trim())
+            }
+        }
         if (estado is LoginUiState.Error && loginDesdeHuella) {
             loginDesdeHuella = false
             HuellaCredentialStore.borrar(context)
@@ -104,9 +112,6 @@ fun LoginScreen(
     // Variables para guardar texto del correo y contraseña
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-
-    // Variable para saber si estamos en modo invitado o login normal
-    var isGuestMode by remember { mutableStateOf(false) }
 
     // Caja principal que ocupa toda la pantalla
     Box(
@@ -188,43 +193,26 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Si está activado modo invitado
-                if (isGuestMode) {
+                // Formulario de login normal
+                NormalLoginForm(
+                    email = email,
+                    password = password,
 
-                    // Mostrar formulario invitado
-                    GuestForm(
-                        onBackToLogin = {
-                            isGuestMode = false
-                        }
-                    )
+                    // Guardar cambios del correo
+                    onEmailChange = {
+                        email = it
+                    },
 
-                } else {
+                    // Guardar cambios contraseña
+                    onPasswordChange = {
+                        password = it
+                    },
 
-                    // Mostrar login normal
-                    NormalLoginForm(
-                        email = email,
-                        password = password,
-
-                        // Guardar cambios del correo
-                        onEmailChange = {
-                            email = it
-                        },
-
-                        // Guardar cambios contraseña
-                        onPasswordChange = {
-                            password = it
-                        },
-
-                        // Activar modo invitado
-                        onGuestModeClick = {
-                            isGuestMode = true
-                        },
-
-                        // Navegar pantallas
-                        onRegisterClick = onNavigateToRegister,
-                        onRecoveryClick = onNavigateToRecovery,
-                        viewModel = viewModel,
-                        uiState = uiState,
+                    // Navegar pantallas
+                    onRegisterClick = onNavigateToRegister,
+                    onRecoveryClick = onNavigateToRecovery,
+                    viewModel = viewModel,
+                    uiState = uiState,
 
                         // Ingreso con huella (biometría local): el sistema pide el dedo
                         // y solo entonces se descifran las credenciales guardadas para
@@ -278,12 +266,6 @@ fun LoginScreen(
                         huellaLoading = huellaOcupado,
                         huellaError = huellaError
                     )
-                    // --- ACCESO RÁPIDO CORREGIDO (MÁS VISIBLE) ---
-                    Spacer(modifier = Modifier.height(16.dp))
-
-
-
-                    }
                 }
 
                 // Éxito del login (manual o con huella): si ya hay una huella registrada
@@ -503,7 +485,7 @@ fun GlowOutlinedButton(
         ),
 
         colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = ThemeText
+            contentColor = LocalAppColors.current.textPrimary
         ),
 
         shape = RoundedCornerShape(12.dp),
@@ -535,6 +517,7 @@ fun GlowOutlinedButton(
 
 
 // FORMULARIO DE LOGIN NORMAL
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NormalLoginForm(
 
@@ -544,7 +527,6 @@ fun NormalLoginForm(
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
 
-    onGuestModeClick: () -> Unit,
     onRegisterClick: () -> Unit,
     onRecoveryClick: () -> Unit,
     viewModel: LoginViewModel,
@@ -574,23 +556,50 @@ fun NormalLoginForm(
         "Iniciar Sesión",
         fontSize = 18.sp,
         fontWeight = FontWeight.Medium,
-        color = ThemeText
+        color = colors.textPrimary
     )
 
     Spacer(modifier = Modifier.height(24.dp))
 
-    // Campo correo
-    OutlinedTextField(
-        value = email,
-        onValueChange = onEmailChange,
-
-        label = {
-            Text("Correo electrónico")
-        },
-
-        modifier = Modifier.fillMaxWidth(),
-        singleLine = true
-    )
+    // Campo correo con historial de correos guardados (autocompletado).
+    val contextHistorial = LocalContext.current
+    var expandirCorreos by remember { mutableStateOf(false) }
+    val correosGuardados = remember { SessionManager.obtenerCorreosUsados(contextHistorial) }
+    val sugerenciasCorreo = remember(email, correosGuardados) {
+        if (correosGuardados.isEmpty()) emptyList()
+        else if (email.isBlank()) correosGuardados
+        else correosGuardados.filter { it.contains(email, ignoreCase = true) && !it.equals(email, ignoreCase = true) }
+    }
+    ExposedDropdownMenuBox(
+        expanded = expandirCorreos && sugerenciasCorreo.isNotEmpty(),
+        onExpandedChange = { expandirCorreos = it }
+    ) {
+        OutlinedTextField(
+            value = email,
+            onValueChange = {
+                onEmailChange(it)
+                expandirCorreos = true
+            },
+            label = { Text("Correo electrónico") },
+            modifier = Modifier.menuAnchor().fillMaxWidth(),
+            singleLine = true
+        )
+        ExposedDropdownMenu(
+            expanded = expandirCorreos && sugerenciasCorreo.isNotEmpty(),
+            onDismissRequest = { expandirCorreos = false }
+        ) {
+            sugerenciasCorreo.forEach { correo ->
+                DropdownMenuItem(
+                    text = { Text(correo) },
+                    leadingIcon = { Icon(Icons.Default.Person, null, tint = SenaGreen) },
+                    onClick = {
+                        onEmailChange(correo)
+                        expandirCorreos = false
+                    }
+                )
+            }
+        }
+    }
 
     Spacer(modifier = Modifier.height(16.dp))
 
@@ -698,20 +707,6 @@ fun NormalLoginForm(
 
     // Éxito: la navegación y el registro de huella se gestionan en LoginScreen.
 
-    // Texto "O"
-    Text(
-        "O",
-        color = colors.textSecondary,
-        modifier = Modifier.padding(vertical = 16.dp)
-    )
-
-    // Botón invitado
-    GlowOutlinedButton(
-        text = "INVITADO",
-        onClick = onGuestModeClick,
-        modifier = Modifier.fillMaxWidth()
-    )
-
     Spacer(modifier = Modifier.height(24.dp))
 
     TextButton(onClick = onRegisterClick) {
@@ -745,75 +740,4 @@ fun NormalLoginForm(
             fontSize = 14.sp
         )
     }
-}
-
-
-// FORMULARIO INVITADO
-@Composable
-fun GuestForm(
-
-    // función para volver login
-    onBackToLogin: () -> Unit
-) {
-
-    // variables
-    var document by remember {
-        mutableStateOf("")
-    }
-
-    var name by remember {
-        mutableStateOf("")
-    }
-
-    // títulos
-    Text("Invitado")
-    Text("Ingreso Rápido")
-
-    // campo documento
-    OutlinedTextField(
-        value = document,
-        onValueChange = {
-            document = it
-        },
-
-        label = {
-            Text("Número de Documento")
-        },
-
-        modifier = Modifier.fillMaxWidth()
-    )
-
-    Spacer(modifier = Modifier.height(16.dp))
-
-    // campo nombre
-    OutlinedTextField(
-        value = name,
-        onValueChange = {
-            name = it
-        },
-
-        label = {
-            Text("Nombre Completo")
-        },
-
-        modifier = Modifier.fillMaxWidth()
-    )
-
-    Spacer(modifier = Modifier.height(32.dp))
-
-    // botón registrar ingreso
-    PrimaryNeonButton(
-        text = "REGISTRAR INGRESO",
-        onClick = { /* lógica de registro invitado */ },
-        modifier = Modifier.fillMaxWidth()
-    )
-
-    Spacer(modifier = Modifier.height(16.dp))
-
-    // botón volver
-    GlowOutlinedButton(
-        text = "VOLVER AL LOGIN",
-        onClick = onBackToLogin,
-        modifier = Modifier.fillMaxWidth()
-    )
 }

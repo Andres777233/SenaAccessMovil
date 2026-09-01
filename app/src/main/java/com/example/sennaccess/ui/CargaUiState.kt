@@ -45,13 +45,30 @@ fun <T> ViewModel.cargarConFallback(
         try {
             setState(CargaUiState.Success(llamadaRed()))
         } catch (e: retrofit2.HttpException) {
-            // Errores HTTP: el 401 se traduce a "Sesión expirada" y el resto a su código.
-            val msg = if (e.code() == 401) "Sesión expirada" else "Error ${e.code()}"
+            // Errores HTTP: el 401 avisa de sesión expirada; el resto muestra
+            // código y mensaje del servidor para diagnosticar la causa real.
+            val msg = if (e.code() == 401) "Sesión expirada" else detalleHttp(e)
             setState(CargaUiState.Error(msg))
         } catch (e: Exception) {
-            // Cualquier otro fallo (red, formato, etc.) se muestra como error genérico;
-            // la vista ofrece reintentar para volver a intentar la llamada.
-            setState(CargaUiState.Error("No se pudo conectar al servidor"))
+            // Fallo sin respuesta HTTP (red, formato, lectura local): se muestra
+            // la causa real en lugar de un texto genérico.
+            setState(CargaUiState.Error("Fallo de conexión: ${e.message ?: e.javaClass.simpleName}"))
         }
+    }
+}
+
+// Extrae código y primer mensaje de validación del cuerpo de error del servidor.
+fun detalleHttp(e: retrofit2.HttpException): String {
+    return try {
+        val json = org.json.JSONObject(e.response()?.errorBody()?.string() ?: "{}")
+        val errores = json.optJSONObject("errors")
+        val primero = if (errores != null && errores.length() > 0) {
+            val campo = errores.keys().next()
+            errores.optJSONArray(campo)?.getString(0) ?: errores.optString(campo)
+        } else null
+        val texto = primero ?: json.optString("message").takeIf { it.isNotBlank() } ?: e.message().orEmpty()
+        "Error ${e.code()}: $texto".trimEnd()
+    } catch (_: Exception) {
+        "Error ${e.code()}: ${e.message().orEmpty()}".trimEnd()
     }
 }

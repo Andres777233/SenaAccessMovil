@@ -24,13 +24,13 @@ object MockData {
 
     // Usuarios ficticios que cubren los tres roles; se usan en listados y estadísticas.
     val usuarios = listOf(
-        UsuarioApi(1, "1000000000", "admin", "System", "admin@sena.edu.co", 0, "Administration", 1, null, rolAdmin),
-        UsuarioApi(2, "12345678", "Carlos", "Méndez", "carlos.mendez@sena.edu.co", 2876541, "ADSO", 2, null, rolInstructor),
-        UsuarioApi(3, "87654321", "Daniel", "Vega", "daniel.vega@sena.edu.co", 2876542, "Análisis y Desarrollo de Software", 2, null, rolInstructor),
-        UsuarioApi(4, "11223344", "María", "Gómez", "maria.gomez@sena.edu.co", 2876543, "Gestión Empresarial", 2, null, rolInstructor),
-        UsuarioApi(5, "12345678", "Pepito", "Perez", "pepito@sena.edu.co", 2876541, "ADSO", 3, null, rolAprendiz),
-        UsuarioApi(6, "87654321", "Laura", "Pérez", "laura.perez@sena.edu.co", 2876541, "ADSO", 3, null, rolAprendiz),
-        UsuarioApi(7, "11223344", "Sofía", "Ramírez", "sofia.ramirez@sena.edu.co", 2876542, "Diseño Gráfico", 3, null, rolAprendiz)
+        UsuarioApi(id_usuario = 1, user_identification = "1000000000", user_name = "admin", user_lastname = "System", user_email = "admin@sena.edu.co", user_coursenumber = 0, user_program = "Administration", user_documento_tipo = "CC", user_telefono = null, fk_id_rol = 1, profile_photo_path = null, role = rolAdmin),
+        UsuarioApi(id_usuario = 2, user_identification = "12345678", user_name = "Carlos", user_lastname = "Méndez", user_email = "carlos.mendez@sena.edu.co", user_coursenumber = 2876541, user_program = "ADSO", user_documento_tipo = "CC", user_telefono = null, fk_id_rol = 2, profile_photo_path = null, role = rolInstructor),
+        UsuarioApi(id_usuario = 3, user_identification = "87654321", user_name = "Daniel", user_lastname = "Vega", user_email = "daniel.vega@sena.edu.co", user_coursenumber = 2876542, user_program = "Análisis y Desarrollo de Software", user_documento_tipo = "CC", user_telefono = null, fk_id_rol = 2, profile_photo_path = null, role = rolInstructor),
+        UsuarioApi(id_usuario = 4, user_identification = "11223344", user_name = "María", user_lastname = "Gómez", user_email = "maria.gomez@sena.edu.co", user_coursenumber = 2876543, user_program = "Gestión Empresarial", user_documento_tipo = "CC", user_telefono = null, fk_id_rol = 2, profile_photo_path = null, role = rolInstructor),
+        UsuarioApi(id_usuario = 5, user_identification = "12345678", user_name = "Pepito", user_lastname = "Perez", user_email = "pepito@sena.edu.co", user_coursenumber = 2876541, user_program = "ADSO", user_documento_tipo = "CC", user_telefono = null, fk_id_rol = 3, profile_photo_path = null, role = rolAprendiz),
+        UsuarioApi(id_usuario = 6, user_identification = "87654321", user_name = "Laura", user_lastname = "Pérez", user_email = "laura.perez@sena.edu.co", user_coursenumber = 2876541, user_program = "ADSO", user_documento_tipo = "CC", user_telefono = null, fk_id_rol = 3, profile_photo_path = null, role = rolAprendiz),
+        UsuarioApi(id_usuario = 7, user_identification = "11223344", user_name = "Sofía", user_lastname = "Ramírez", user_email = "sofia.ramirez@sena.edu.co", user_coursenumber = 2876542, user_program = "Diseño Gráfico", user_documento_tipo = "CC", user_telefono = null, fk_id_rol = 3, profile_photo_path = null, role = rolAprendiz)
     )
 
     // Filtros derivados: separan los usuarios de ejemplo según su rol.

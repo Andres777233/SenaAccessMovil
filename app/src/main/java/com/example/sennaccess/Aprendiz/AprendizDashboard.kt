@@ -7,6 +7,7 @@ package com.example.sennaccess.aprendiz
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
@@ -19,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -38,12 +40,23 @@ import com.example.sennaccess.data.Notificacion
 import com.example.sennaccess.data.SessionManager
 import com.example.sennaccess.data.UsuarioApi
 import com.example.sennaccess.data.mock.MockData
+import com.example.sennaccess.excusas.MisExcusasView
+import com.example.sennaccess.jornada.JornadaViewModel
+import com.example.sennaccess.jornada.MarcarPresenciaView
+import com.example.sennaccess.ui.AcercaDeView
 import com.example.sennaccess.ui.AvatarPerfil
 import com.example.sennaccess.ui.CargaUiState
+import com.example.sennaccess.ui.CargandoBox
+import com.example.sennaccess.ui.ErrorBox
 import com.example.sennaccess.ui.EstadoContenido
+import com.example.sennaccess.ui.EstadoVacio
+import com.example.sennaccess.ui.FilaDato
 import com.example.sennaccess.ui.MiHuellaSection
 import com.example.sennaccess.ui.NotificacionesView
-import com.example.sennaccess.ui.theme.AppColors
+import com.example.sennaccess.ui.PerfilHeader
+import com.example.sennaccess.ui.fechaLegible
+import com.example.sennaccess.ui.fechaRelativa
+import com.example.sennaccess.ui.horaCorta
 import com.example.sennaccess.ui.theme.ErrorRed
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.OrangeAmber
@@ -57,21 +70,32 @@ import com.example.sennaccess.ui.ios.IosGlassTopBar
 import com.example.sennaccess.ui.ios.glassSurface
 import com.example.sennaccess.ui.ios.GlassCornerRadius
 import com.example.sennaccess.ui.ios.pressScale
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AprendizDashboard(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggleTheme: () -> Unit = {}) {
     // Pestaña activa; rememberSaveable conserva su valor al girar la pantalla.
     var currentView by rememberSaveable  { mutableStateOf("DASHBOARD") }
     val colors = LocalAppColors.current
     val viewModel: AprendizDashboardViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    val jornadaViewModel: JornadaViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    val scope = rememberCoroutineScope()
+    // Estado del indicador de pull-to-refresh.
+    var refrescando by remember { mutableStateOf(false) }
 
-    LaunchedEffect(currentView) {
+    // Recarga los datos de la pestaña activa; lo usan el cambio de pestaña y el refresco.
+    fun cargarActual() {
         when (currentView) {
             "DASHBOARD" -> viewModel.cargarResumen()
             "HISTORIAL" -> viewModel.cargarHistorial()
             "COMPROBANTES" -> viewModel.cargarComprobantes()
+            "JORNADA" -> jornadaViewModel.cargarEstado()
         }
     }
+
+    LaunchedEffect(currentView) { cargarActual() }
 
     // Suscripción a los StateFlow del ViewModel: recomponen la vista al cambiar su estado.
     val resumen by viewModel.resumen.collectAsState()
@@ -107,6 +131,8 @@ fun AprendizDashboard(onCerrarSesion: () -> Unit, isDark: Boolean = true, onTogg
             AprendizTopBar(
                 onLogout = onCerrarSesion,
                 onPerfil = { currentView = "PERFIL" },
+                onEditarPerfil = { currentView = "EDITAR_PERFIL" },
+                onAcercaDe = { currentView = "ACERCA_DE" },
                 onNotificaciones = { currentView = "NOTIFICACIONES" },
                 noLeidas = noLeidas,
                 isDark = isDark,
@@ -114,7 +140,17 @@ fun AprendizDashboard(onCerrarSesion: () -> Unit, isDark: Boolean = true, onTogg
             )
 
             // 4. Contenido Dinámico (padding inferior para no quedar bajo el dock)
-            Box(
+            // Envuelto en PullToRefreshBox: deslizar hacia abajo recarga la pestaña activa.
+            PullToRefreshBox(
+                isRefreshing = refrescando,
+                onRefresh = {
+                    scope.launch {
+                        refrescando = true
+                        cargarActual()
+                        delay(600)
+                        refrescando = false
+                    }
+                },
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp)
@@ -122,9 +158,17 @@ fun AprendizDashboard(onCerrarSesion: () -> Unit, isDark: Boolean = true, onTogg
                 // Renderiza únicamente la vista de la pestaña seleccionada; cada
                 // vista recibe su CargaUiState y la acción de reintento del ViewModel.
                 when (currentView) {
-                    "DASHBOARD" -> ResumenView(resumen, onReintentar = viewModel::cargarResumen)
+                    "DASHBOARD" -> ResumenView(
+                        estado = resumen,
+                        historialEstado = historial,
+                        perfilEstado = perfil,
+                        onReintentar = viewModel::cargarResumen,
+                        onVerHistorial = { currentView = "HISTORIAL" }
+                    )
                     "HISTORIAL" -> HistorialView(historial, onReintentar = viewModel::cargarHistorial)
                     "COMPROBANTES" -> ComprobantesView(comprobantes, onReintentar = viewModel::cargarComprobantes)
+                    "JORNADA" -> MarcarPresenciaView(onBack = { currentView = "DASHBOARD" }, viewModel = jornadaViewModel)
+                    "MIS_EXCUSAS" -> MisExcusasView(onBack = { currentView = "DASHBOARD" })
                     "PERFIL" -> PerfilAprendizView(
                         perfil,
                         onBack = { currentView = "DASHBOARD" },
@@ -147,6 +191,7 @@ fun AprendizDashboard(onCerrarSesion: () -> Unit, isDark: Boolean = true, onTogg
                         onMarcarTodasLeidas = viewModel::marcarTodasLeidas,
                         onBack = { currentView = "DASHBOARD" }
                     )
+                    "ACERCA_DE" -> AcercaDeView(onBack = { currentView = "DASHBOARD" })
                 }
             }
         }
@@ -156,6 +201,8 @@ fun AprendizDashboard(onCerrarSesion: () -> Unit, isDark: Boolean = true, onTogg
         GlassDock(
             items = listOf(
                 GlassDockItem("DASHBOARD", Icons.Default.Home, "Inicio"),
+                GlassDockItem("JORNADA", Icons.Default.QrCodeScanner, "Jornada"),
+                GlassDockItem("MIS_EXCUSAS", Icons.Default.Assignment, "Excusas"),
                 GlassDockItem("HISTORIAL", Icons.Default.History, "Historial"),
                 GlassDockItem("COMPROBANTES", Icons.Default.Devices, "Equipos")
             ),
@@ -166,13 +213,14 @@ fun AprendizDashboard(onCerrarSesion: () -> Unit, isDark: Boolean = true, onTogg
     }
 }
 
-// --- BARRA SUPERIOR (vidrio iOS) ---
-// Barra superior de vidrio: identidad SENA ACCESS con el rol del usuario,
+// Barra superior: identidad SENA ACCESS con el rol del usuario,
 // alternancia de tema oscuro/claro y menú de acciones (Perfil / Cerrar sesión).
 @Composable
 fun AprendizTopBar(
     onLogout: () -> Unit,
     onPerfil: (() -> Unit)? = null,
+    onEditarPerfil: (() -> Unit)? = null,
+    onAcercaDe: (() -> Unit)? = null,
     onNotificaciones: (() -> Unit)? = null,
     noLeidas: Int = 0,
     isDark: Boolean = true,
@@ -247,11 +295,21 @@ fun AprendizTopBar(
                         Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp).fillMaxWidth()) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(contentAlignment = Alignment.BottomEnd) {
+                                    AvatarPerfil(fotoPath = SessionManager.userPhoto, nombre = nombre, tamano = 48.dp)
                                     Box(
-                                        modifier = Modifier.size(50.dp).clip(CircleShape).background(SenaGreen.copy(alpha = 0.15f)),
+                                        modifier = Modifier
+                                            .size(22.dp)
+                                            .clip(CircleShape)
+                                            .background(SenaGreen)
+                                            .border(2.dp, colors.cardBackground, CircleShape)
+                                            .clickable {
+                                                showMenu = false
+                                                (onEditarPerfil ?: onPerfil)?.invoke()
+                                            },
                                         contentAlignment = Alignment.Center
-                                    ) { Icon(Icons.Default.Person, null, tint = SenaGreen, modifier = Modifier.size(32.dp)) }
-                                    Icon(Icons.Default.Edit, null, tint = SenaGreen, modifier = Modifier.size(14.dp))
+                                    ) {
+                                        Icon(Icons.Default.Edit, null, tint = Color.White, modifier = Modifier.size(12.dp))
+                                    }
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
@@ -268,6 +326,13 @@ fun AprendizTopBar(
                                 onClick = { showMenu = false; onPerfil() }
                             )
                         }
+                        if (onAcercaDe != null) {
+                            DropdownMenuItem(
+                                text = { Text("Acerca de", color = colors.textPrimary) },
+                                leadingIcon = { Icon(Icons.Default.Info, null, tint = SenaGreen) },
+                                onClick = { showMenu = false; onAcercaDe() }
+                            )
+                        }
                         DropdownMenuItem(
                             text = { Text("Cerrar sesion", color = Color.Red) },
                             leadingIcon = { Icon(Icons.Default.Logout, null, tint = Color.Red) },
@@ -280,12 +345,26 @@ fun AprendizTopBar(
 }
 
 // --- VISTA 1: DASHBOARD (RESUMEN) ---
-// Tarjetas con los conteos de ingresos y equipos del aprendiz; EstadoContenido
-// resuelve Loading/Error/Success y ofrece reintento cuando falla la API.
+// Dashboard del Aprendiz: banner bienvenida + estado dentro/fuera + actividad
+// reciente. Sin StatCards ni sección Equipos (a petición). El resto sigue
+// en HISTORIAL y COMPROBANTES (dock inferior).
 @Composable
-fun ResumenView(estado: CargaUiState<ResumenAprendiz>, onReintentar: () -> Unit) {
+fun ResumenView(
+    estado: CargaUiState<ResumenAprendiz>,
+    historialEstado: CargaUiState<List<Ingreso>> = CargaUiState.Success(emptyList()),
+    perfilEstado: CargaUiState<UsuarioApi> = CargaUiState.Loading,
+    onReintentar: () -> Unit,
+    onVerHistorial: () -> Unit = {}
+) {
     val colors = LocalAppColors.current
     val scrollState = rememberScrollState()
+    // Datos de perfil para el banner de bienvenida (fallback a sesión/mocks).
+    val perfilUsuario = (perfilEstado as? CargaUiState.Success<UsuarioApi>)?.datos
+    val nombreBienvenida = perfilUsuario?.nombreCompleto
+        ?: SessionManager.userName ?: MockData.aprendizDemo.nombreCompleto
+    val fotoPath = perfilUsuario?.profile_photo_path
+    val ficha = perfilUsuario?.user_coursenumber
+    val programa = perfilUsuario?.user_program
 
     Column(
         modifier = Modifier
@@ -294,18 +373,75 @@ fun ResumenView(estado: CargaUiState<ResumenAprendiz>, onReintentar: () -> Unit)
     ) {
         IosCollapsibleHeader(
             title = "Dashboard Aprendiz",
-            subtitle = "Bienvenido, ${SessionManager.userName ?: MockData.aprendizDemo.nombreCompleto}",
+            subtitle = "Bienvenido, $nombreBienvenida",
             scrollOffset = scrollState.value.toFloat()
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        EstadoContenido(estado = estado, onReintentar = onReintentar) { resumen ->
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                StatCard("Mis Ingresos", resumen.ingresosCount.toString(), Icons.Default.History, Modifier.weight(1f))
-                StatCard("Equipos Registrados", resumen.equiposCount.toString(), Icons.Default.Devices, Modifier.weight(1f))
+        // Banner de bienvenida con avatar y ficha/programa.
+        BienvenidaDashboardCard(
+            fotoPath = fotoPath,
+            nombre = nombreBienvenida,
+            rol = "APRENDIZ",
+            ficha = ficha,
+            programa = programa
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Estado actual (dentro/fuera) derivado del último ingreso.
+        SeccionDashboardTitulo(titulo = "TU ESTADO ACTUAL")
+        Spacer(modifier = Modifier.height(8.dp))
+        when (historialEstado) {
+            is CargaUiState.Loading -> CargandoBox()
+            is CargaUiState.Error -> ErrorBox(historialEstado.mensaje, onReintentar)
+            is CargaUiState.Success -> {
+                val lista = historialEstado.datos
+                if (lista.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().glassSurface(cornerRadius = GlassCornerRadius).padding(20.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.Info, null, tint = colors.textSecondary, modifier = Modifier.size(28.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("Sin movimientos recientes", color = colors.textSecondary, fontSize = 13.sp)
+                        }
+                    }
+                } else {
+                    EstadoAccesoDashboardCard(ingreso = lista.first())
+                }
             }
         }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Actividad reciente (preview de HISTORIAL).
+        SeccionDashboardTitulo(titulo = "ACTIVIDAD RECIENTE", accionTexto = "Ver todo", onAccion = onVerHistorial)
+        Spacer(modifier = Modifier.height(8.dp))
+        when (historialEstado) {
+            is CargaUiState.Loading -> CargandoBox()
+            is CargaUiState.Error -> ErrorBox(historialEstado.mensaje, onReintentar)
+            is CargaUiState.Success -> {
+                val lista = historialEstado.datos
+                if (lista.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().glassSurface(cornerRadius = GlassCornerRadius).padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("Aún no tienes ingresos registrados", color = colors.textSecondary, fontSize = 13.sp)
+                    }
+                } else {
+                    lista.take(3).forEach { item ->
+                        TarjetaActividadDashboard(item)
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
     }
 }
 
@@ -335,15 +471,17 @@ fun HistorialView(estado: CargaUiState<List<Ingreso>>, onReintentar: () -> Unit)
 
             EstadoContenido(estado = estado, onReintentar = onReintentar) { items ->
                 if (items.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
-                        Text("Aún no tienes ingresos registrados.", color = colors.textSecondary, fontSize = 14.sp)
-                    }
+                    EstadoVacio(
+                        icono = Icons.Default.History,
+                        titulo = "Aún no tienes ingresos registrados",
+                        mensaje = "Tus entradas y salidas del centro aparecerán aquí."
+                    )
                 } else {
                     LazyColumn(state = listState) {
                         items(items) { item ->
                             HorizontalDivider(color = colors.border)
                             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text(item.ingreso_datetime ?: "—", modifier = Modifier.width(180.dp), color = colors.textPrimary, fontSize = 13.sp)
+                                Text(fechaLegible(item.ingreso_datetime), modifier = Modifier.width(180.dp), color = colors.textPrimary, fontSize = 13.sp)
                                 Box(modifier = Modifier.width(150.dp)) {
                                     Text(item.ingreso_place ?: "CCyS", color = SenaGreen, modifier = Modifier.border(1.dp, SenaGreen.copy(0.3f), RoundedCornerShape(4.dp)).padding(horizontal = 8.dp, vertical = 2.dp), fontSize = 11.sp)
                                 }
@@ -392,9 +530,11 @@ fun ComprobantesView(
 
             EstadoContenido(estado = estado, onReintentar = onReintentar) { items ->
                 if (items.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                        Text("No tienes equipos registrados.", color = colors.textSecondary, fontSize = 14.sp)
-                    }
+                    EstadoVacio(
+                        icono = Icons.Default.Devices,
+                        titulo = "No tienes equipos registrados",
+                        mensaje = "Cuando el administrador registre un equipo a tu nombre, lo verás aquí."
+                    )
                 } else {
                     items.forEach { eq ->
                         HorizontalDivider(color = colors.border)
@@ -402,11 +542,194 @@ fun ComprobantesView(
                             Text(eq.equipo_type ?: "Equipo", modifier = Modifier.width(100.dp), color = colors.textPrimary, fontSize = 13.sp)
                             Text(eq.marcaModelo, modifier = Modifier.width(150.dp), color = colors.textPrimary, fontSize = 13.sp)
                             Text(eq.equipo_serial ?: "—", modifier = Modifier.width(120.dp), color = colors.textPrimary, fontSize = 13.sp)
-                            Text(eq.entry_datetime ?: "—", modifier = Modifier.width(160.dp), color = colors.textPrimary, fontSize = 13.sp)
+                            Text(fechaLegible(eq.entry_datetime), modifier = Modifier.width(160.dp), color = colors.textPrimary, fontSize = 13.sp)
                             Text("● INGRESADO", modifier = Modifier.width(100.dp), color = SenaGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+// --- COMPONENTES DASHBOARD (banner, estado, previews) ---
+// Banner de bienvenida con avatar y ficha/programa; compartido con Instructor.
+@Composable
+fun BienvenidaDashboardCard(
+    fotoPath: String?,
+    nombre: String,
+    rol: String,
+    ficha: Int?,
+    programa: String?
+) {
+    val colors = LocalAppColors.current
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .glassSurface(cornerRadius = GlassCornerRadius)
+            .padding(16.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            AvatarPerfil(fotoPath = fotoPath, nombre = nombre, tamano = 52.dp)
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Hola,", color = colors.textSecondary, fontSize = 11.sp)
+                Text(nombre, color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp, maxLines = 1)
+                val detalle = buildString {
+                    if (ficha != null && ficha > 0) append("Ficha $ficha")
+                    if (!programa.isNullOrBlank()) {
+                        if (isNotEmpty()) append(" • ")
+                        append(programa)
+                    }
+                }
+                if (detalle.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(detalle, color = colors.textSecondary, fontSize = 11.sp, maxLines = 2)
+                }
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Box(
+                modifier = Modifier
+                    .border(1.dp, SenaGreen.copy(alpha = 0.5f), RoundedCornerShape(50))
+                    .background(SenaGreen.copy(alpha = 0.12f), RoundedCornerShape(50))
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
+            ) {
+                Text(rol, color = SenaGreen, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+// Título de sección del dashboard con acción opcional "Ver todo".
+@Composable
+fun SeccionDashboardTitulo(titulo: String, accionTexto: String? = null, onAccion: (() -> Unit)? = null) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(titulo, color = SenaGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+        if (accionTexto != null && onAccion != null) {
+            Text(
+                accionTexto,
+                color = SenaGreen,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .clickable(onClick = onAccion)
+                    .padding(horizontal = 6.dp, vertical = 4.dp)
+            )
+        }
+    }
+}
+
+// Card de estado dentro/fuera derivada del último ingreso.
+@Composable
+fun EstadoAccesoDashboardCard(ingreso: Ingreso) {
+    val colors = LocalAppColors.current
+    val esSalida = ingreso.ingreso_type.equals("Salida", ignoreCase = true)
+    val estaDentro = !esSalida
+    val colorEstado = if (estaDentro) SenaGreen else OrangeAmber
+    val bgEstado = if (estaDentro) SenaGreen.copy(alpha = 0.15f) else OrangeAmber.copy(alpha = 0.15f)
+    val icono = if (estaDentro) Icons.Default.Login else Icons.Default.Logout
+    val titulo = if (estaDentro) "Estás dentro del centro" else "Estás fuera del centro"
+    val subtitulo = "${fechaLegible(ingreso.ingreso_datetime)} • ${ingreso.ingreso_place ?: "CCyS"}"
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .glassSurface(cornerRadius = GlassCornerRadius)
+            .padding(16.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier.size(48.dp).clip(CircleShape).background(bgEstado),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icono, null, tint = colorEstado, modifier = Modifier.size(24.dp))
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(titulo, color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(subtitulo, color = colors.textSecondary, fontSize = 12.sp)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(fechaRelativa(ingreso.ingreso_datetime), color = colorEstado, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Box(
+                modifier = Modifier
+                    .border(1.dp, colorEstado.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Text(if (estaDentro) "DENTRO" else "FUERA", color = colorEstado, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+// Tarjeta compacta de actividad (ingreso) para el preview.
+@Composable
+fun TarjetaActividadDashboard(item: Ingreso) {
+    val colors = LocalAppColors.current
+    val esSalida = item.ingreso_type.equals("Salida", ignoreCase = true)
+    val colorTipo = if (esSalida) OrangeAmber else SenaGreen
+    val icono = if (esSalida) Icons.Default.Logout else Icons.Default.Login
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .glassSurface(cornerRadius = 16.dp)
+            .padding(14.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier.size(42.dp).clip(CircleShape).background(colorTipo.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icono, null, tint = colorTipo, modifier = Modifier.size(20.dp))
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(if (esSalida) "Salida" else "Entrada", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text(item.ingreso_place ?: "CCyS", color = colors.textSecondary, fontSize = 11.sp)
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(horaCorta(item.ingreso_datetime), color = colorTipo, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text(fechaRelativa(item.ingreso_datetime), color = colors.textSecondary, fontSize = 11.sp)
+            }
+        }
+    }
+}
+
+// Tarjeta compacta de equipo para el preview.
+@Composable
+fun TarjetaEquipoDashboard(eq: IngresoEquipo) {
+    val colors = LocalAppColors.current
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .glassSurface(cornerRadius = 16.dp)
+            .padding(14.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier.size(42.dp).clip(CircleShape).background(SenaGreen.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Devices, null, tint = SenaGreen, modifier = Modifier.size(20.dp))
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(eq.equipo_type ?: "Equipo", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text(eq.marcaModelo, color = colors.textSecondary, fontSize = 11.sp, maxLines = 1)
+                Text(eq.equipo_serial ?: "—", color = colors.textSecondary, fontSize = 11.sp)
+            }
+            Box(
+                modifier = Modifier
+                    .border(1.dp, SenaGreen.copy(alpha = 0.3f), RoundedCornerShape(4.dp))
+                    .padding(horizontal = 6.dp, vertical = 3.dp)
+            ) {
+                Text("● INGRESADO", color = SenaGreen, fontSize = 9.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -473,43 +796,43 @@ fun PerfilAprendizView(estado: CargaUiState<UsuarioApi>, onBack: () -> Unit, onR
         Spacer(modifier = Modifier.height(8.dp))
 
         EstadoContenido(estado = estado, onReintentar = onReintentar) { usuario ->
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .glassSurface(cornerRadius = GlassCornerRadius)
-                    .padding(24.dp)
+                    .padding(20.dp)
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                    AvatarPerfil(fotoPath = usuario.profile_photo_path, nombre = usuario.nombreCompleto, tamano = 80.dp)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(usuario.nombreCompleto, color = colors.textPrimary, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                    Text("Aprendiz", color = SenaGreen, fontSize = 14.sp)
-                    Spacer(modifier = Modifier.height(24.dp))
-                    filaPerfil("Correo", usuario.user_email ?: "—", colors)
-                    filaPerfil("Documento", usuario.user_identification ?: "—", colors)
-                    filaPerfil("Ficha", usuario.user_coursenumber?.toString() ?: "—", colors)
-                    filaPerfil("Programa", usuario.user_program ?: "—", colors)
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Button(
-                        onClick = onEditar,
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black)
-                    ) { Text("EDITAR PERFIL", fontWeight = FontWeight.Bold) }
+                PerfilHeader(
+                    fotoPath = usuario.profile_photo_path,
+                    nombre = usuario.nombreCompleto,
+                    rol = "Aprendiz"
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+                HorizontalDivider(color = colors.border)
+                Spacer(modifier = Modifier.height(4.dp))
+                FilaDato(Icons.Default.Email, "Correo", usuario.user_email ?: "—")
+                FilaDato(Icons.Default.Badge, "Documento", usuario.user_identification ?: "—")
+                if (usuario.user_coursenumber != null) {
+                    FilaDato(Icons.Default.Numbers, "Ficha", usuario.user_coursenumber.toString())
+                }
+                if (!usuario.user_program.isNullOrBlank()) {
+                    FilaDato(Icons.Default.School, "Programa", usuario.user_program!!)
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = onEditar,
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black)
+                ) {
+                    Icon(Icons.Default.Edit, null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("EDITAR PERFIL", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
             // Gestión de la huella dactilar local: registrar, ver estado y eliminar.
             MiHuellaSection()
         }
-    }
-}
-
-// Fila etiqueta/valor reutilizada para renderizar cada dato del perfil.
-@Composable
-private fun filaPerfil(label: String, valor: String, colors: AppColors) {
-    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-        Text("$label: ", color = SenaGreen, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-        Text(valor, color = colors.textPrimary, fontSize = 14.sp)
     }
 }

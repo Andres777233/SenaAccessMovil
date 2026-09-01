@@ -56,6 +56,8 @@ fun CrearUsuarioContent(
     var ficha by remember { mutableStateOf("") }
     var jornada by remember { mutableStateOf("") }
     var contrasena by remember { mutableStateOf("") }
+    var documentoTipo by remember { mutableStateOf("CC") }
+    var telefono by remember { mutableStateOf("") }
     var rolSeleccionado by remember { mutableStateOf<Role?>(null) }
     var dropdownAbierto by remember { mutableStateOf(false) }
     var creado by remember { mutableStateOf(false) }
@@ -86,6 +88,8 @@ fun CrearUsuarioContent(
                         user_password = contrasena,
                         user_coursenumber = ficha.trim().toIntOrNull(),
                         user_program = programa.trim(),
+                        user_documento_tipo = documentoTipo,
+                        user_telefono = telefono.trim().ifBlank { null },
                         fk_id_rol = rolId
                     )
                 )
@@ -127,6 +131,49 @@ fun CrearUsuarioContent(
                     OutlinedTextField(value = correo, onValueChange = { correo = it }, label = { Text("Correo Electronico") }, modifier = Modifier.weight(1f), colors = campoCrearColors())
                     OutlinedTextField(value = identificacion, onValueChange = { identificacion = it }, label = { Text("Numero de Identificacion") }, modifier = Modifier.weight(1f), colors = campoCrearColors())
                 }
+                Spacer(modifier = Modifier.height(12.dp))
+                // Tipo de documento con su significado entre paréntesis (dropdown).
+                var docDropdownAbierto by remember { mutableStateOf(false) }
+                val tiposDoc = listOf(
+                    "CC" to "Cédula de Ciudadanía",
+                    "CE" to "Cédula de Extranjería",
+                    "TI" to "Tarjeta de Identidad",
+                    "PAS" to "Pasaporte"
+                )
+                val docSeleccionado = tiposDoc.firstOrNull { it.first == documentoTipo } ?: tiposDoc.first()
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = "${docSeleccionado.first}: ${docSeleccionado.second}",
+                        onValueChange = {},
+                        readOnly = true,
+                        singleLine = true,
+                        label = { Text("Tipo de Documento") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = campoCrearColors(),
+                        trailingIcon = {
+                            IconButton(onClick = { docDropdownAbierto = true }) {
+                                Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = SenaGreen)
+                            }
+                        }
+                    )
+                    DropdownMenu(
+                        expanded = docDropdownAbierto,
+                        onDismissRequest = { docDropdownAbierto = false },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        tiposDoc.forEach { (codigo, significado) ->
+                            DropdownMenuItem(
+                                text = { Text("$codigo: $significado", color = colors.textPrimary) },
+                                onClick = {
+                                    documentoTipo = codigo
+                                    docDropdownAbierto = false
+                                }
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(value = telefono, onValueChange = { telefono = it }, label = { Text("Telefono de contacto (opcional)") }, modifier = Modifier.fillMaxWidth(), colors = campoCrearColors())
                 Spacer(modifier = Modifier.height(12.dp))
                 // Fila 3: programa de formacion y ficha.
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {

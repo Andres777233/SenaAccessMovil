@@ -160,10 +160,7 @@ fun PasswordRecoveryScreen(
                     Text(
                         "Bienvenido al CCyS",
                         fontSize = 16.sp,
-
-                        // copia color pero con transparencia
-                        color = ThemeText.copy(alpha = 0.8f),
-
+                        color = colors.textSecondary,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
 
@@ -380,8 +377,7 @@ fun PasswordRecoveryScreen(
                                 }
                             },
 
-                            color =
-                                ThemeText.copy(alpha = 0.8f),
+                            color = colors.textSecondary,
 
                             fontSize = 14.sp
                         )

@@ -22,6 +22,8 @@ import androidx.compose.ui.unit.sp
 import com.example.sennaccess.data.Ingreso
 import com.example.sennaccess.ui.CargaUiState
 import com.example.sennaccess.ui.EstadoContenido
+import com.example.sennaccess.ui.EstadoVacio
+import com.example.sennaccess.ui.horaCorta
 import com.example.sennaccess.ui.ios.GlassCornerRadius
 import com.example.sennaccess.ui.ios.IosCollapsibleHeader
 import com.example.sennaccess.ui.ios.glassSurface
@@ -31,7 +33,7 @@ import com.example.sennaccess.ui.theme.SenaGreen
 // Catálogo de pantallas del módulo admin; usado por la navegación interna.
 enum class AdminScreen { PANEL, USUARIOS, CREAR_USUARIO, ACTUALIZAR_USUARIO,
     ACCESO_APRENDICES, ACCESO_INSTRUCTORES, REPORTE_NOVEDADES, PERFIL,
-    EQUIPOS, NOTIFICACIONES }
+    EQUIPOS, NOTIFICACIONES, ACERCA_DE, QR_AULA, AUTORIZAR_SALIDA, AMBIENTES, VALIDAR_EXCUSA }
 
 /**
  * Panel de inicio del ADMINISTRADOR (contenido de la pestaña INICIO).
@@ -71,16 +73,18 @@ fun AdminPanelResumen(resumen: CargaUiState<List<Ingreso>>, onReintentar: () -> 
         EstadoContenido(estado = resumen, onReintentar = onReintentar) { ingresos ->
             if (ingresos.isEmpty()) {
                 // Estado vacío: aún no hay ingresos registrados hoy.
-                Box(modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
-                    Text("Aún no hay ingresos registrados hoy.", color = colors.textSecondary, fontSize = 14.sp)
-                }
+                EstadoVacio(
+                    icono = Icons.Default.Schedule,
+                    titulo = "Aún no hay ingresos registrados hoy",
+                    mensaje = "Las entradas y salidas del centro aparecerán aquí."
+                )
             } else {
                 // Lista los ingresos del día como tarjetas individuales.
                 ingresos.forEach { ingreso ->
                     AccesoResumenCard(
                         nombre = ingreso.user?.nombreCompleto ?: "Usuario",
                         tipo = ingreso.ingreso_type ?: "Acceso",
-                        hora = ingreso.ingreso_datetime ?: "—"
+                        hora = horaCorta(ingreso.ingreso_datetime)
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                 }

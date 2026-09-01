@@ -95,8 +95,7 @@ fun AdminTopBar(
     noLeidas: Int = 0,
     isDark: Boolean = true,
     onToggleTheme: () -> Unit = {}
-) {
-    // Estado local que controla si el menú hamburguesa está abierto.
+) {    // Estado local que controla si el menú hamburguesa está abierto.
     var showMenu by remember { mutableStateOf(false) }
     val colors = LocalAppColors.current
 
@@ -186,6 +185,31 @@ fun AdminTopBar(
                             text = { Text("Notificaciones", color = colors.textPrimary) },
                             leadingIcon = { Icon(Icons.Default.Notifications, null, tint = SenaGreen) },
                             onClick = { showMenu = false; onNavigate(AdminScreen.NOTIFICACIONES) }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Acerca de", color = colors.textPrimary) },
+                            leadingIcon = { Icon(Icons.Default.Info, null, tint = SenaGreen) },
+                            onClick = { showMenu = false; onNavigate(AdminScreen.ACERCA_DE) }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Ambientes", color = colors.textPrimary) },
+                            leadingIcon = { Icon(Icons.Default.MeetingRoom, null, tint = SenaGreen) },
+                            onClick = { showMenu = false; onNavigate(AdminScreen.AMBIENTES) }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("QR del aula", color = colors.textPrimary) },
+                            leadingIcon = { Icon(Icons.Default.QrCode2, null, tint = SenaGreen) },
+                            onClick = { showMenu = false; onNavigate(AdminScreen.QR_AULA) }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Autorizar salida", color = colors.textPrimary) },
+                            leadingIcon = { Icon(Icons.Default.Approval, null, tint = SenaGreen) },
+                            onClick = { showMenu = false; onNavigate(AdminScreen.AUTORIZAR_SALIDA) }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Validar excusa (PIN)", color = colors.textPrimary) },
+                            leadingIcon = { Icon(Icons.Default.VpnKey, null, tint = SenaGreen) },
+                            onClick = { showMenu = false; onNavigate(AdminScreen.VALIDAR_EXCUSA) }
                         )
                     }
                     DropdownMenuItem(

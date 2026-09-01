@@ -56,6 +56,8 @@ fun ActualizarUsuarioContent(
     var numeroId by remember { mutableStateOf(usuario.user_identification ?: "") }
     var ficha by remember { mutableStateOf(usuario.user_coursenumber?.toString() ?: "") }
     var programa by remember { mutableStateOf(usuario.user_program ?: "") }
+    var documentoTipo by remember { mutableStateOf(usuario.user_documento_tipo ?: "CC") }
+    var telefono by remember { mutableStateOf(usuario.user_telefono ?: "") }
     var contrasena by remember { mutableStateOf("") }
     var rolSeleccionado by remember { mutableStateOf(usuario.role) }
     var dropdownAbierto by remember { mutableStateOf(false) }
@@ -85,6 +87,8 @@ fun ActualizarUsuarioContent(
                         user_password = contrasena.ifBlank { null },
                         user_coursenumber = ficha.trim().toIntOrNull(),
                         user_program = programa.trim(),
+                        user_documento_tipo = documentoTipo,
+                        user_telefono = telefono.trim().ifBlank { null },
                         fk_id_rol = rolId
                     )
                 )
@@ -139,6 +143,49 @@ fun ActualizarUsuarioContent(
                         OutlinedTextField(value = programa, onValueChange = { programa = it }, label = { Text("Programa de Formacion") }, modifier = Modifier.fillMaxWidth(), colors = campoColors())
                     }
                 }
+                Spacer(modifier = Modifier.height(12.dp))
+                // Tipo de documento con su significado entre paréntesis (dropdown).
+                var docDropdownAbierto by remember { mutableStateOf(false) }
+                val tiposDoc = listOf(
+                    "CC" to "Cédula de Ciudadanía",
+                    "CE" to "Cédula de Extranjería",
+                    "TI" to "Tarjeta de Identidad",
+                    "PAS" to "Pasaporte"
+                )
+                val docSeleccionado = tiposDoc.firstOrNull { it.first == documentoTipo } ?: tiposDoc.first()
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = "${docSeleccionado.first}: ${docSeleccionado.second}",
+                        onValueChange = {},
+                        readOnly = true,
+                        singleLine = true,
+                        label = { Text("Tipo de Documento") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = campoColors(),
+                        trailingIcon = {
+                            IconButton(onClick = { docDropdownAbierto = true }) {
+                                Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = SenaGreen)
+                            }
+                        }
+                    )
+                    DropdownMenu(
+                        expanded = docDropdownAbierto,
+                        onDismissRequest = { docDropdownAbierto = false },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        tiposDoc.forEach { (codigo, significado) ->
+                            DropdownMenuItem(
+                                text = { Text("$codigo: $significado", color = colors.textPrimary) },
+                                onClick = {
+                                    documentoTipo = codigo
+                                    docDropdownAbierto = false
+                                }
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(value = telefono, onValueChange = { telefono = it }, label = { Text("Telefono de contacto (opcional)") }, modifier = Modifier.fillMaxWidth(), colors = campoColors())
                 Spacer(modifier = Modifier.height(12.dp))
                 // Dropdown de rol prellenado con el rol actual del usuario.
                 EstadoContenido(estado = roles, onReintentar = onReintentarRoles) { listaRoles ->

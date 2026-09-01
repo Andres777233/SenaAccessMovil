@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -29,15 +30,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.sennaccess.data.Notificacion
+import com.example.sennaccess.ui.fechaRelativa
 import com.example.sennaccess.ui.ios.GlassCornerRadius
 import com.example.sennaccess.ui.ios.IosCollapsibleHeader
 import com.example.sennaccess.ui.ios.glassSurface
 import com.example.sennaccess.ui.ios.pressScale
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.OrangeAmber
-import com.example.sennaccess.ui.theme.SenaGreen
-
-// Vista de notificaciones: encabezado, botón de leídas y lista de tarjetas.
+import com.example.sennaccess.ui.theme.SenaGreen// Vista de notificaciones: encabezado, botón de leídas y lista de tarjetas.
 @Composable
 fun NotificacionesView(
     estado: CargaUiState<List<Notificacion>>,
@@ -85,9 +85,11 @@ fun NotificacionesView(
             }
 
             if (notificaciones.isEmpty()) {
-                Box(modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
-                    Text("No tienes notificaciones.", color = colors.textSecondary, fontSize = 14.sp)
-                }
+                EstadoVacio(
+                    icono = Icons.Default.Notifications,
+                    titulo = "No tienes notificaciones",
+                    mensaje = "Cuando recibas avisos del centro de formación, aparecerán aquí."
+                )
             } else {
                 notificaciones.forEach { notificacion ->
                     TarjetaNotificacion(
@@ -147,7 +149,7 @@ private fun TarjetaNotificacion(notificacion: Notificacion, onClick: () -> Unit)
                     Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(SenaGreen))
                 }
             }
-            Text(notificacion.created_at ?: "—", color = colors.textSecondary, fontSize = 11.sp)
+            Text(fechaRelativa(notificacion.created_at), color = colors.textSecondary, fontSize = 11.sp)
             Spacer(modifier = Modifier.height(4.dp))
             Text(notificacion.notification_body ?: "—", color = colors.textSecondary, fontSize = 12.sp, lineHeight = 16.sp)
         }

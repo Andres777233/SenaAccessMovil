@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
+import androidx.compose.ui.graphics.luminance
 
 /**
  * Item del dock flotante.
@@ -74,6 +75,7 @@ fun GlassDock(
 ) {
     val colors = LocalAppColors.current
     val shape = RoundedCornerShape(35.dp)
+    val isLight = colors.background.luminance() > 0.5f
 
     Box(
         modifier = modifier
@@ -82,28 +84,28 @@ fun GlassDock(
             .padding(horizontal = 20.dp, vertical = 14.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Fondo de vidrio del dock: sombra suave, gradiente translúcido y borde fino.
+        // Fondo de vidrio del dock: sombra y borde adaptados al tema.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .shadow(
-                    elevation = 24.dp,
+                    elevation = if (isLight) 14.dp else 24.dp,
                     shape = shape,
                     clip = false,
-                    ambientColor = Color.Black.copy(alpha = 0.35f),
-                    spotColor = Color.Black.copy(alpha = 0.45f)
+                    ambientColor = if (isLight) Color.Black.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.35f),
+                    spotColor = if (isLight) Color.Black.copy(alpha = 0.16f) else Color.Black.copy(alpha = 0.45f)
                 )
                 .clip(shape)
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            colors.surface.copy(alpha = 0.75f),
-                            colors.surface.copy(alpha = 0.55f)
+                            colors.surface.copy(alpha = if (isLight) 0.92f else 0.75f),
+                            colors.surface.copy(alpha = if (isLight) 0.85f else 0.55f)
                         )
                     )
                 )
-                .background(Color.White.copy(alpha = 0.05f))
-                .border(1.dp, colors.borderLight.copy(alpha = 0.18f), shape)
+                .background(Color.White.copy(alpha = if (isLight) 0.0f else 0.05f))
+                .border(1.dp, if (isLight) colors.border.copy(alpha = 0.9f) else colors.borderLight.copy(alpha = 0.18f), shape)
                 .padding(horizontal = 8.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
