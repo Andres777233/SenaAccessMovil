@@ -41,8 +41,6 @@ import com.example.sennaccess.data.SessionManager
 import com.example.sennaccess.data.UsuarioApi
 import com.example.sennaccess.data.mock.MockData
 import com.example.sennaccess.excusas.MisExcusasView
-import com.example.sennaccess.jornada.JornadaViewModel
-import com.example.sennaccess.jornada.MarcarPresenciaView
 import com.example.sennaccess.ui.AcercaDeView
 import com.example.sennaccess.ui.AvatarPerfil
 import com.example.sennaccess.ui.CargaUiState
@@ -80,7 +78,6 @@ fun AprendizDashboard(onCerrarSesion: () -> Unit, isDark: Boolean = true, onTogg
     var currentView by rememberSaveable  { mutableStateOf("DASHBOARD") }
     val colors = LocalAppColors.current
     val viewModel: AprendizDashboardViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
-    val jornadaViewModel: JornadaViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
     val scope = rememberCoroutineScope()
     // Estado del indicador de pull-to-refresh.
     var refrescando by remember { mutableStateOf(false) }
@@ -91,7 +88,6 @@ fun AprendizDashboard(onCerrarSesion: () -> Unit, isDark: Boolean = true, onTogg
             "DASHBOARD" -> viewModel.cargarResumen()
             "HISTORIAL" -> viewModel.cargarHistorial()
             "COMPROBANTES" -> viewModel.cargarComprobantes()
-            "JORNADA" -> jornadaViewModel.cargarEstado()
         }
     }
 
@@ -167,7 +163,6 @@ fun AprendizDashboard(onCerrarSesion: () -> Unit, isDark: Boolean = true, onTogg
                     )
                     "HISTORIAL" -> HistorialView(historial, onReintentar = viewModel::cargarHistorial)
                     "COMPROBANTES" -> ComprobantesView(comprobantes, onReintentar = viewModel::cargarComprobantes)
-                    "JORNADA" -> MarcarPresenciaView(onBack = { currentView = "DASHBOARD" }, viewModel = jornadaViewModel)
                     "MIS_EXCUSAS" -> MisExcusasView(onBack = { currentView = "DASHBOARD" })
                     "PERFIL" -> PerfilAprendizView(
                         perfil,
@@ -201,7 +196,6 @@ fun AprendizDashboard(onCerrarSesion: () -> Unit, isDark: Boolean = true, onTogg
         GlassDock(
             items = listOf(
                 GlassDockItem("DASHBOARD", Icons.Default.Home, "Inicio"),
-                GlassDockItem("JORNADA", Icons.Default.QrCodeScanner, "Jornada"),
                 GlassDockItem("MIS_EXCUSAS", Icons.Default.Assignment, "Excusas"),
                 GlassDockItem("HISTORIAL", Icons.Default.History, "Historial"),
                 GlassDockItem("COMPROBANTES", Icons.Default.Devices, "Equipos")

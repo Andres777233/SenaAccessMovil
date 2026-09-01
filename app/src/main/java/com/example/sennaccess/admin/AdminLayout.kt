@@ -202,11 +202,6 @@ fun AdminTopBar(
                             onClick = { showMenu = false; onNavigate(AdminScreen.QR_AULA) }
                         )
                         DropdownMenuItem(
-                            text = { Text("Autorizar salida", color = colors.textPrimary) },
-                            leadingIcon = { Icon(Icons.Default.Approval, null, tint = SenaGreen) },
-                            onClick = { showMenu = false; onNavigate(AdminScreen.AUTORIZAR_SALIDA) }
-                        )
-                        DropdownMenuItem(
                             text = { Text("Validar excusa (PIN)", color = colors.textPrimary) },
                             leadingIcon = { Icon(Icons.Default.VpnKey, null, tint = SenaGreen) },
                             onClick = { showMenu = false; onNavigate(AdminScreen.VALIDAR_EXCUSA) }
