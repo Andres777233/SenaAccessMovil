@@ -78,6 +78,81 @@ data class AppColors(
     val buttonSecondaryText: Color,
 )
 
+// Nuevo verde más vibrante para el modo renovado
+val NewSenaGreen = Color(0xFF00E676)
+
+// Paleta renovada con mejor contraste y colores más vibrantes
+fun darkAppColorsRenovado() = AppColors(
+    background = Color(0xFF05070B),
+    surface = Color(0xFF0F1217),
+    surfaceVariant = Color(0xFF161D24),
+    textPrimary = Color(0xFFE6E6E6),
+    textSecondary = Color(0xFFA0A0A0),
+    textOnPrimary = Color.White,
+    border = Color.White.copy(alpha = 0.08f),
+    borderLight = Color.White.copy(alpha = 0.25f),
+    cardBackground = Color(0xFF0F1217).copy(alpha = 0.9f),
+    inputBackground = Color(0xFF0F1217).copy(alpha = 0.95f),
+    successBackground = NewSenaGreen.copy(alpha = 0.12f),
+    warningBackground = WarningYellow.copy(alpha = 0.12f),
+    errorBackground = ErrorRed.copy(alpha = 0.12f),
+    bottomNavBar = Color.Black.copy(alpha = 0.98f),
+    topBarBackground = Color(0xFF0B1A0F),
+    iconTint = Color(0xFFE6E6E6),
+    divider = Color.White.copy(alpha = 0.08f),
+    inputText = Color(0xFFE6E6E6),
+    inputLabel = Color(0xFFA0A0A0),
+    navigationIndicator = NewSenaGreen.copy(alpha = 0.2f),
+    headerText = Color(0xFFE6E6E6),
+    subtitleText = Color(0xFFA0A0A0),
+    statCardBackground = Color(0xFF0F1217).copy(alpha = 0.9f),
+    tableRowEven = Color(0xFF0F1217).copy(alpha = 0.6f),
+    tableRowOdd = Color(0xFF161D24).copy(alpha = 0.6f),
+    tableHeaderBackground = Color(0xFF0B1215),
+    scrollbarThumb = Color(0xFF5A5A5A),
+    overlayBackground = Color.Black.copy(alpha = 0.6f),
+    chipBackground = Color(0xFF0F1217).copy(alpha = 0.9f),
+    chipText = Color(0xFFE6E6E6),
+    buttonSecondaryBackground = Color(0xFF0F1217).copy(alpha = 0.9f),
+    buttonSecondaryText = Color(0xFFE6E6E6),
+)
+
+// Paleta clara renovada con mejor contraste
+fun lightAppColorsRenovado() = AppColors(
+    background = Color(0xFFFAFAFA),
+    surface = Color(0xFFFFFFFF),
+    surfaceVariant = Color(0xFFEDEDED),
+    textPrimary = Color(0xFF1A1A1A),
+    textSecondary = Color(0xFF5A5A5A),
+    textOnPrimary = Color.White,
+    border = Color.Black.copy(alpha = 0.1f),
+    borderLight = NewSenaGreen.copy(alpha = 0.4f),
+    cardBackground = Color.White,
+    inputBackground = Color.White,
+    successBackground = NewSenaGreen.copy(alpha = 0.15f),
+    warningBackground = WarningYellow.copy(alpha = 0.15f),
+    errorBackground = ErrorRed.copy(alpha = 0.15f),
+    bottomNavBar = Color.White.copy(alpha = 0.99f),
+    topBarBackground = Color(0xFFE8F5E9),
+    iconTint = Color(0xFF1A1A1A),
+    divider = Color.Black.copy(alpha = 0.08f),
+    inputText = Color(0xFF1A1A1A),
+    inputLabel = Color(0xFF5A5A5A),
+    navigationIndicator = NewSenaGreen.copy(alpha = 0.22f),
+    headerText = Color(0xFF1A1A1A),
+    subtitleText = Color(0xFF5A5A5A),
+    statCardBackground = Color.White,
+    tableRowEven = Color.White,
+    tableRowOdd = Color(0xFFF8F8F8),
+    tableHeaderBackground = Color(0xFFF0F0F0),
+    scrollbarThumb = Color(0xFF888888),
+    overlayBackground = Color.Black.copy(alpha = 0.3f),
+    chipBackground = Color.White,
+    chipText = Color(0xFF1A1A1A),
+    buttonSecondaryBackground = Color.White,
+    buttonSecondaryText = Color(0xFF1A1A1A),
+)
+
 // Paleta oscura (por defecto de la app): fondo casi negro, superficies gris-azuladas
 // y acentos en verde SENA. Favorece el contraste del estilo vidrio.
 fun darkAppColors() = AppColors(

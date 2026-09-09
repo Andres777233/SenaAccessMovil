@@ -25,8 +25,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
+import com.example.sennaccess.ui.theme.DesignMode
+import com.example.sennaccess.ui.theme.DesignModeStore
 import com.example.sennaccess.ui.theme.ErrorRed
 import com.example.sennaccess.ui.theme.LocalAppColors
+import com.example.sennaccess.ui.theme.LocalDesignMode
 import com.example.sennaccess.ui.theme.SenaGreen
 import com.example.sennaccess.ui.ios.GlowSpheres
 import com.example.sennaccess.ui.ios.IosGlassDropdownMenu
@@ -187,24 +190,21 @@ fun AdminTopBar(
                             onClick = { showMenu = false; onNavigate(AdminScreen.NOTIFICACIONES) }
                         )
                         DropdownMenuItem(
-                            text = { Text("Acerca de", color = colors.textPrimary) },
-                            leadingIcon = { Icon(Icons.Default.Info, null, tint = SenaGreen) },
-                            onClick = { showMenu = false; onNavigate(AdminScreen.ACERCA_DE) }
-                        )
-                        DropdownMenuItem(
                             text = { Text("Ambientes", color = colors.textPrimary) },
                             leadingIcon = { Icon(Icons.Default.MeetingRoom, null, tint = SenaGreen) },
                             onClick = { showMenu = false; onNavigate(AdminScreen.AMBIENTES) }
                         )
                         DropdownMenuItem(
-                            text = { Text("QR del aula", color = colors.textPrimary) },
-                            leadingIcon = { Icon(Icons.Default.QrCode2, null, tint = SenaGreen) },
-                            onClick = { showMenu = false; onNavigate(AdminScreen.QR_AULA) }
-                        )
-                        DropdownMenuItem(
                             text = { Text("Validar excusa (PIN)", color = colors.textPrimary) },
                             leadingIcon = { Icon(Icons.Default.VpnKey, null, tint = SenaGreen) },
                             onClick = { showMenu = false; onNavigate(AdminScreen.VALIDAR_EXCUSA) }
+                        )
+                        // Alterna el diseño visual entre original y renovado (solo estética).
+                        val designMode = LocalDesignMode.current
+                        DropdownMenuItem(
+                            text = { Text(if (designMode == DesignMode.RENOVADO) "Diseño: renovado" else "Diseño: original", color = colors.textPrimary) },
+                            leadingIcon = { Icon(Icons.Default.Palette, null, tint = SenaGreen) },
+                            onClick = { showMenu = false; DesignModeStore.toggle() }
                         )
                     }
                     DropdownMenuItem(

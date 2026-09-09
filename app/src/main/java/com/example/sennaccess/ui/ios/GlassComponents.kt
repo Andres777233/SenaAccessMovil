@@ -27,7 +27,10 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.sennaccess.ui.theme.LocalAppColors
+import com.example.sennaccess.ui.theme.DesignMode
+import com.example.sennaccess.ui.theme.LocalDesignMode
 import com.example.sennaccess.ui.theme.SenaGreen
+import com.example.sennaccess.ui.theme.NewSenaGreen
 import androidx.compose.ui.graphics.luminance
 
 /**
@@ -123,53 +126,114 @@ fun Modifier.glassSurface(
     elevated: Boolean = false
 ): Modifier {
     val colors = LocalAppColors.current
-    val shape = RoundedCornerShape(cornerRadius)
+    val designMode = LocalDesignMode.current
+    // En renovado las tarjetas usan un radio un poco mayor y aprovechan mejor el ancho.
+    val shape = if (designMode == DesignMode.RENOVADO) RoundedCornerShape(cornerRadius + 4.dp) else RoundedCornerShape(cornerRadius)
     // Detecta tema claro por luminancia del fondo (claro > 0.5).
     val isLight = colors.background.luminance() > 0.5f
 
     // Fondo: en claro la tarjeta debe ser casi opaca para que el texto oscuro
     // contraste bien y no se vea como "caja blanca fantasma" bajo el texto.
-    val base = if (isLight) colors.cardBackground.copy(alpha = 0.92f)
-    else colors.cardBackground.copy(alpha = 0.5f)
+    val base = if (isLight) {
+        if (designMode == DesignMode.RENOVADO) {
+            colors.cardBackground.copy(alpha = 0.96f)
+        } else {
+            colors.cardBackground.copy(alpha = 0.92f)
+        }
+    } else {
+        if (designMode == DesignMode.RENOVADO) {
+            colors.cardBackground.copy(alpha = 0.6f)
+        } else {
+            colors.cardBackground.copy(alpha = 0.5f)
+        }
+    }
 
     // Highlight superior: en claro necesita brillo más marcado (blanco sobre blanco
     // al 0.10 era invisible); en oscuro se mantiene sutil.
-    val highlight = if (isLight) Brush.linearGradient(
-        colors = listOf(
-            Color.White.copy(alpha = 0.55f),
-            Color.White.copy(alpha = 0.18f),
-            Color.Transparent
-        ),
-        start = Offset(0f, 0f),
-        end = Offset(0f, Float.POSITIVE_INFINITY)
-    ) else Brush.linearGradient(
-        colors = listOf(
-            Color.White.copy(alpha = 0.10f),
-            Color.White.copy(alpha = 0.02f),
-            Color.Transparent
-        ),
-        start = Offset(0f, 0f),
-        end = Offset(0f, Float.POSITIVE_INFINITY)
-    )
+    val highlight = if (isLight) {
+        if (designMode == DesignMode.RENOVADO) {
+            Brush.linearGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = 0.7f),
+                    Color.White.copy(alpha = 0.3f),
+                    Color.Transparent
+                ),
+                start = Offset(0f, 0f),
+                end = Offset(0f, Float.POSITIVE_INFINITY)
+            )
+        } else {
+            Brush.linearGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = 0.55f),
+                    Color.White.copy(alpha = 0.18f),
+                    Color.Transparent
+                ),
+                start = Offset(0f, 0f),
+                end = Offset(0f, Float.POSITIVE_INFINITY)
+            )
+        }
+    } else {
+        if (designMode == DesignMode.RENOVADO) {
+            Brush.linearGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = 0.18f),
+                    Color.White.copy(alpha = 0.05f),
+                    Color.Transparent
+                ),
+                start = Offset(0f, 0f),
+                end = Offset(0f, Float.POSITIVE_INFINITY)
+            )
+        } else {
+            Brush.linearGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = 0.10f),
+                    Color.White.copy(alpha = 0.02f),
+                    Color.Transparent
+                ),
+                start = Offset(0f, 0f),
+                end = Offset(0f, Float.POSITIVE_INFINITY)
+            )
+        }
+    }
 
     return this
         .shadow(
             elevation = if (isLight) {
-                if (elevated) 16.dp else 8.dp
+                if (elevated) {
+                    if (designMode == DesignMode.RENOVADO) 20.dp else 16.dp
+                } else {
+                    if (designMode == DesignMode.RENOVADO) 12.dp else 8.dp
+                }
             } else {
-                if (elevated) 24.dp else 14.dp
+                if (elevated) {
+                    if (designMode == DesignMode.RENOVADO) 28.dp else 24.dp
+                } else {
+                    if (designMode == DesignMode.RENOVADO) 18.dp else 14.dp
+                }
             },
             shape = shape,
             clip = false,
-            ambientColor = if (isLight) Color.Black.copy(alpha = 0.10f) else Color.Black.copy(alpha = 0.4f),
-            spotColor = if (isLight) Color.Black.copy(alpha = 0.14f) else Color.Black.copy(alpha = 0.5f)
+            ambientColor = if (isLight) {
+                if (designMode == DesignMode.RENOVADO) Color.Black.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.10f)
+            } else {
+                if (designMode == DesignMode.RENOVADO) Color.Black.copy(alpha = 0.5f) else Color.Black.copy(alpha = 0.4f)
+            },
+            spotColor = if (isLight) {
+                if (designMode == DesignMode.RENOVADO) Color.Black.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.14f)
+            } else {
+                if (designMode == DesignMode.RENOVADO) Color.Black.copy(alpha = 0.6f) else Color.Black.copy(alpha = 0.5f)
+            }
         )
         .clip(shape)
         .background(base)
         .background(highlight)
         .border(
-            1.dp,
-            if (isLight) colors.border.copy(alpha = 0.9f) else colors.borderLight.copy(alpha = 0.15f),
+            if (designMode == DesignMode.RENOVADO) 1.2.dp else 1.dp,
+            if (isLight) {
+                if (designMode == DesignMode.RENOVADO) colors.border.copy(alpha = 0.95f) else colors.border.copy(alpha = 0.9f)
+            } else {
+                if (designMode == DesignMode.RENOVADO) colors.borderLight.copy(alpha = 0.25f) else colors.borderLight.copy(alpha = 0.15f)
+            },
             shape
         )
 }

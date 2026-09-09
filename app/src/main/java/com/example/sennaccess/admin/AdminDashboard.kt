@@ -26,9 +26,8 @@ import com.example.sennaccess.data.Novedad
 import com.example.sennaccess.data.UsuarioApi
 import com.example.sennaccess.admin.ambientes.AmbientesAdminView
 import com.example.sennaccess.excusas.ValidarExcusaView
-import com.example.sennaccess.jornada.AutorizarSalidaView
-import com.example.sennaccess.jornada.GenerarQrAulaView
-import com.example.sennaccess.ui.AcercaDeView
+
+
 import com.example.sennaccess.ui.CargaUiState
 import com.example.sennaccess.ui.NotificacionesView
 import com.example.sennaccess.ui.NovedadesView
@@ -85,6 +84,7 @@ fun AdminDashboard(
     val notificaciones by viewModel.notificaciones.collectAsState()
     val novedades by viewModel.novedades.collectAsState()
     val presentes by viewModel.presentes.collectAsState()
+    val ambientes by viewModel.ambientes.collectAsState()
 
     // No leídas para el badge de la campana (0 si el estado no trae datos).
     val noLeidas = (notificaciones as? CargaUiState.Success<List<Notificacion>>)?.datos
@@ -134,9 +134,8 @@ fun AdminDashboard(
             AdminScreen.ACCESO_INSTRUCTORES -> subScreen = AdminScreen.ACCESO_INSTRUCTORES
             AdminScreen.EQUIPOS -> subScreen = AdminScreen.EQUIPOS
             AdminScreen.NOTIFICACIONES -> subScreen = AdminScreen.NOTIFICACIONES
-            AdminScreen.ACERCA_DE -> subScreen = AdminScreen.ACERCA_DE
-            AdminScreen.QR_AULA -> subScreen = AdminScreen.QR_AULA
-            AdminScreen.AUTORIZAR_SALIDA -> subScreen = AdminScreen.AUTORIZAR_SALIDA
+
+
             AdminScreen.AMBIENTES -> subScreen = AdminScreen.AMBIENTES
             AdminScreen.VALIDAR_EXCUSA -> subScreen = AdminScreen.VALIDAR_EXCUSA
         }
@@ -251,9 +250,8 @@ fun AdminDashboard(
                         onMarcarTodasLeidas = viewModel::marcarTodasLeidas,
                         onBack = { subScreen = null }
                     )
-                    AdminScreen.ACERCA_DE -> AcercaDeView(onBack = { subScreen = null })
-                    AdminScreen.QR_AULA -> GenerarQrAulaView(onBack = { subScreen = null })
-                    AdminScreen.AUTORIZAR_SALIDA -> AutorizarSalidaView(onBack = { subScreen = null })
+
+
                     AdminScreen.AMBIENTES -> AmbientesAdminView(onBack = { subScreen = null })
                     AdminScreen.VALIDAR_EXCUSA -> ValidarExcusaView(onBack = { subScreen = null })
                     else -> when (currentTab) {
@@ -283,8 +281,14 @@ fun AdminDashboard(
                         )
                         // PRESENTES: quiénes están dentro ahora.
                         "PRESENTES" -> PresentesView(
-                            estado = presentes,
-                            onReintentar = viewModel::cargarPresentes
+                            ambientesEstado = ambientes,
+                            presentesEstado = presentes,
+                            ingresosEstado = resumen,
+                            onReintentar = {
+                                viewModel.cargarPresentes()
+                                viewModel.cargarAmbientes()
+                                viewModel.cargarResumen()
+                            }
                         )
                     }
                 }

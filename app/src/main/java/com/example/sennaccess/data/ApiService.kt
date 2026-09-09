@@ -265,42 +265,6 @@ interface ApiService {
     @GET("admin/ingresos/export")
     suspend fun exportIngresos(@Header("Authorization") auth: String): ResponseBody
 
-    // ---- Jornada / Presencia física (FSM) ----
-    // El servidor valida ventana NTP (configurable por ambiente), TOTP
-    // y geolocalización/BSSID; la app solo recolecta la prueba y orquesta la UI.
-    @GET("jornada/estado")
-    suspend fun getJornadaEstado(@Header("Authorization") auth: String): JornadaEstadoResponse
-
-    @POST("jornada/en-aula")
-    suspend fun postEnAula(@Header("Authorization") auth: String, @Body body: JornadaEnAulaRequest): JornadaEstadoResponse
-
-    @POST("jornada/descanso")
-    suspend fun postDescanso(@Header("Authorization") auth: String, @Body body: JornadaTransicionRequest): JornadaEstadoResponse
-
-    @POST("jornada/regreso-aula")
-    suspend fun postRegresoAula(@Header("Authorization") auth: String, @Body body: JornadaTransicionRequest): JornadaEstadoResponse
-
-    @POST("jornada/finalizar")
-    suspend fun postFinalizar(@Header("Authorization") auth: String, @Body body: JornadaTransicionRequest): JornadaEstadoResponse
-
-    @POST("jornada/salida-anticipada")
-    suspend fun postSalidaAnticipada(@Header("Authorization") auth: String, @Body body: SalidaAnticipadaRequest): JornadaEstadoResponse
-
-    @POST("jornada/emitir-permiso")
-    suspend fun emitirPermiso(@Header("Authorization") auth: String, @Body body: EmitirPermisoRequest): EmitirPermisoResponse
-
-    @GET("jornada/qr/{ambienteId}")
-    suspend fun getQrAula(@Header("Authorization") auth: String, @Path("ambienteId") ambienteId: Int): JornadaQrResponse
-
-    @GET("jornada/qr-actual")
-    suspend fun getQrActual(@Header("Authorization") auth: String, @Query("ambiente_id") ambienteId: Int? = null): JornadaQrResponse
-
-    @GET("jornada/auditoria")
-    suspend fun getAuditoria(@Header("Authorization") auth: String): List<AuditoriaSalida>
-
-    @GET("jornada/presentes")
-    suspend fun getJornadaPresentes(@Header("Authorization") auth: String): List<Presente>
-
     // ---- Excusas con PIN (instructor crea, admin valida) ----
     @POST("instructor/excusas")
     suspend fun crearExcusa(@Header("Authorization") auth: String, @Body body: CrearExcusaRequest): Excusa

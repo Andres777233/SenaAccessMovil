@@ -1,13 +1,11 @@
 package com.example.sennaccess.ambientes
 
-// Detalle de un ambiente para el instructor: lista aprendices, agregar/quitar,
-// y atajos a QR del aula y a autorizar salida.
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -15,8 +13,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Approval
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MeetingRoom
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -45,7 +43,7 @@ import kotlinx.coroutines.launch
 fun AmbienteDetalleView(
     ambiente: Ambiente,
     onBack: () -> Unit,
-    onProyectarQr: (Ambiente) -> Unit,
+    onProyectarQr: ((Ambiente) -> Unit)? = null,
     onAutorizarSalida: () -> Unit
 ) {
     val colors = LocalAppColors.current
@@ -58,7 +56,6 @@ fun AmbienteDetalleView(
     var mostrarAgregar by remember { mutableStateOf(false) }
     var aprendicesDisponibles by remember { mutableStateOf<List<UsuarioApi>>(emptyList()) }
     var seleccionado by remember { mutableStateOf<UsuarioApi?>(null) }
-    var menuDisponibles by remember { mutableStateOf(false) }
     var errorAgregar by remember { mutableStateOf<String?>(null) }
     var agregando by remember { mutableStateOf(false) }
     var aprendizAEliminar by remember { mutableStateOf<UsuarioApi?>(null) }
@@ -87,53 +84,85 @@ fun AmbienteDetalleView(
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null, tint = colors.textPrimary) }
-            Text(ambiente.ambiente_nombre ?: "Ambiente", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
             Spacer(modifier = Modifier.weight(1f))
             IconButton(onClick = { scope.launch { cargarAprendices() } }) { Icon(Icons.Default.Refresh, null, tint = colors.textSecondary) }
         }
-        Text("${ambiente.ambiente_ubicacion ?: ""} • ${ambiente.ambiente_jornada ?: ""} • cap. ${ambiente.ambiente_capacidad ?: "—"}", color = colors.textSecondary, fontSize = 12.sp)
+
+        // Cabecera destacada
+        Box(modifier = Modifier.fillMaxWidth().glassSurface(cornerRadius = GlassCornerRadius).padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.size(56.dp).clip(CircleShape).background(SenaGreen.copy(0.18f)), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.MeetingRoom, null, tint = SenaGreen, modifier = Modifier.size(28.dp))
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(ambiente.ambiente_nombre ?: "Ambiente", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        if (!ambiente.ambiente_ubicacion.isNullOrBlank()) {
+                            AssistChip(onClick = {}, label = { Text(ambiente.ambiente_ubicacion!!, fontSize = 11.sp) }, colors = AssistChipDefaults.assistChipColors(containerColor = colors.borderLight, labelColor = colors.textSecondary))
+                        }
+                        if (!ambiente.ambiente_jornada.isNullOrBlank()) {
+                            AssistChip(onClick = {}, label = { Text(ambiente.ambiente_jornada!!, fontSize = 11.sp) }, colors = AssistChipDefaults.assistChipColors(containerColor = colors.borderLight, labelColor = colors.textSecondary))
+                        }
+                        if (ambiente.ambiente_capacidad != null) {
+                            AssistChip(onClick = {}, label = { Text("Cap. ${ambiente.ambiente_capacidad}", fontSize = 11.sp) }, colors = AssistChipDefaults.assistChipColors(containerColor = colors.borderLight, labelColor = colors.textSecondary))
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("${aprendices.size} estudiantes", color = SenaGreen, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                }
+            }
+        }
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Atajos jornada.
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-            Button(onClick = { onProyectarQr(ambiente) }, modifier = Modifier.weight(1f).height(46.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black)) {
-                Icon(Icons.Default.QrCode2, null, modifier = Modifier.size(18.dp)); Spacer(modifier = Modifier.width(6.dp)); Text("QR", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+        // Acciones: primario agregar, secundario permiso
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+            Button(onClick = { mostrarAgregar = true; scope.launch { cargarDisponibles() } }, modifier = Modifier.fillMaxWidth().height(50.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black)) {
+                Icon(Icons.Default.Add, null, modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("AGREGAR APRENDIZ", fontWeight = FontWeight.Bold, fontSize = 14.sp)
             }
-            Button(onClick = onAutorizarSalida, modifier = Modifier.weight(1f).height(46.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = SenaGreen.copy(0.18f), contentColor = SenaGreen)) {
-                Icon(Icons.Default.Approval, null, modifier = Modifier.size(18.dp)); Spacer(modifier = Modifier.width(6.dp)); Text("Permiso salida", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            OutlinedButton(onClick = onAutorizarSalida, modifier = Modifier.fillMaxWidth().height(48.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = SenaGreen), border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(SenaGreen))) {
+                Icon(Icons.Default.Approval, null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("PERMISO DE SALIDA", fontWeight = FontWeight.Medium, fontSize = 13.sp)
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
 
         // Lista de aprendices.
-        Text("APRENDICES (${aprendices.size})", color = SenaGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+        Text("ESTUDIANTES (${aprendices.size})", color = SenaGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
         Spacer(modifier = Modifier.height(8.dp))
-        Button(
-            onClick = { mostrarAgregar = true; scope.launch { cargarDisponibles() } },
-            modifier = Modifier.fillMaxWidth().height(44.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = SenaGreen.copy(0.18f), contentColor = SenaGreen)
-        ) { Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp)); Spacer(modifier = Modifier.width(6.dp)); Text("AGREGAR APRENDIZ", fontWeight = FontWeight.Bold) }
-        Spacer(modifier = Modifier.height(12.dp))
 
         when (estado) {
             is CargaUiState.Loading -> CargandoBox()
             is CargaUiState.Error -> ErrorBox((estado as CargaUiState.Error).mensaje, onReintentar = { scope.launch { cargarAprendices() } })
             is CargaUiState.Success -> {
                 if (aprendices.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxWidth().glassSurface(cornerRadius = GlassCornerRadius).padding(20.dp), contentAlignment = Alignment.Center) {
-                        Text("No hay aprendices en este ambiente. Agrega los estudiantes de tu ficha.", color = colors.textSecondary, fontSize = 13.sp)
+                    Box(modifier = Modifier.fillMaxWidth().glassSurface(cornerRadius = GlassCornerRadius).padding(24.dp), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.Person, null, tint = colors.textSecondary, modifier = Modifier.size(36.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("Este ambiente aún no tiene estudiantes", color = colors.textPrimary, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                            Text("Agrega los aprendices de tu ficha tocando el botón de arriba.", color = colors.textSecondary, fontSize = 12.sp)
+                        }
                     }
                 } else {
                     aprendices.forEach { ap ->
                         Row(modifier = Modifier.fillMaxWidth().glassSurface(cornerRadius = 12.dp).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(36.dp).clip(RoundedCornerShape(8.dp)).background(SenaGreen.copy(0.12f)), contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.Person, null, tint = SenaGreen, modifier = Modifier.size(18.dp))
+                            Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(SenaGreen.copy(0.12f)), contentAlignment = Alignment.Center) {
+                                val inicial = ap.nombreCompleto.take(1).uppercase()
+                                Text(inicial, color = SenaGreen, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             }
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(ap.nombreCompleto, color = colors.textPrimary, fontWeight = FontWeight.Medium, fontSize = 13.sp)
-                                Text("${ap.user_email ?: ""} • CC ${ap.user_identification ?: "—"}", color = colors.textSecondary, fontSize = 11.sp)
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    if (ap.user_coursenumber != null) {
+                                        AssistChip(onClick = {}, label = { Text("Ficha ${ap.user_coursenumber}", fontSize = 10.sp) }, colors = AssistChipDefaults.assistChipColors(containerColor = SenaGreen.copy(0.12f), labelColor = SenaGreen))
+                                    }
+                                    Text(ap.user_email ?: "", color = colors.textSecondary, fontSize = 11.sp)
+                                }
                             }
                             IconButton(onClick = { aprendizAEliminar = ap }) { Icon(Icons.Default.Delete, null, tint = ErrorRed, modifier = Modifier.size(18.dp)) }
                         }
@@ -145,7 +174,6 @@ fun AmbienteDetalleView(
         Spacer(modifier = Modifier.height(20.dp))
     }
 
-    // Diálogo agregar.
     if (mostrarAgregar) {
         AlertDialog(
             onDismissRequest = { mostrarAgregar = false; errorAgregar = null; seleccionado = null },
@@ -160,7 +188,6 @@ fun AmbienteDetalleView(
                         Text("Aprendices disponibles (${aprendicesDisponibles.size})", color = colors.textSecondary, fontSize = 12.sp)
                         Spacer(modifier = Modifier.height(8.dp))
                         var expandir by remember { mutableStateOf(false) }
-                        // Simple dropdown mimicked with list in dialog scroll
                         Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).glassSurface(cornerRadius = 10.dp).padding(8.dp)) {
                             Column {
                                 Text(seleccionado?.nombreCompleto ?: "Selecciona aprendiz", color = if (seleccionado == null) colors.textSecondary else colors.textPrimary, fontSize = 13.sp, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { expandir = !expandir }.padding(8.dp))
@@ -199,7 +226,6 @@ fun AmbienteDetalleView(
         )
     }
 
-    // Confirmar eliminación.
     aprendizAEliminar?.let { ap ->
         AlertDialog(
             onDismissRequest = { aprendizAEliminar = null },

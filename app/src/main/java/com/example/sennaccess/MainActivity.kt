@@ -30,12 +30,23 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            // Preferencia de tema (claro/oscuro) conservada ante cambios de configuración.
             var isDark by rememberSaveable { mutableStateOf(true) }
-            val appColors = if (isDark) darkAppColors() else lightAppColors()
+            // El modo de diseño vive en el store global para que los menús
+            // hamburguesa lo alternen sin cambiar firmas de navegación.
+            val designMode by DesignModeStore.mode
 
-            CompositionLocalProvider(LocalAppColors provides appColors) {
-                SennaccessTheme(darkTheme = isDark) {
+            val appColors = when {
+                designMode == DesignMode.RENOVADO && isDark -> darkAppColorsRenovado()
+                designMode == DesignMode.RENOVADO && !isDark -> lightAppColorsRenovado()
+                !isDark -> lightAppColors()
+                else -> darkAppColors()
+            }
+
+            CompositionLocalProvider(
+                LocalAppColors provides appColors,
+                LocalDesignMode provides designMode
+            ) {
+                SennaccessTheme(darkTheme = isDark, designMode = designMode) {
                     // Identificador de la pantalla activa; cada cambio dispara la transición.
                     var currentScreen by rememberSaveable { mutableStateOf("splash") }
 

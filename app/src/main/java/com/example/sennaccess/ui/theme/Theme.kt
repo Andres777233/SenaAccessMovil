@@ -11,7 +11,15 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalContext
+import com.example.sennaccess.ui.theme.DesignMode
+import com.example.sennaccess.ui.theme.LocalDesignMode
+import com.example.sennaccess.ui.theme.darkAppColors
+import com.example.sennaccess.ui.theme.lightAppColors
+import com.example.sennaccess.ui.theme.darkAppColorsRenovado
+import com.example.sennaccess.ui.theme.lightAppColorsRenovado
+import androidx.compose.ui.graphics.Color
 
 // Esquemas Material 3 por defecto de la plantilla (colores "purple" de muestra).
 // La paleta real de la app se consume vía LocalAppColors definida en AppColors.
@@ -43,6 +51,7 @@ fun SennaccessTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
+    designMode: DesignMode = DesignMode.ORIGINAL,
     content: @Composable () -> Unit
 ) {
     // El color dinámico solo aplica en Android 12+ y deriva de la imagen de fondo.
@@ -56,9 +65,22 @@ fun SennaccessTheme(
         else -> LightColorScheme
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    // Obtener la paleta según el modo de diseño y tema
+    val appColors = when {
+        designMode == DesignMode.RENOVADO && darkTheme -> darkAppColorsRenovado()
+        designMode == DesignMode.RENOVADO && !darkTheme -> lightAppColorsRenovado()
+        !darkTheme -> lightAppColors()
+        else -> darkAppColors()
+    }
+
+    CompositionLocalProvider(
+        LocalAppColors provides appColors,
+        LocalDesignMode provides designMode
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content
+        )
+    }
 }

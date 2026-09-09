@@ -42,14 +42,11 @@ fun MiHuellaSection() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    // Estado de la huella en este dispositivo (se consulta al entrar a la vista).
     var registrada by remember { mutableStateOf(HuellaCredentialStore.hayGuardada(context)) }
     var ocupado by remember { mutableStateOf(false) }
     var mensaje by remember { mutableStateOf<String?>(null) }
     var errorMensaje by remember { mutableStateOf<String?>(null) }
-    // Abre el diálogo de confirmación de borrado.
     var confirmarBorrar by remember { mutableStateOf(false) }
-    // Contraseña que confirma el usuario para registrar la huella desde el perfil.
     var password by remember { mutableStateOf("") }
     var verPassword by remember { mutableStateOf(false) }
 
@@ -60,59 +57,68 @@ fun MiHuellaSection() {
             .padding(16.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.Fingerprint, contentDescription = null, tint = SenaGreen, modifier = Modifier.size(22.dp))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Mi Huella", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Icon(Icons.Default.Fingerprint, null, tint = SenaGreen, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Mi Huella", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            Spacer(Modifier.weight(1f))
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = if (registrada) SenaGreen.copy(alpha = 0.15f) else colors.borderLight,
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    if (registrada) "Activa" else "Inactiva",
+                    color = if (registrada) SenaGreen else colors.textSecondary,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                )
+            }
         }
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(Modifier.height(4.dp))
         Text(
-            "Ingresa a la app solo con tu huella. Tus credenciales se guardan cifradas en este teléfono y se desbloquean únicamente con tu huella.",
+            if (registrada) "Ingresa a la app con tu huella" else "Registra tu huella para ingresar sin contraseña",
             color = colors.textSecondary,
             fontSize = 12.sp
         )
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(Modifier.height(12.dp))
 
         if (registrada) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.Fingerprint, contentDescription = null, tint = SenaGreen, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     "Huella registrada en este dispositivo",
                     color = colors.textPrimary,
                     fontSize = 13.sp,
                     modifier = Modifier.weight(1f)
                 )
+                TextButton(
+                    onClick = { if (!ocupado) confirmarBorrar = true },
+                    enabled = !ocupado,
+                    colors = ButtonDefaults.textButtonColors(contentColor = ErrorRed)
+                ) {
+                    Icon(Icons.Default.Delete, null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Eliminar", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                }
             }
-            Spacer(modifier = Modifier.height(10.dp))
-            Button(
-                onClick = { if (!ocupado) confirmarBorrar = true },
-                enabled = !ocupado,
-                modifier = Modifier.fillMaxWidth().height(45.dp),
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = ErrorRed, contentColor = Color.Black)
-            ) { Text("ELIMINAR HUELLA", fontWeight = FontWeight.Bold) }
         } else {
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Confirma tu contraseña") },
+                label = { Text("Contraseña") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                visualTransformation =
-                    if (verPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                visualTransformation = if (verPassword) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
                     IconButton(onClick = { verPassword = !verPassword }) {
-                        Icon(
-                            imageVector = if (verPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = null
-                        )
+                        Icon(if (verPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility, null)
                     }
                 }
             )
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(Modifier.height(8.dp))
             Button(
                 onClick = {
                     if (ocupado) return@Button
@@ -120,30 +126,24 @@ fun MiHuellaSection() {
                     mensaje = null
                     val correo = SessionManager.userEmail
                     when {
-                        correo == null ->
-                            errorMensaje = "Inicia sesión para registrar tu huella."
-                        password.isBlank() ->
-                            errorMensaje = "Escribe tu contraseña para registrar la huella."
+                        correo == null -> errorMensaje = "Inicia sesión para registrar tu huella."
+                        password.isBlank() -> errorMensaje = "Escribe tu contraseña."
                         !BiometricAuth.isAvailable(context) ->
-                            errorMensaje = "Tu dispositivo no tiene huella configurada. Regístrala en Ajustes del sistema."
+                            errorMensaje = "Tu dispositivo no tiene huella configurada."
                         else -> {
                             ocupado = true
                             scope.launch {
-                                // Valida la contraseña contra el backend antes de guardarla:
-                                // así el botón INGRESAR CON HUELLA funcionará con seguridad.
                                 try {
                                     AuthRepository().login(correo, password.trim())
                                 } catch (e: retrofit2.HttpException) {
                                     ocupado = false
-                                    errorMensaje = if (e.code() == 401) "La contraseña no es correcta." else "Error ${e.code()} al validar tu contraseña."
+                                    errorMensaje = if (e.code() == 401) "Contraseña incorrecta" else "Error ${e.code()}"
                                     return@launch
                                 } catch (e: Exception) {
                                     ocupado = false
-                                    errorMensaje = "No se pudo conectar al servidor."
+                                    errorMensaje = "Error de conexión"
                                     return@launch
                                 }
-                                // Con la contraseña validada, pide la huella al sistema y
-                                // guarda las credenciales cifradas con la llave del Keystore.
                                 try {
                                     val activity = context as? FragmentActivity
                                         ?: throw IllegalStateException("Sin actividad")
@@ -151,7 +151,7 @@ fun MiHuellaSection() {
                                     BiometricAuth.authenticate(
                                         activity = activity,
                                         title = "Registra tu huella",
-                                        subtitle = "Toca el sensor para proteger tus credenciales",
+                                        subtitle = "Toca el sensor",
                                         cryptoObject = BiometricPrompt.CryptoObject(cipher),
                                         onSuccess = { result ->
                                             ocupado = false
@@ -162,11 +162,11 @@ fun MiHuellaSection() {
                                                     correo,
                                                     password.trim()
                                                 )
-                                                mensaje = "Huella registrada correctamente."
+                                                mensaje = "Huella registrada."
                                                 password = ""
                                                 registrada = true
                                             } catch (e: Exception) {
-                                                errorMensaje = "No se pudo guardar la huella. Intenta de nuevo."
+                                                errorMensaje = "No se pudo guardar la huella."
                                             }
                                         },
                                         onError = { motivo ->
@@ -178,43 +178,41 @@ fun MiHuellaSection() {
                                     )
                                 } catch (e: Throwable) {
                                     ocupado = false
-                                    errorMensaje = "No se pudo preparar la llave de seguridad. Inicia sesión en la app y vuelve a intentar."
+                                    errorMensaje = "Error al preparar la llave de seguridad."
                                 }
                             }
                         }
                     }
                 },
                 enabled = !ocupado,
-                modifier = Modifier.fillMaxWidth().height(45.dp),
+                modifier = Modifier.fillMaxWidth().height(44.dp),
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black)
-            ) { Text(if (ocupado) "VERIFICANDO..." else "REGISTRAR HUELLA", fontWeight = FontWeight.Bold) }
+            ) { Text(if (ocupado) "VERIFICANDO..." else "REGISTRAR", fontWeight = FontWeight.Bold) }
         }
 
         if (mensaje != null) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(mensaje!!, color = SenaGreen, fontSize = 12.sp)
+            Spacer(Modifier.height(6.dp))
+            Surface(color = SenaGreen.copy(alpha = 0.10f), shape = RoundedCornerShape(8.dp)) {
+                Text(mensaje!!, color = SenaGreen, fontSize = 12.sp, modifier = Modifier.padding(8.dp))
+            }
         }
         if (errorMensaje != null) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(errorMensaje!!, color = ErrorRed, fontSize = 12.sp)
+            Spacer(Modifier.height(6.dp))
+            Surface(color = ErrorRed.copy(alpha = 0.10f), shape = RoundedCornerShape(8.dp)) {
+                Text(errorMensaje!!, color = ErrorRed, fontSize = 12.sp, modifier = Modifier.padding(8.dp))
+            }
         }
     }
 
-    // Confirmación antes de eliminar la huella registrada en el dispositivo.
     if (confirmarBorrar) {
         AlertDialog(
             onDismissRequest = { confirmarBorrar = false },
             containerColor = colors.cardBackground.copy(alpha = 0.98f),
             shape = RoundedCornerShape(24.dp),
-            icon = { Icon(Icons.Default.Delete, contentDescription = null, tint = ErrorRed, modifier = Modifier.size(40.dp)) },
+            icon = { Icon(Icons.Default.Delete, null, tint = ErrorRed, modifier = Modifier.size(36.dp)) },
             title = { Text("¿Eliminar huella?", color = colors.textPrimary, fontWeight = FontWeight.Bold) },
-            text = {
-                Text(
-                    "Ya no podrás usar INGRESAR CON HUELLA en este teléfono hasta volver a registrarla.",
-                    color = colors.textSecondary
-                )
-            },
+            text = { Text("Ya no podrás usar el acceso con huella en este teléfono.", color = colors.textSecondary) },
             confirmButton = {
                 Button(
                     onClick = {

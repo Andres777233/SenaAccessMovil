@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Devices
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -68,6 +69,8 @@ fun AdminEquiposContent(
     var equipoAEliminar by remember { mutableStateOf<IngresoEquipo?>(null) }
     var eliminando by remember { mutableStateOf(false) }
     var errorEliminar by remember { mutableStateOf<String?>(null) }
+    // Texto de búsqueda local por propietario, tipo, marca o serial.
+    var busqueda by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -103,6 +106,20 @@ fun AdminEquiposContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        OutlinedTextField(
+            value = busqueda,
+            onValueChange = { busqueda = it },
+            placeholder = { Text("Buscar por propietario, tipo o serial...", color = colors.textSecondary) },
+            modifier = Modifier.fillMaxWidth(),
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = colors.textSecondary) },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = SenaGreen, unfocusedBorderColor = colors.borderLight,
+                cursorColor = SenaGreen, focusedTextColor = colors.textPrimary, unfocusedTextColor = colors.textPrimary
+            )
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         TableContainer(title = "Equipos del Centro", subtitle = "Registros de ingreso de equipos") {
             Row(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
                 Text("PROPIETARIO", modifier = Modifier.width(140.dp), color = colors.textSecondary, fontSize = 12.sp)
@@ -113,14 +130,25 @@ fun AdminEquiposContent(
             HorizontalDivider(color = colors.border)
 
             EstadoContenido(estado = estado, onReintentar = onReintentar) { items ->
-                if (items.isEmpty()) {
+                val filtrados = items.filter { eq ->
+                    busqueda.isBlank() ||
+                        eq.user?.nombreCompleto?.contains(busqueda, ignoreCase = true) == true ||
+                        eq.equipo_type?.contains(busqueda, ignoreCase = true) == true ||
+                        eq.marcaModelo.contains(busqueda, ignoreCase = true) ||
+                        eq.equipo_serial?.contains(busqueda, ignoreCase = true) == true
+                }
+                if (filtrados.isEmpty()) {
                     EstadoVacio(
                         icono = Icons.Default.Devices,
-                        titulo = "No hay equipos registrados",
-                        mensaje = "Los equipos que se registren en el centro aparecerán aquí."
+                        titulo = if (items.isEmpty()) "No hay equipos registrados" else "Sin coincidencias",
+                        mensaje = if (items.isEmpty()) {
+                            "Los equipos que se registren en el centro aparecerán aquí."
+                        } else {
+                            "Ningún equipo coincide con \"$busqueda\"."
+                        }
                     )
                 } else {
-                    items.forEach { eq ->
+                    filtrados.forEach { eq ->
                         HorizontalDivider(color = colors.border)
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),

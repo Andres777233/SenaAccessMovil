@@ -41,7 +41,7 @@ import com.example.sennaccess.data.SessionManager
 import com.example.sennaccess.data.UsuarioApi
 import com.example.sennaccess.data.mock.MockData
 import com.example.sennaccess.excusas.MisExcusasView
-import com.example.sennaccess.ui.AcercaDeView
+
 import com.example.sennaccess.ui.AvatarPerfil
 import com.example.sennaccess.ui.CargaUiState
 import com.example.sennaccess.ui.CargandoBox
@@ -55,8 +55,11 @@ import com.example.sennaccess.ui.PerfilHeader
 import com.example.sennaccess.ui.fechaLegible
 import com.example.sennaccess.ui.fechaRelativa
 import com.example.sennaccess.ui.horaCorta
+import com.example.sennaccess.ui.theme.DesignMode
+import com.example.sennaccess.ui.theme.DesignModeStore
 import com.example.sennaccess.ui.theme.ErrorRed
 import com.example.sennaccess.ui.theme.LocalAppColors
+import com.example.sennaccess.ui.theme.LocalDesignMode
 import com.example.sennaccess.ui.theme.OrangeAmber
 import com.example.sennaccess.ui.theme.SenaGreen
 import com.example.sennaccess.ui.ios.GlassDock
@@ -128,7 +131,7 @@ fun AprendizDashboard(onCerrarSesion: () -> Unit, isDark: Boolean = true, onTogg
                 onLogout = onCerrarSesion,
                 onPerfil = { currentView = "PERFIL" },
                 onEditarPerfil = { currentView = "EDITAR_PERFIL" },
-                onAcercaDe = { currentView = "ACERCA_DE" },
+
                 onNotificaciones = { currentView = "NOTIFICACIONES" },
                 noLeidas = noLeidas,
                 isDark = isDark,
@@ -186,7 +189,7 @@ fun AprendizDashboard(onCerrarSesion: () -> Unit, isDark: Boolean = true, onTogg
                         onMarcarTodasLeidas = viewModel::marcarTodasLeidas,
                         onBack = { currentView = "DASHBOARD" }
                     )
-                    "ACERCA_DE" -> AcercaDeView(onBack = { currentView = "DASHBOARD" })
+
                 }
             }
         }
@@ -214,7 +217,7 @@ fun AprendizTopBar(
     onLogout: () -> Unit,
     onPerfil: (() -> Unit)? = null,
     onEditarPerfil: (() -> Unit)? = null,
-    onAcercaDe: (() -> Unit)? = null,
+
     onNotificaciones: (() -> Unit)? = null,
     noLeidas: Int = 0,
     isDark: Boolean = true,
@@ -320,13 +323,14 @@ fun AprendizTopBar(
                                 onClick = { showMenu = false; onPerfil() }
                             )
                         }
-                        if (onAcercaDe != null) {
-                            DropdownMenuItem(
-                                text = { Text("Acerca de", color = colors.textPrimary) },
-                                leadingIcon = { Icon(Icons.Default.Info, null, tint = SenaGreen) },
-                                onClick = { showMenu = false; onAcercaDe() }
-                            )
-                        }
+                        // Alterna el diseño visual entre original y renovado (solo estética).
+                        val designMode = LocalDesignMode.current
+                        DropdownMenuItem(
+                            text = { Text(if (designMode == DesignMode.RENOVADO) "Diseño: renovado" else "Diseño: original", color = colors.textPrimary) },
+                            leadingIcon = { Icon(Icons.Default.Palette, null, tint = SenaGreen) },
+                            onClick = { showMenu = false; DesignModeStore.toggle() }
+                        )
+
                         DropdownMenuItem(
                             text = { Text("Cerrar sesion", color = Color.Red) },
                             leadingIcon = { Icon(Icons.Default.Logout, null, tint = Color.Red) },
