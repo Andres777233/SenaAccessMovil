@@ -44,34 +44,6 @@ interface ApiService {
     @POST("reset-password")
     suspend fun resetPassword(@Body body: ResetRequest): MessageResponse
 
-    // ---- WebAuthn (passkeys): login con huella ----
-    // El servidor genera un reto, el dispositivo lo firma con su llave privada
-    // (desbloqueada por la biometría) y aquí se verifica la firma. El registro
-    // requiere sesión; el login es público y devuelve el mismo LoginResponse.
-    @POST("webauthn/login/options")
-    suspend fun getWebauthnLoginOptions(): WebauthnOptionsResponse
-
-    @POST("webauthn/login")
-    suspend fun loginWithPasskey(@Body body: Map<String, String>): LoginResponse
-
-    @POST("webauthn/register/options")
-    suspend fun getWebauthnRegisterOptions(@Header("Authorization") auth: String): WebauthnOptionsResponse
-
-    @POST("webauthn/register")
-    suspend fun registerPasskey(
-        @Header("Authorization") auth: String,
-        @Body body: Map<String, String>
-    ): MessageResponse
-
-    @GET("webauthn/passkeys")
-    suspend fun getMyPasskeys(@Header("Authorization") auth: String): List<PasskeyInfo>
-
-    @DELETE("webauthn/passkeys/{id}")
-    suspend fun deletePasskey(
-        @Header("Authorization") auth: String,
-        @Path("id") id: Int
-    ): MessageResponse
-
     // ---- Cualquier rol (sesión) ----
     // 2. GET /api/user: perfil del usuario autenticado. Cualquier rol con sesión puede
     //    pedir sus propios datos; el token viaja en el header "Authorization: Bearer".

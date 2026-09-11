@@ -1,0 +1,14 @@
+# Build reproducible del APK: construye debug + release y deja los APK en ./artifacts.
+# Uso:  docker compose run --rm sennaccess-movil
+# Quita la capa de build previa con:  docker compose build
+services:
+  sennaccess-movil:
+    build:
+      context: .
+    image: sennaccess-movil:latest
+    volumes:
+      - ./artifacts:/artifacts
+    command:
+      - sh
+      - -c
+      - "./gradlew :app:assembleDebug :app:assembleRelease --no-daemon && cp -r app/build/outputs/apk /artifacts/"

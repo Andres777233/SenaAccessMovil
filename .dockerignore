@@ -1,0 +1,17 @@
+# Excluye del contexto de build todo lo que no afecta al APK.
+# IMPORTANTE: app/debug.keystore NO se ignora y viaja al contenedor, porque el
+# proyecto firma debug y release con esa llave.
+
+**/build
+**/.gradle
+**/.cxx
+**/.externalNativeBuild
+**/.idea
+.git
+*.iml
+*.log
+.DS_Store
+local.properties
+captures
+artifacts
+out

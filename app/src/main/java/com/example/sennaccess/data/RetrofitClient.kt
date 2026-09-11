@@ -4,6 +4,7 @@ package com.example.sennaccess.data
 // La app habla SIEMPRE con el backend desplegado en Railway (HTTPS); sin
 // fallbacks locales para no caer en servidores desactualizados.
 
+import com.example.sennaccess.BuildConfig
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -15,10 +16,11 @@ object RetrofitClient {
     // Backend desplegado en Railway (URL pública, HTTPS). Único destino de la app.
     private const val BASE_URL_REMOTE = "https://senaaccessweb-production.up.railway.app/api/"
 
-    // 1. Interceptor de logs: registra cada petición y respuesta HTTP con su cuerpo.
-    //    El nivel BODY sirve para depurar; en producción convendría reducirlo o quitarlo.
+    // 1. Interceptor de logs: en DEBUG registra cada petición con su cuerpo para
+    //    depurar; en release se desactiva para no filtrar tokens/contraseñas y para
+    //    no añadir coste en los requests de todos los dispositivos.
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BODY
+        level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
     }
 
     // 2. Cliente HTTP con tiempos holgados: la conexión tarda hasta 10s (arranque

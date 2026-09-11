@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Aplica configuración por defecto: solo conexiones HTTPS permitidas -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <!-- Incluye certificados del sistema -->
+            <certificates src="system" />
+            <!-- Incluye certificados personalizados si es necesario para desarrollo -->
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+    
+    <!-- Permitir cleartext solo para localhost en modo debug -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">10.0.2.2</domain> <!-- Emulador Android -->
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+    </domain-config>
+    
+    <!-- Dominio específico para producción -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">senaaccessweb-production.up.railway.app</domain>
+        <pin-set expiration="2027-12-31">
+            <pin digest="SHA-256">AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</pin>
+        </pin-set>
+    </domain-config>
+</network-security-config>
