@@ -33,13 +33,72 @@ data class User(
 )
 
 // Respuesta del login: mensaje, datos del usuario, nombre del rol y access_token que
-// la app guarda en SessionManager para autenticar el resto de las llamadas.
+// la app guarda en SessionManager para autenticar el resto de las llamadas. Cuando el
+// usuario tiene 2FA activado, el backend NO devuelve token: responde two_factor_required
+// con el id del reto para que la app muestre el segundo paso.
 data class LoginResponse(
     val message: String? = null,
     val user: User? = null,
     val role: String? = null,
     @SerializedName("access_token") val access_token: String? = null,
-    @SerializedName("token_type") val token_type: String? = null
+    @SerializedName("token_type") val token_type: String? = null,
+    @SerializedName("two_factor_required") val two_factor_required: Boolean? = null,
+    @SerializedName("two_factor_id") val two_factor_id: String? = null,
+    @SerializedName("two_factor_method") val two_factor_method: String? = null,
+    @SerializedName("code_sent") val two_factor_code_sent: Boolean? = null
+)
+
+// ---- Verificación en dos pasos (2FA) ----
+
+// Configuración del 2FA del usuario autenticado (GET/POST /2fa/estado-config, activar, desactivar).
+data class TwoFactorConfigEstado(
+    @SerializedName("two_factor_enabled") val two_factor_enabled: Boolean? = null,
+    val message: String? = null
+)
+
+// Cuerpo para validar el código de 6 dígitos recibido por correo (POST /2fa/validar-codigo).
+data class ValidarCodigo2FaRequest(
+    @SerializedName("challenge_id") val challenge_id: String,
+    val code: String
+)
+
+// Cuerpo para desactivar el 2FA (exige la contraseña actual).
+data class Desactivar2FaRequest(
+    @SerializedName("user_password") val user_password: String
+)
+
+// Cuerpo para aprobar/denegar un reto desde el dispositivo confiable (POST /2fa/aprobar).
+data class Aprobar2FaRequest(
+    @SerializedName("challenge_id") val challenge_id: String,
+    val decision: String
+)
+
+// Reto pendiente de aprobación tal como lo ve el dispositivo con sesión
+// (GET /2fa/pendientes).
+data class TwoFactorReto(
+    @SerializedName("challenge_id") val challenge_id: String? = null,
+    val ip: String? = null,
+    @SerializedName("user_agent") val user_agent: String? = null,
+    @SerializedName("created_at") val created_at: String? = null,
+    @SerializedName("expires_at") val expires_at: String? = null
+)
+
+// Respuesta del polling de retos pendientes del usuario autenticado.
+data class TwoFactorPendientes(
+    val pending: Boolean? = null,
+    val challenge: TwoFactorReto? = null
+)
+
+// Estado de un reto consultado por el dispositivo en pleno intento de login
+// (GET /2fa/estado/{id}). Solo devuelve access_token/user/role cuando quedó aprobado.
+data class Verificacion2FaEstado(
+    val message: String? = null,
+    @SerializedName("two_factor_id") val two_factor_id: String? = null,
+    val estado: String? = null,
+    @SerializedName("access_token") val access_token: String? = null,
+    @SerializedName("token_type") val token_type: String? = null,
+    val user: User? = null,
+    val role: String? = null
 )
 
 // Respuesta del cierre de sesión: solo confirmación del servidor.

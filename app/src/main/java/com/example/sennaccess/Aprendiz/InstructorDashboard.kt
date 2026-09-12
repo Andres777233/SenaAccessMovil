@@ -55,6 +55,8 @@ import com.example.sennaccess.ui.PerfilHeader
 import com.example.sennaccess.ui.fechaLegible
 import com.example.sennaccess.ui.fechaRelativa
 import com.example.sennaccess.ui.horaCorta
+import com.example.sennaccess.ui.verificacion2fa.Configuracion2FaView
+import com.example.sennaccess.ui.verificacion2fa.Dashboards2FaPendientes
 import com.example.sennaccess.ui.theme.DesignMode
 import com.example.sennaccess.ui.theme.DesignModeStore
 import com.example.sennaccess.ui.theme.LocalAppColors
@@ -185,8 +187,10 @@ fun InstructorDashboard(onCerrarSesion: () -> Unit, isDark: Boolean = true, onTo
                         perfil,
                         onBack = { currentView = "DASHBOARD" },
                         onReintentar = viewModel::cargarPerfil,
-                        onEditar = { currentView = "EDITAR_PERFIL" }
+                        onEditar = { currentView = "EDITAR_PERFIL" },
+                        onConfigurar2Fa = { currentView = "VERIFICACION_2FA" }
                     )
+                    "VERIFICACION_2FA" -> Configuracion2FaView(onBack = { currentView = "PERFIL" })
                     "EDITAR_PERFIL" -> EditarPerfilView(
                         estado = perfil,
                         onBack = { currentView = "PERFIL" },
@@ -223,6 +227,10 @@ fun InstructorDashboard(onCerrarSesion: () -> Unit, isDark: Boolean = true, onTo
             onSelect = { currentView = it },
             modifier = Modifier.align(Alignment.BottomCenter)
         )
+
+        // Tarjeta "¿Eres tú?" de la verificación en dos pasos: consulta retos
+        // pendientes de este usuario y permite aprobar/denegar accesos.
+        Dashboards2FaPendientes()
     }
 }
 
@@ -569,7 +577,7 @@ fun MisEquiposView(estado: CargaUiState<List<IngresoEquipo>>, onReintentar: () -
 // Vista 4: perfil del instructor en una tarjeta de vidrio, con los datos
 // obtenidos de la API (o mocks) mediante EstadoContenido.
 @Composable
-fun PerfilInstructorView(estado: CargaUiState<UsuarioApi>, onBack: () -> Unit, onReintentar: () -> Unit, onEditar: () -> Unit) {
+fun PerfilInstructorView(estado: CargaUiState<UsuarioApi>, onBack: () -> Unit, onReintentar: () -> Unit, onEditar: () -> Unit, onConfigurar2Fa: () -> Unit) {
     val colors = LocalAppColors.current
     val scrollState = rememberScrollState()
 
@@ -614,6 +622,16 @@ fun PerfilInstructorView(estado: CargaUiState<UsuarioApi>, onBack: () -> Unit, o
                     Icon(Icons.Default.Edit, null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("EDITAR PERFIL", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+                OutlinedButton(
+                    onClick = onConfigurar2Fa,
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Default.Shield, null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("VERIFICACIÓN EN DOS PASOS", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))

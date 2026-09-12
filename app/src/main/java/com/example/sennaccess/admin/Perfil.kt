@@ -42,7 +42,8 @@ fun PerfilContent(
     perfil: CargaUiState<UsuarioApi>,
     onBack: () -> Unit,
     onReintentar: () -> Unit,
-    onEditar: () -> Unit
+    onEditar: () -> Unit,
+    onConfigurar2Fa: () -> Unit
 ) {
     val colors = LocalAppColors.current
     val scrollState = rememberScrollState()
@@ -100,6 +101,16 @@ fun PerfilContent(
                     Icon(Icons.Default.Edit, null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("EDITAR PERFIL", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+                OutlinedButton(
+                    onClick = onConfigurar2Fa,
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Default.Shield, null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("VERIFICACIÓN EN DOS PASOS", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))

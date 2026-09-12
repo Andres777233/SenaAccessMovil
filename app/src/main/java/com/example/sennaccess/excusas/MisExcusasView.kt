@@ -86,7 +86,7 @@ fun MisExcusasView(onBack: (() -> Unit)? = null) {
                                 Spacer(modifier = Modifier.height(8.dp))
                                 if (ex.estado == "pendiente") {
                                     Text("PIN: ${ex.pin ?: "—"}", color = colors.textPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
-                                    Text("Vigencia 60 min • expira ${ex.expira_en ?: ""}", color = colors.textSecondary, fontSize = 11.sp)
+                                    Text("Vigencia 15 min • expira ${ex.expira_en ?: ""}", color = colors.textSecondary, fontSize = 11.sp)
                                 } else {
                                     Text("PIN: ${ex.pin ?: "—"} • ${ex.expira_en ?: ""}", color = colors.textSecondary, fontSize = 12.sp)
                                     if (ex.usado_en != null) Text("Usada: ${ex.usado_en}", color = colors.textSecondary, fontSize = 11.sp)

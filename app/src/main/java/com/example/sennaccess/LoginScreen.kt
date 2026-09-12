@@ -53,6 +53,7 @@ import androidx.fragment.app.FragmentActivity
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.LoginViewModel
 import com.example.sennaccess.ui.LoginUiState
+import com.example.sennaccess.ui.verificacion2fa.Verificacion2FaScreen
 import com.example.sennaccess.ui.ios.GlowSpheres
 import com.example.sennaccess.ui.ios.glassSurface
 import com.example.sennaccess.ui.ios.GlassCornerRadiusLg
@@ -89,6 +90,9 @@ fun LoginScreen(
     var loginDesdeHuella by remember { mutableStateOf(false) }
     // Controla el diálogo de opt-in para registrar la huella tras un login manual.
     var askSaveBiometric by remember { mutableStateOf(false) }
+    // Reto de verificación en dos pasos pendiente: si no es null se muestra el
+    // overlay de 2FA (código del correo + aprobación desde otro dispositivo).
+    var reto2FaById by remember { mutableStateOf<String?>(null) }
 
     // Si el login con huella falla (credenciales guardadas inválidas), borra lo
     // guardado para forzar un nuevo registro en el próximo login manual.
@@ -121,6 +125,24 @@ fun LoginScreen(
     ) {
         // Luces ambientales detrás del vidrio (acentúan el glassmorphism).
         GlowSpheres(isDark = isDark)
+
+        // Overlay de verificación en dos pasos: a pantalla completa, tapa el login
+        // cuando el backend responde two_factor_required en lugar de un token.
+        reto2FaById?.let { challengeId ->
+            Verificacion2FaScreen(
+                challengeId = challengeId,
+                isDark = isDark,
+                onCancel = {
+                    reto2FaById = null
+                    viewModel.reset()
+                },
+                onLoginSuccess = { role ->
+                    reto2FaById = null
+                    viewModel.reset()
+                    onLoginSuccess(role)
+                }
+            )
+        }
 
         Box(
             modifier = Modifier
@@ -273,6 +295,12 @@ fun LoginScreen(
                 // el botón INGRESAR CON HUELLA la próxima vez.
                 if (uiState is LoginUiState.Success) {
                     val res = (uiState as LoginUiState.Success).response
+                    // Si el backend pide segundo factor, este intento aún no tiene
+                    // token: se muestra el overlay de 2FA y no se avanza al dashboard.
+                    if (res.two_factor_required == true && res.two_factor_id != null) {
+                        reto2FaById = res.two_factor_id
+                        viewModel.reset()
+                    }
                     // Se evalúan una vez por intento de login exitoso.
                     var yaTieneHuella by remember(res) { mutableStateOf(HuellaCredentialStore.hayGuardada(context)) }
                     var navegando by remember(res) { mutableStateOf(false) }

@@ -49,6 +49,37 @@ interface ApiService {
     @POST("email/verification-notification")
     suspend fun resendVerification(@Header("Authorization") auth: String): MessageResponse
 
+    // ---- Verificación en dos pasos (2FA) ----
+    // 1f. POST /api/2fa/validar-codigo: el dispositivo en intento de login envía el
+    //     código de 6 dígitos recibido por correo. Devuelve el LoginResponse completo.
+    @POST("2fa/validar-codigo")
+    suspend fun validarCodigo2Fa(@Body body: ValidarCodigo2FaRequest): LoginResponse
+
+    // 1g. GET /api/2fa/estado/{id}: polling del dispositivo que intenta iniciar sesión.
+    //     Público (sin token); cuando el otro dispositivo aprueba, devuelve access_token.
+    @GET("2fa/estado/{challengeId}")
+    suspend fun estadoVerificacion2Fa(@Path("challengeId") challengeId: String): Verificacion2FaEstado
+
+    // 1h. GET /api/2fa/estado-config: si el usuario autenticado tiene 2FA activo.
+    @GET("2fa/estado-config")
+    suspend fun estadoConfig2Fa(@Header("Authorization") auth: String): TwoFactorConfigEstado
+
+    // 1i. POST /api/2fa/activar y /desactivar: alternan el 2FA desde el perfil.
+    @POST("2fa/activar")
+    suspend fun activar2Fa(@Header("Authorization") auth: String): TwoFactorConfigEstado
+
+    @POST("2fa/desactivar")
+    suspend fun desactivar2Fa(@Header("Authorization") auth: String, @Body body: Desactivar2FaRequest): TwoFactorConfigEstado
+
+    // 1j. GET /api/2fa/pendientes: retos de acceso pendientes de aprobar. Lo consulta
+    //     el dispositivo con sesión ("¿Eres tú?") cada pocos segundos.
+    @GET("2fa/pendientes")
+    suspend fun pendientes2Fa(@Header("Authorization") auth: String): TwoFactorPendientes
+
+    // 1k. POST /api/2fa/aprobar: aprueba o deniega un reto desde el dispositivo confiable.
+    @POST("2fa/aprobar")
+    suspend fun aprobar2Fa(@Header("Authorization") auth: String, @Body body: Aprobar2FaRequest): MessageResponse
+
     // ---- Cualquier rol (sesión) ----
     // 2. GET /api/user: perfil del usuario autenticado. Cualquier rol con sesión puede
     //    pedir sus propios datos; el token viaja en el header "Authorization: Bearer".

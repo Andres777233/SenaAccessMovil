@@ -46,6 +46,12 @@ class LoginViewModel : ViewModel() {
             try {
                 val response = repository.login(email.trim(), password)
                 lastResponse = response
+                if (response.two_factor_required == true) {
+                    // 2FA pendiente: todavía NO hay token. La pantalla de verificación
+                    // se encarga de obtenerlo al aprobar o validar el código del correo.
+                    _uiState.value = LoginUiState.Success(response)
+                    return@launch
+                }
                 token = response.access_token
                 SessionManager.saveSession(
                     response.access_token,

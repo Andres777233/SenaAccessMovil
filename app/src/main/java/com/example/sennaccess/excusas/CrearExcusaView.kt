@@ -107,7 +107,7 @@ fun CrearExcusaView(
             IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null, tint = SenaGreen) }
             Text("Crear excusa", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
         }
-        Text("Selecciona el aprendiz, el ambiente y el motivo. Se genera un PIN de 4 dígitos (vigencia 60 min) que el aprendiz entrega en portería.", color = colors.textSecondary, fontSize = 12.sp)
+        Text("Selecciona el aprendiz, el ambiente y el motivo. Se genera un PIN de 4 dígitos (vigencia 15 min) que el aprendiz entrega en portería.", color = colors.textSecondary, fontSize = 12.sp)
         Spacer(modifier = Modifier.height(16.dp))
 
         // Selector ambiente.
@@ -182,7 +182,7 @@ fun CrearExcusaView(
                     Text("${ex.aprendiz?.nombreCompleto ?: "Aprendiz"} • ${ex.ambiente?.ambiente_nombre ?: ""}", color = colors.textSecondary, fontSize = 12.sp)
                     Text("Motivo: ${ex.motivo ?: ""}", color = colors.textPrimary, fontSize = 13.sp)
                     Spacer(modifier = Modifier.height(10.dp))
-                    Text("PIN (4 dígitos, 60 min, un solo uso):", color = colors.textSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text("PIN (4 dígitos, 15 min, un solo uso):", color = colors.textSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(6.dp))
                     Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).glassSurface(cornerRadius = 12.dp).padding(12.dp)) {
                         Text(ex.pin ?: "—", color = colors.textPrimary, fontSize = 28.sp, fontWeight = FontWeight.Bold, letterSpacing = 4.sp)

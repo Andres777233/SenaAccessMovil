@@ -35,6 +35,8 @@ import com.example.sennaccess.ui.ios.GlassDock
 import com.example.sennaccess.ui.ios.GlassDockItem
 import com.example.sennaccess.ui.ios.GlowSpheres
 import com.example.sennaccess.ui.theme.LocalAppColors
+import com.example.sennaccess.ui.verificacion2fa.Configuracion2FaView
+import com.example.sennaccess.ui.verificacion2fa.Dashboards2FaPendientes
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -138,6 +140,7 @@ fun AdminDashboard(
 
             AdminScreen.AMBIENTES -> subScreen = AdminScreen.AMBIENTES
             AdminScreen.VALIDAR_EXCUSA -> subScreen = AdminScreen.VALIDAR_EXCUSA
+            AdminScreen.VERIFICACION_2FA -> subScreen = AdminScreen.VERIFICACION_2FA
         }
     }
 
@@ -223,9 +226,11 @@ fun AdminDashboard(
                             perfil = perfil,
                             onBack = { subScreen = null },
                             onReintentar = viewModel::cargarPerfil,
-                            onEditar = { editandoPerfil = true }
+                            onEditar = { editandoPerfil = true },
+                            onConfigurar2Fa = { subScreen = AdminScreen.VERIFICACION_2FA }
                         )
                     }
+                    AdminScreen.VERIFICACION_2FA -> Configuracion2FaView(onBack = { subScreen = AdminScreen.PERFIL })
                     AdminScreen.ACCESO_APRENDICES -> AccesoAprendicesContent(
                         estado = historial,
                         onReintentar = viewModel::cargarHistorial,
@@ -310,5 +315,9 @@ fun AdminDashboard(
             onSelect = { irATab(it) },
             modifier = Modifier.align(Alignment.BottomCenter)
         )
+
+        // Tarjeta "¿Eres tú?" de la verificación en dos pasos: consulta retos
+        // pendientes de este usuario y permite aprobar/denegar accesos.
+        Dashboards2FaPendientes()
     }
 }
