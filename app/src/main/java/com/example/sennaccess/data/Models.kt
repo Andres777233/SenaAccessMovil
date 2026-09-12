@@ -14,20 +14,7 @@ data class LoginRequest(
     @SerializedName("user_password") val user_password: String
 )
 
-// Opciones WebAuthn (passkeys) que devuelve el backend: options es el JSON estándar
-// que se le pasa al Credential Manager de Android y challenge se usa para la firma.
-data class WebauthnOptionsResponse(
-    val options: JsonObject? = null,
-    val challenge: String? = null
-)
 
-// Passkey registrada en el backend (solo metadatos; la llave privada nunca sale
-// del dispositivo).
-data class PasskeyInfo(
-    @SerializedName("id") val id: Int? = null,
-    @SerializedName("credential_id") val credential_id: String? = null,
-    @SerializedName("created_at") val created_at: String? = null
-)
 
 // Usuario tal como lo devuelve el endpoint de login: perfil básico con su rol.
 data class User(

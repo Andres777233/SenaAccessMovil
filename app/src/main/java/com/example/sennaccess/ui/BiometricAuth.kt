@@ -7,6 +7,7 @@ package com.example.sennaccess.ui
 // HuellaCredentialStore) solo si la huella es válida.
 
 import android.content.Context
+import android.os.Build
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
@@ -14,11 +15,24 @@ import androidx.fragment.app.FragmentActivity
 
 object BiometricAuth {
 
-    // Indica si el dispositivo tiene un sensor biométrico fuerte (huella) y hay
-    // al menos una huella registrada en los Ajustes del sistema.
+    // Juego de autenticadores permitidos: en Android 10 o superior se acepta además
+    // de la huella/rostro el PIN/patrón del dispositivo (DEVICE_CREDENTIAL), de modo
+    // que el ingreso sin contraseña funciona también en equipos sin sensor fuerte.
+    // En Android 8-9 (API 28-29) solo existe el sensor fuerte.
+    fun authenticators(): Int =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            BiometricManager.Authenticators.BIOMETRIC_STRONG or
+                BiometricManager.Authenticators.BIOMETRIC_WEAK or
+                BiometricManager.Authenticators.DEVICE_CREDENTIAL
+        } else {
+            BiometricManager.Authenticators.BIOMETRIC_STRONG
+        }
+
+    // Indica si el dispositivo admite alguno de los métodos de autenticación del
+    // sistema (huella/rostro/PIN) y hay al menos uno registrado en los Ajustes.
     fun isAvailable(context: Context): Boolean =
         BiometricManager.from(context)
-            .canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) ==
+            .canAuthenticate(authenticators()) ==
             BiometricManager.BIOMETRIC_SUCCESS
 
     // Lanza el diálogo biométrico del sistema sin operación criptográfica:
@@ -54,12 +68,21 @@ object BiometricAuth {
             }
         })
 
-        val info = BiometricPrompt.PromptInfo.Builder()
+        // Con DEVICE_CREDENTIAL (API 30+) la API prohíbe el botón negativo; en API 28-29
+        // solo hay sensor fuerte y el botón negativo es obligatorio. Por eso se construye
+        // el PromptInfo de forma distinta según la versión.
+        val builder = BiometricPrompt.PromptInfo.Builder()
             .setTitle(title)
             .setSubtitle(subtitle)
-            .setNegativeButtonText("Cancelar")
-            .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
-            .build()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            builder.setAllowedAuthenticators(authenticators())
+        } else {
+            builder.setNegativeButtonText("Cancelar")
+                .setAllowedAuthenticators(authenticators())
+        }
+
+        val info = builder.build()
 
         if (cryptoObject != null) {
             prompt.authenticate(info, cryptoObject)

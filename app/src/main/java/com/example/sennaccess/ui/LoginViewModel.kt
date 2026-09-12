@@ -70,21 +70,4 @@ class LoginViewModel : ViewModel() {
     fun reset() {
         _uiState.value = LoginUiState.Idle
     }
-
-    // Registra el éxito de un login con passkey (la verificación la hizo el
-    // servidor): guarda la sesión y notifica a la UI para navegar al dashboard.
-    fun onPasskeySuccess(response: LoginResponse) {
-        lastResponse = response
-        token = response.access_token
-        SessionManager.saveSession(
-            response.access_token,
-            response.user?.id_usuario,
-            response.user?.user_name,
-            response.user?.user_email,
-            response.role,
-            response.user?.email_verified_at != null
-        )
-        SessionManager.savePhoto(response.user?.profile_photo_path)
-        _uiState.value = LoginUiState.Success(response)
-    }
 }
