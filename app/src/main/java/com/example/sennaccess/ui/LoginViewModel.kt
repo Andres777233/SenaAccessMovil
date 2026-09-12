@@ -52,7 +52,8 @@ class LoginViewModel : ViewModel() {
                     response.user?.id_usuario,
                     response.user?.user_name,
                     response.user?.user_email,
-                    response.role
+                    response.role,
+                    response.user?.email_verified_at != null
                 )
                 SessionManager.savePhoto(response.user?.profile_photo_path)
                 _uiState.value = LoginUiState.Success(response)
@@ -80,7 +81,8 @@ class LoginViewModel : ViewModel() {
             response.user?.id_usuario,
             response.user?.user_name,
             response.user?.user_email,
-            response.role
+            response.role,
+            response.user?.email_verified_at != null
         )
         SessionManager.savePhoto(response.user?.profile_photo_path)
         _uiState.value = LoginUiState.Success(response)

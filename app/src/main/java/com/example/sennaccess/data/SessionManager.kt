@@ -22,14 +22,22 @@ object SessionManager {
         private set
     var userPhoto: String? = null
         private set
+    var emailVerified: Boolean? = null
+        private set
 
     // Almacena la sesión completa tras un login exitoso.
-    fun saveSession(token: String?, id: Int?, name: String?, email: String?, role: String?) {
+    fun saveSession(token: String?, id: Int?, name: String?, email: String?, role: String?, emailVerified: Boolean? = null) {
         this.token = token
         this.userId = id
         this.userName = name
         this.userEmail = email
         this.userRole = role
+        this.emailVerified = emailVerified
+    }
+
+    // Marca (o desmarca) que el correo ya fue verificado en el servidor.
+    fun saveEmailVerified(verified: Boolean?) {
+        this.emailVerified = verified
     }
 
     // Guarda o actualiza la URL de la foto de perfil (relativa "/avatars/x" o absoluta).
@@ -50,6 +58,7 @@ object SessionManager {
         userEmail = null
         userRole = null
         userPhoto = null
+        emailVerified = null
     }
 
     // Construye el header HTTP de autorización con el esquema Bearer a partir del token

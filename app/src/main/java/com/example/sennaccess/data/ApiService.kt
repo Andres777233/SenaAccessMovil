@@ -44,6 +44,11 @@ interface ApiService {
     @POST("reset-password")
     suspend fun resetPassword(@Body body: ResetRequest): MessageResponse
 
+    // 1e. POST /api/email/verification-notification: reenvía el enlace de verificación
+    //     de correo. Requiere sesión (el enlace llega al correo registrado).
+    @POST("email/verification-notification")
+    suspend fun resendVerification(@Header("Authorization") auth: String): MessageResponse
+
     // ---- WebAuthn (passkeys): login con huella ----
     // El servidor genera un reto, el dispositivo lo firma con su llave privada
     // (desbloqueada por la biometría) y aquí se verifica la firma. El registro

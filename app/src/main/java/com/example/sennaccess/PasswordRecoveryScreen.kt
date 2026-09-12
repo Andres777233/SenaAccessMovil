@@ -258,7 +258,8 @@ fun PasswordRecoveryScreen(
 
                     // BOTÓN ENVIAR CÓDIGO
                     Button(
-
+                        // Deshabilita mientras se envía para evitar dobles toques.
+                        enabled = !enviando,
                         // acción del botón: solicita el código de recuperación al backend
                         onClick = {
                             if (enviando) return@Button
@@ -316,16 +317,24 @@ fun PasswordRecoveryScreen(
                                 Alignment.CenterVertically
                         ) {
 
-                            // icono enviar
-                            Icon(
-                                imageVector =
-                                    Icons.AutoMirrored.Filled.Send,
+                            // Icono enviar, o spinner mientras se procesa la petición.
+                            if (enviando) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    color = Color.Black,
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Icon(
+                                    imageVector =
+                                        Icons.AutoMirrored.Filled.Send,
 
-                                contentDescription = null,
+                                    contentDescription = null,
 
-                                modifier =
-                                    Modifier.size(20.dp)
-                            )
+                                    modifier =
+                                        Modifier.size(20.dp)
+                                )
+                            }
 
                             Spacer(
                                 modifier =
@@ -334,7 +343,7 @@ fun PasswordRecoveryScreen(
 
                             // texto botón
                             Text(
-                                text = "ENVIAR CÓDIGO",
+                                text = if (enviando) "ENVIANDO..." else "ENVIAR CÓDIGO",
 
                                 fontWeight =
                                     FontWeight.ExtraBold,

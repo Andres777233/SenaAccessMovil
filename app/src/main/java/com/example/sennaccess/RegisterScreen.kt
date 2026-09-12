@@ -346,7 +346,7 @@ fun RegisterScreen(onBackToLogin: () -> Unit, isDark: Boolean = true, onToggleTh
                 },
                 text = {
                     Text(
-                        "¡Cuenta creada correctamente! Tu cuenta de aprendiz quedó activa. Ya puedes iniciar sesión con tu correo y contraseña.",
+                        "¡Cuenta creada correctamente! Ya puedes iniciar sesión con tu correo y contraseña. Te llegó un correo con un enlace para verificar tu cuenta (revisa la bandeja de entrada y de correo no deseado).",
                         color = colors.textSecondary
                     )
                 },

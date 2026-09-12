@@ -22,6 +22,10 @@ class AuthRepository {
     suspend fun resetPassword(body: ResetRequest): MessageResponse =
         RetrofitClient.conServicio { it.resetPassword(body) }
 
+    // Reenvía el enlace de verificación de correo al usuario autenticado.
+    suspend fun resendVerification(token: String): MessageResponse =
+        RetrofitClient.conServicio { it.resendVerification("Bearer $token") }
+
     // Cierra la sesión en el servidor (registra la "Salida" y revoca el token).
     suspend fun logout(token: String): LogoutResponse =
         RetrofitClient.conServicio { it.logout("Bearer $token") }
