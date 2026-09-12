@@ -57,11 +57,8 @@ import com.example.sennaccess.ui.fechaRelativa
 import com.example.sennaccess.ui.horaCorta
 import com.example.sennaccess.ui.verificacion2fa.Configuracion2FaView
 import com.example.sennaccess.ui.verificacion2fa.Dashboards2FaPendientes
-import com.example.sennaccess.ui.theme.DesignMode
-import com.example.sennaccess.ui.theme.DesignModeStore
 import com.example.sennaccess.ui.theme.ErrorRed
 import com.example.sennaccess.ui.theme.LocalAppColors
-import com.example.sennaccess.ui.theme.LocalDesignMode
 import com.example.sennaccess.ui.theme.OrangeAmber
 import com.example.sennaccess.ui.theme.SenaGreen
 import com.example.sennaccess.ui.ios.GlassDock
@@ -331,13 +328,6 @@ fun AprendizTopBar(
                                 onClick = { showMenu = false; onPerfil() }
                             )
                         }
-                        // Alterna el diseño visual entre original y renovado (solo estética).
-                        val designMode = LocalDesignMode.current
-                        DropdownMenuItem(
-                            text = { Text(if (designMode == DesignMode.RENOVADO) "Diseño: renovado" else "Diseño: original", color = colors.textPrimary) },
-                            leadingIcon = { Icon(Icons.Default.Palette, null, tint = SenaGreen) },
-                            onClick = { showMenu = false; DesignModeStore.toggle() }
-                        )
 
                         DropdownMenuItem(
                             text = { Text("Cerrar sesion", color = Color.Red) },

@@ -54,8 +54,9 @@ fun MisExcusasView(onBack: (() -> Unit)? = null) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             if (onBack != null) IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null, tint = SenaGreen) }
             Text("Mis excusas", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-            Spacer(modifier = Modifier.weight(1f))
+            // Recarga al lado del título, centrado verticalmente con el texto.
             IconButton(onClick = { scope.launch { cargar() } }) { Icon(Icons.Default.Refresh, null, tint = colors.textSecondary) }
+            Spacer(modifier = Modifier.weight(1f))
         }
         Text("Aquí ves las excusas que tu instructor generó para ti. Entrega el PIN en portería para salir.", color = colors.textSecondary, fontSize = 12.sp)
         Spacer(modifier = Modifier.height(16.dp))

@@ -25,11 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
-import com.example.sennaccess.ui.theme.DesignMode
-import com.example.sennaccess.ui.theme.DesignModeStore
 import com.example.sennaccess.ui.theme.ErrorRed
 import com.example.sennaccess.ui.theme.LocalAppColors
-import com.example.sennaccess.ui.theme.LocalDesignMode
 import com.example.sennaccess.ui.theme.SenaGreen
 import com.example.sennaccess.ui.ios.GlowSpheres
 import com.example.sennaccess.ui.ios.IosGlassDropdownMenu
@@ -198,13 +195,6 @@ fun AdminTopBar(
                             text = { Text("Validar excusa (PIN)", color = colors.textPrimary) },
                             leadingIcon = { Icon(Icons.Default.VpnKey, null, tint = SenaGreen) },
                             onClick = { showMenu = false; onNavigate(AdminScreen.VALIDAR_EXCUSA) }
-                        )
-                        // Alterna el diseño visual entre original y renovado (solo estética).
-                        val designMode = LocalDesignMode.current
-                        DropdownMenuItem(
-                            text = { Text(if (designMode == DesignMode.RENOVADO) "Diseño: renovado" else "Diseño: original", color = colors.textPrimary) },
-                            leadingIcon = { Icon(Icons.Default.Palette, null, tint = SenaGreen) },
-                            onClick = { showMenu = false; DesignModeStore.toggle() }
                         )
                     }
                     DropdownMenuItem(
