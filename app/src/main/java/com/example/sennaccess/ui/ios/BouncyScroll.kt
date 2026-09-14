@@ -21,25 +21,24 @@ import androidx.compose.ui.unit.Velocity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-/**
- * Física de scroll elástico tipo iOS (rebote en los extremos / "bouncing physics").
- *
- * Implementa un [NestedScrollConnection] que:
- *  - Consume el "overscroll" cuando ya no se puede seguir desplazando.
- *  - Desplaza visualmente el contenido (translationY) con resistencia.
- *  - Al soltar, regresa con un spring elástico suave (60 FPS).
- *
- * Uso:
- *   val scroll = rememberScrollState()
- *   val bouncy = rememberBouncyScrollState(scroll)
- *   Column(Modifier.bouncyScroll(bouncy).verticalScroll(scroll)) { ... }
- */
+// Física de scroll elástico tipo iOS (rebote en los extremos / "bouncing physics").
+// 
+// Implementa un [NestedScrollConnection] que:
+// - Consume el "overscroll" cuando ya no se puede seguir desplazando.
+// - Desplaza visualmente el contenido (translationY) con resistencia.
+// - Al soltar, regresa con un spring elástico suave (60 FPS).
+// 
+// Uso:
+// val scroll = rememberScrollState()
+// val bouncy = rememberBouncyScrollState(scroll)
+// Column(Modifier.bouncyScroll(bouncy).verticalScroll(scroll)) { ... }
+
 class BouncyScrollState internal constructor(
     private val scope: CoroutineScope,
     private val canScrollForward: () -> Boolean,
     private val canScrollBackward: () -> Boolean
 ) {
-    /** Desplazamiento visual actual del overscroll (px). */
+    // Desplazamiento visual actual del overscroll (px).
     val overscroll = Animatable(0f)
 
     // El connection traduce los eventos de scroll del contenedor en overscroll visual.
@@ -91,7 +90,7 @@ class BouncyScrollState internal constructor(
         }
     }
 
-    /** Devuelve el contenido a su sitio al cancelar gesto. */
+    // Devuelve el contenido a su sitio al cancelar gesto.
     suspend fun release() {
         if (overscroll.value != 0f) {
             overscroll.animateTo(
@@ -105,7 +104,7 @@ class BouncyScrollState internal constructor(
     }
 }
 
-/** Crea el estado de scroll con rebote a partir de un [ScrollState]. */
+// Crea el estado de scroll con rebote a partir de un [ScrollState].
 @Composable
 fun rememberBouncyScrollState(scrollState: ScrollState): BouncyScrollState {
     val scope = rememberCoroutineScope()
@@ -118,7 +117,7 @@ fun rememberBouncyScrollState(scrollState: ScrollState): BouncyScrollState {
     }
 }
 
-/** Variante para estados genéricos (LazyColumn, etc.). */
+// Variante para estados genéricos (LazyColumn, etc.).
 @Composable
 fun rememberBouncyScrollState(scrollableState: ScrollableState): BouncyScrollState {
     val scope = rememberCoroutineScope()
@@ -131,10 +130,9 @@ fun rememberBouncyScrollState(scrollableState: ScrollableState): BouncyScrollSta
     }
 }
 
-/**
- * Aplica el efecto de rebote iOS al contenedor scrolleable.
- * Colócalo ANTES del `verticalScroll`/`lazy` para que traduzca el contenido.
- */
+// Aplica el efecto de rebote iOS al contenedor scrolleable.
+// Colócalo ANTES del `verticalScroll`/`lazy` para que traduzca el contenido.
+
 fun Modifier.bouncyScroll(state: BouncyScrollState): Modifier = this
     .nestedScroll(state.connection)
     .graphicsLayer {

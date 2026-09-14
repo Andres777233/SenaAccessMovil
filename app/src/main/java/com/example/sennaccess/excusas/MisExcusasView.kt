@@ -26,6 +26,7 @@ import com.example.sennaccess.ui.CargandoBox
 import com.example.sennaccess.ui.ErrorBox
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
+import com.example.sennaccess.ui.theme.verdeMarca
 import com.example.sennaccess.ui.theme.ErrorRed
 import com.example.sennaccess.ui.ios.GlassCornerRadius
 import com.example.sennaccess.ui.ios.glassSurface
@@ -50,9 +51,9 @@ fun MisExcusasView(onBack: (() -> Unit)? = null) {
 
     LaunchedEffect(Unit) { cargar() }
 
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).imePadding()) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            if (onBack != null) IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null, tint = SenaGreen) }
+            if (onBack != null) IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null, tint = verdeMarca()) }
             Text("Mis excusas", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
             // Recarga al lado del título, centrado verticalmente con el texto.
             IconButton(onClick = { scope.launch { cargar() } }) { Icon(Icons.Default.Refresh, null, tint = colors.textSecondary) }
@@ -72,7 +73,7 @@ fun MisExcusasView(onBack: (() -> Unit)? = null) {
                     }
                 } else {
                     lista.forEach { ex ->
-                        val c = when (ex.estado) { "pendiente" -> SenaGreen; "usada" -> Color(0xFF2E7D32); "expirada","anulada" -> ErrorRed; else -> colors.textSecondary }
+                        val c = when (ex.estado) { "pendiente" -> verdeMarca(); "usada" -> Color(0xFF2E7D32); "expirada","anulada" -> ErrorRed; else -> colors.textSecondary }
                         Box(modifier = Modifier.fillMaxWidth().glassSurface(cornerRadius = 12.dp).padding(14.dp)) {
                             Column {
                                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {

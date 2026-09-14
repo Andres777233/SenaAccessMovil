@@ -7,6 +7,7 @@ package com.example.sennaccess.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
@@ -22,12 +23,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
+import com.example.sennaccess.ui.theme.verdeMarca
 
 // Puerta de entrada única al patrón: cada pantalla pasa su CargaUiState y el contenido real.
-/**
- * Renderiza un [CargaUiState]: Loading (spinner), Error (mensaje + reintentar)
- * o Success (contenido real). Centraliza el patrón en todas las pantallas.
- */
+// Renderiza un [CargaUiState]: Loading (spinner), Error (mensaje + reintentar)
+// o Success (contenido real). Centraliza el patrón en todas las pantallas.
+
 @Composable
 fun <T> EstadoContenido(
     estado: CargaUiState<T>,
@@ -52,7 +53,7 @@ fun CargandoBox() {
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            CircularProgressIndicator(color = SenaGreen, modifier = Modifier.size(32.dp))
+            CircularProgressIndicator(color = verdeMarca(), modifier = Modifier.size(32.dp))
             Spacer(modifier = Modifier.height(12.dp))
             Text("Cargando...", color = colors.textSecondary, fontSize = 13.sp)
         }
@@ -79,7 +80,7 @@ fun EstadoVacio(
                 modifier = Modifier.size(64.dp).clip(CircleShape).background(SenaGreen.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icono, contentDescription = null, tint = SenaGreen, modifier = Modifier.size(30.dp))
+                Icon(icono, contentDescription = null, tint = verdeMarca(), modifier = Modifier.size(30.dp))
             }
             Spacer(modifier = Modifier.height(12.dp))
             Text(titulo, color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp, textAlign = TextAlign.Center)
@@ -90,6 +91,7 @@ fun EstadoVacio(
 }
 
 // Mensaje de error con el detalle y un botón para reintentar la operación.
+// Botón a 28dp píldora, táctil 48dp y con descripción accesible.
 @Composable
 fun ErrorBox(mensaje: String, onReintentar: () -> Unit) {
     val colors = LocalAppColors.current
@@ -116,9 +118,11 @@ fun ErrorBox(mensaje: String, onReintentar: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
             OutlinedButton(
                 onClick = onReintentar,
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = SenaGreen)
+                modifier = Modifier.heightIn(min = 48.dp),
+                shape = RoundedCornerShape(28.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = verdeMarca())
             ) {
-                Icon(Icons.Default.Refresh, null, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.Refresh, contentDescription = "Reintentar carga", modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(6.dp))
                 Text("Reintentar", fontWeight = FontWeight.Bold)
             }

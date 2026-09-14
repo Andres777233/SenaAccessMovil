@@ -5,7 +5,6 @@ package com.example.sennaccess.aprendiz
 // vidrio, contenido dinámico y dock flotante, reutilizando los componentes
 // StatCard y TableContainer del dashboard del Aprendiz.
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,12 +23,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.rememberAsyncImagePainter
 import com.example.sennaccess.data.Ingreso
 import com.example.sennaccess.data.IngresoEquipo
 import com.example.sennaccess.data.Notificacion
@@ -61,14 +57,20 @@ import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.OrangeAmber
 import com.example.sennaccess.ui.theme.SenaGreen
 import com.example.sennaccess.ui.theme.ErrorRed
+import com.example.sennaccess.ui.theme.verdeMarca
 import com.example.sennaccess.ui.ios.GlassDock
 import com.example.sennaccess.ui.ios.GlassDockItem
+import com.example.sennaccess.ui.ios.GlowOutlinedButton
 import com.example.sennaccess.ui.ios.GlowSpheres
 import com.example.sennaccess.ui.ios.IosCollapsibleHeader
 import com.example.sennaccess.ui.ios.IosGlassDropdownMenu
 import com.example.sennaccess.ui.ios.IosGlassTopBar
+import com.example.sennaccess.ui.ios.PrimaryNeonButton
+import com.example.sennaccess.ui.ios.ThemeToggleButton
 import com.example.sennaccess.ui.ios.glassSurface
 import com.example.sennaccess.ui.ios.GlassCornerRadius
+import com.example.sennaccess.ui.ds.SenaSpacing
+import com.example.sennaccess.ui.ds.dockKeyFor
 import com.example.sennaccess.ui.ios.pressScale
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -77,7 +79,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun InstructorDashboard(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggleTheme: () -> Unit = {}) {
     // Pestaña activa; rememberSaveable conserva su valor al girar la pantalla.
-    var currentView by rememberSaveable  { mutableStateOf("DASHBOARD") }
+    var currentView by rememberSaveable { mutableStateOf("DASHBOARD") }
     // Ambiente seleccionado dentro de AMBIENTES (gestión de estudiantes/QR).
     var ambienteSeleccionado by remember { mutableStateOf<Ambiente?>(null) }
 
@@ -119,13 +121,7 @@ fun InstructorDashboard(onCerrarSesion: () -> Unit, isDark: Boolean = true, onTo
             .systemBarsPadding()
             .background(colors.background)
     ) {
-        Image(
-            painter = rememberAsyncImagePainter("https://www.sena.edu.co/Style%20Library/alayout/images/pattern.png"),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize().graphicsLayer(alpha = 0.15f),
-            contentScale = ContentScale.Crop
-        )
-
+        // 1. Luces ambientales detrás del vidrio
         GlowSpheres(isDark = isDark)
 
         Column(modifier = Modifier.fillMaxSize()) {
@@ -153,7 +149,12 @@ fun InstructorDashboard(onCerrarSesion: () -> Unit, isDark: Boolean = true, onTo
                 },
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp)
+                    .padding(
+                        start = SenaSpacing.screenH,
+                        end = SenaSpacing.screenH,
+                        top = SenaSpacing.screenV,
+                        bottom = SenaSpacing.dockClearance
+                    )
             ) {
                 // Renderiza únicamente la vista de la pestaña seleccionada; cada
                 // vista recibe su CargaUiState y la acción de reintento del ViewModel.
@@ -220,7 +221,7 @@ fun InstructorDashboard(onCerrarSesion: () -> Unit, isDark: Boolean = true, onTo
                 GlassDockItem("HISTORIAL", Icons.Default.History, "Historial"),
                 GlassDockItem("MIS_EQUIPOS", Icons.Default.Devices, "Equipos")
             ),
-            selectedKey = currentView,
+            selectedKey = dockKeyFor(currentView, "DASHBOARD"),
             onSelect = { currentView = it },
             modifier = Modifier.align(Alignment.BottomCenter)
         )
@@ -253,7 +254,7 @@ fun InstructorTopBar(
     IosGlassTopBar {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("SENA ", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                Text("ACCESS", color = SenaGreen, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text("ACCESS", color = verdeMarca(), fontWeight = FontWeight.Bold, fontSize = 18.sp)
 
                 Spacer(modifier = Modifier.width(8.dp))
 
@@ -264,7 +265,7 @@ fun InstructorTopBar(
                 ) {
                     Text(
                         text = "INSTRUCTOR",
-                        color = SenaGreen,
+                        color = verdeMarca(),
                         fontSize = 8.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.5.sp
@@ -304,13 +305,7 @@ fun InstructorTopBar(
                         }
                     }
                 }
-                IconButton(onClick = onToggleTheme) {
-                    Icon(
-                        if (isDark) Icons.Default.WbSunny else Icons.Default.DarkMode,
-                        contentDescription = "Toggle theme",
-                        tint = colors.textPrimary
-                    )
-                }
+                ThemeToggleButton(isDark = isDark, onToggleTheme = onToggleTheme)
                 Box {
                     IconButton(onClick = { showMenu = true }) {
                         Icon(Icons.Default.Menu, null, tint = colors.textPrimary)
@@ -351,7 +346,7 @@ fun InstructorTopBar(
                         if (onPerfil != null) {
                             DropdownMenuItem(
                                 text = { Text("Perfil", color = colors.textPrimary) },
-                                leadingIcon = { Icon(Icons.Default.Person, null, tint = SenaGreen) },
+                                leadingIcon = { Icon(Icons.Default.Person, null, tint = verdeMarca()) },
                                 onClick = { showMenu = false; onPerfil() }
                             )
                         }
@@ -506,8 +501,8 @@ fun HistorialIngresosView(estado: CargaUiState<List<Ingreso>>, onReintentar: () 
                             Text(item.user?.nombreCompleto ?: "Usuario", modifier = Modifier.width(140.dp), color = colors.textPrimary, fontSize = 13.sp)
                             Text(fechaLegible(item.ingreso_datetime), modifier = Modifier.width(150.dp), color = colors.textPrimary, fontSize = 13.sp)
                             val tipo = item.ingreso_type ?: "Entrada"
-                            Text("● ${if (tipo.equals("Salida", true)) "SALIDA" else "INGRESO"}", modifier = Modifier.width(90.dp), color = if (tipo.equals("Salida", true)) Color(0xFFE67E22) else SenaGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                            Text(item.ingreso_place ?: "—", modifier = Modifier.width(90.dp), color = SenaGreen, fontSize = 12.sp)
+                            Text("● ${if (tipo.equals("Salida", true)) "SALIDA" else "INGRESO"}", modifier = Modifier.width(90.dp), color = if (tipo.equals("Salida", true)) OrangeAmber else verdeMarca(), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Text(item.ingreso_place ?: "—", modifier = Modifier.width(90.dp), color = verdeMarca(), fontSize = 12.sp)
                         }
                     }
                 }
@@ -575,6 +570,8 @@ fun PerfilInstructorView(estado: CargaUiState<UsuarioApi>, onBack: () -> Unit, o
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(scrollState)
+            // El contenido se encoge sobre el teclado para no tapar la huella.
+            .imePadding()
     ) {
         IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null, tint = colors.textPrimary) }
         Spacer(modifier = Modifier.height(8.dp))
@@ -603,30 +600,25 @@ fun PerfilInstructorView(estado: CargaUiState<UsuarioApi>, onBack: () -> Unit, o
                     FilaDato(Icons.Default.Numbers, "Ficha", usuario.user_coursenumber.toString())
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(
+                PrimaryNeonButton(
+                    text = "EDITAR PERFIL",
+                    icon = Icons.Default.Edit,
                     onClick = onEditar,
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black)
-                ) {
-                    Icon(Icons.Default.Edit, null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("EDITAR PERFIL", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                }
+                    modifier = Modifier.fillMaxWidth()
+                )
                 Spacer(modifier = Modifier.height(10.dp))
-                OutlinedButton(
+                GlowOutlinedButton(
+                    text = "VERIFICACIÓN EN DOS PASOS",
+                    icon = Icons.Default.Shield,
                     onClick = onConfigurar2Fa,
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(Icons.Default.Shield, null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("VERIFICACIÓN EN DOS PASOS", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                }
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
             Spacer(modifier = Modifier.height(16.dp))
             // Gestión de la huella dactilar local: registrar, ver estado y eliminar.
             MiHuellaSection()
+            // Espacio final para que el último campo suba sobre el teclado.
+            Spacer(modifier = Modifier.imePadding().height(96.dp))
         }
     }
 }

@@ -12,17 +12,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.graphicsLayer
 
-/**
- * Efecto táctil tipo iOS: al presionar, el elemento reduce su escala levemente
- * y regresa suave con física elástica al soltar.
- *
- * Uso:
- *   Box(Modifier.pressScale().clickable { ... })
- *
- * @param pressedScale  escala al presionar (0.95–0.97 recomendado). Por defecto 0.96.
- * @param interactionSource  si el componente ya tiene uno (p.ej. Button), pásalo
- *                           para compartir el estado de pressed; si no, se crea uno.
- */
+// Efecto táctil tipo iOS: al presionar, el elemento reduce su escala levemente
+// y regresa suave con física elástica al soltar.
+// 
+// Uso:
+// Box(Modifier.pressScale().clickable { ... })
+// 
+// @param pressedScale  escala al presionar (0.95–0.97 recomendado). Por defecto 0.96.
+// @param interactionSource  si el componente ya tiene uno (p.ej. Button), pásalo
+// para compartir el estado de pressed; si no, se crea uno.
+
 fun Modifier.pressScale(
     pressedScale: Float = 0.96f,
     interactionSource: MutableInteractionSource? = null
@@ -43,14 +42,13 @@ fun Modifier.pressScale(
     }
 }
 
-/**
- * Variante que además devuelve el [MutableInteractionSource] para que lo uses
- * en tu propio `clickable`/`Button` y así compartir el estado pressed.
- *
- * Uso:
- *   val src = remember { MutableInteractionSource() }
- *   Box(Modifier.pressScale(interactionSource = src).clickable(src, null) { ... })
- */
+// Variante que además devuelve el [MutableInteractionSource] para que lo uses
+// en tu propio `clickable`/`Button` y así compartir el estado pressed.
+// 
+// Uso:
+// val src = remember { MutableInteractionSource() }
+// Box(Modifier.pressScale(interactionSource = src).clickable(src, null) { ... })
+
 fun Modifier.pressScaleWith(
     interactionSource: MutableInteractionSource,
     pressedScale: Float = 0.96f

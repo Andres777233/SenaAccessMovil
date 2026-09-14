@@ -27,9 +27,11 @@ import com.example.sennaccess.ui.CargaUiState
 import com.example.sennaccess.ui.ErrorBox
 import com.example.sennaccess.ui.EstadoVacio
 import com.example.sennaccess.ui.SkeletonList
+import com.example.sennaccess.ui.ds.SenaSearchField
 import com.example.sennaccess.ui.fechaLegible
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
+import com.example.sennaccess.ui.theme.verdeMarca
 import com.example.sennaccess.ui.ios.GlassCornerRadius
 import com.example.sennaccess.ui.ios.IosCollapsibleHeader
 import com.example.sennaccess.ui.ios.glassSurface
@@ -63,7 +65,8 @@ fun PresentesView(
         }
     } else emptyMap()
 
-    // Combinar ambientes y presentes en una lista de AmbienteConPresencia
+    // Combinar ambientes y presentes en una lista de AmbienteConPresencia.
+    // Solo datos reales del servidor: sin ejemplos demo mezclados en producción.
     val ambientesConPresencia = when {
         ambientesEstado is CargaUiState.Success && presentesEstado is CargaUiState.Success -> {
             val presentesMap = presentesEstado.datos.groupBy { it.id_usuario }
@@ -78,17 +81,7 @@ fun PresentesView(
                     total = miembros.size
                 )
             }
-            // Agregar 5 ambientes de ejemplo si la lista real es corta (menos de 3)
-            val ejemplos = if (reales.size < 3) {
-                listOf(
-                    crearAmbienteEjemplo("301", "CCyS", "Mañana", listOf("Andrés Vargas" to 3142101, "Laura Medina" to 3142101)),
-                    crearAmbienteEjemplo("302", "Ciudad Jardín", "Tarde", listOf("Carlos Pérez" to 3142102)),
-                    crearAmbienteEjemplo("303", "CCyS", "Noche", emptyList()),
-                    crearAmbienteEjemplo("304", "Ciudad Jardín", "Mañana", listOf("Ana Gómez" to 3142103)),
-                    crearAmbienteEjemplo("305", "CCyS", "Tarde", listOf("Luis Fernández" to 3142104))
-                )
-            } else emptyList()
-            (reales + ejemplos).filter { it.total > 0 || it.presentes.isNotEmpty() }
+            reales.filter { it.total > 0 || it.presentes.isNotEmpty() }
         }
         else -> emptyList()
     }
@@ -106,19 +99,10 @@ fun PresentesView(
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
-            value = busqueda,
-            onValueChange = { busqueda = it },
-            placeholder = { Text("Buscar por Ficha", color = colors.textSecondary) },
-            modifier = Modifier.fillMaxWidth(),
-            leadingIcon = { Icon(Icons.Default.Search, null, tint = colors.textSecondary) },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = SenaGreen,
-                unfocusedBorderColor = colors.borderLight,
-                cursorColor = SenaGreen,
-                focusedTextColor = colors.textPrimary,
-                unfocusedTextColor = colors.textPrimary
-            )
+        SenaSearchField(
+            valor = busqueda,
+            onValor = { busqueda = it },
+            placeholder = "Buscar por Ficha"
         )
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -166,7 +150,7 @@ private fun TarjetaAmbiente(item: AmbienteConPresencia, ultimaEntradaPorUsuario:
                         .background(SenaGreen.copy(alpha = 0.15f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.MeetingRoom, null, tint = SenaGreen, modifier = Modifier.size(22.dp))
+                    Icon(Icons.Default.MeetingRoom, null, tint = verdeMarca(), modifier = Modifier.size(22.dp))
                 }
                 Spacer(modifier = Modifier.width(14.dp))
                 Column(modifier = Modifier.weight(1f)) {
@@ -186,7 +170,7 @@ private fun TarjetaAmbiente(item: AmbienteConPresencia, ultimaEntradaPorUsuario:
                     }
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("$dentro / $total", color = if (dentro > 0) SenaGreen else colors.textSecondary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("$dentro / $total", color = if (dentro > 0) verdeMarca() else colors.textSecondary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     Text("Dentro", color = colors.textSecondary, fontSize = 10.sp)
                 }
             }
@@ -195,14 +179,14 @@ private fun TarjetaAmbiente(item: AmbienteConPresencia, ultimaEntradaPorUsuario:
                 LinearProgressIndicator(
                     progress = dentro.toFloat() / total,
                     modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
-                    color = SenaGreen,
+                    color = verdeMarca(),
                     trackColor = colors.borderLight
                 )
             }
 
             if (expandido) {
                 Spacer(modifier = Modifier.height(12.dp))
-                Divider(color = colors.border)
+                HorizontalDivider(color = colors.border)
                 Spacer(modifier = Modifier.height(8.dp))
                 val miembros = (item.ambiente.aprendices ?: emptyList()) + (item.ambiente.instructores ?: emptyList())
                 if (miembros.isEmpty()) {
@@ -239,7 +223,7 @@ private fun FilaPersonaAmbiente(
             contentAlignment = Alignment.Center
         ) {
             if (estaDentro) {
-                Icon(Icons.Default.CheckCircle, null, tint = SenaGreen, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.CheckCircle, null, tint = verdeMarca(), modifier = Modifier.size(16.dp))
             } else {
                 Icon(Icons.Default.Circle, null, tint = colors.textSecondary, modifier = Modifier.size(12.dp))
             }
@@ -256,7 +240,7 @@ private fun FilaPersonaAmbiente(
                 if (estaDentro) {
                     Text(
                         "Entró: ${fechaLegible(presente!!.entrada_hora)}",
-                        color = SenaGreen,
+                        color = verdeMarca(),
                         fontSize = 11.sp
                     )
                 } else if (!ultimaEntrada.isNullOrBlank()) {
@@ -273,59 +257,4 @@ private fun FilaPersonaAmbiente(
             Text(extras.filter { it.isNotBlank() }.joinToString(" · "), color = colors.textSecondary, fontSize = 11.sp)
         }
     }
-}
-
-// Función auxiliar para crear ambientes de ejemplo con miembros ficticios
-private fun crearAmbienteEjemplo(nombre: String, ubicacion: String, jornada: String, aprendices: List<Pair<String, Int>>): AmbienteConPresencia {
-    val usuarios = aprendices.mapIndexed { idx, (nom, ficha) ->
-        com.example.sennaccess.data.UsuarioApi(
-            id_usuario = 1000 + idx,
-            user_name = nom.split(" ").firstOrNull(),
-            user_lastname = nom.split(" ").lastOrNull(),
-            user_email = "${nom.lowercase().replace(" ", ".")}@sena.edu.co",
-            user_identification = "123456${idx}",
-            role = com.example.sennaccess.data.Role(1, "Aprendiz"),
-            user_coursenumber = ficha,
-            user_program = "Tecnólogo",
-            profile_photo_path = null,
-            user_documento_tipo = "CC",
-            user_telefono = null
-        )
-    }
-    val ambiente = com.example.sennaccess.data.Ambiente(
-        id_ambiente = 1000 + nombre.hashCode(),
-        ambiente_nombre = nombre,
-        ambiente_ubicacion = ubicacion,
-        ambiente_jornada = jornada,
-        ambiente_capacidad = 30,
-        instructores = emptyList(),
-        aprendices = usuarios,
-        fk_id_instructor = null,
-        hora_inicio = null,
-        hora_fin = null,
-        ambiente_estado = "Activo",
-        aprendices_count = usuarios.size
-    )
-    val presentes = when (nombre) {
-        "301" -> usuarios.take(2).map { u ->
-            com.example.sennaccess.data.Presente(
-                id_usuario = u.id_usuario,
-                user_name = u.user_name,
-                user_lastname = u.user_lastname,
-                rol = "Aprendiz",
-                entrada_hora = "2026-09-06 08:00:00"
-            )
-        }
-        "302" -> usuarios.take(1).map { u ->
-            com.example.sennaccess.data.Presente(
-                id_usuario = u.id_usuario,
-                user_name = u.user_name,
-                user_lastname = u.user_lastname,
-                rol = "Aprendiz",
-                entrada_hora = "2026-09-06 09:00:00"
-            )
-        }
-        else -> emptyList()
-    }
-    return AmbienteConPresencia(ambiente, presentes, usuarios.size)
 }

@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.sennaccess.data.AuthRepository
 import com.example.sennaccess.data.LoginResponse
+import com.example.sennaccess.data.RolSeguro
 import com.example.sennaccess.data.SessionManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -40,16 +41,29 @@ class LoginViewModel : ViewModel() {
 
     // Lanza la autenticación en una corrutina (viewModelScope): marca Loading,
     // consulta la API, guarda token y datos de usuario y notifica el resultado.
-    fun login(email: String, password: String) {
+    // Solo el correo se recorta/normaliza: la contraseña se envía intacta para
+    // no romper claves con espacios legítimos al inicio o al final.
+    // deviceId identifica ESTE teléfono para el 2FA por dispositivo.
+    fun login(email: String, password: String, deviceId: String? = null) {
         _uiState.value = LoginUiState.Loading
+        // Limpia cualquier sesion anterior para que un rol viejo nunca se reutilice.
+        SessionManager.clear()
+        token = null
+        lastResponse = null
         viewModelScope.launch {
             try {
-                val response = repository.login(email.trim(), password)
+                val response = repository.login(email.trim(), password, deviceId)
                 lastResponse = response
                 if (response.two_factor_required == true) {
                     // 2FA pendiente: todavía NO hay token. La pantalla de verificación
                     // se encarga de obtenerlo al aprobar o validar el código del correo.
                     _uiState.value = LoginUiState.Success(response)
+                    return@launch
+                }
+                // Rol cerrado: sin rol valido no se guarda sesion ni se navega.
+                if (!RolSeguro.esValido(response.role)) {
+                    SessionManager.clear()
+                    _uiState.value = LoginUiState.Error("Tu cuenta no tiene un rol válido. Contacta al administrador.")
                     return@launch
                 }
                 token = response.access_token

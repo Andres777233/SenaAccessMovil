@@ -39,9 +39,11 @@ import androidx.compose.ui.unit.sp
 import com.example.sennaccess.data.SessionManager
 import com.example.sennaccess.data.TwoFactorRepository
 import com.example.sennaccess.data.TwoFactorReto
+import com.example.sennaccess.ui.fechaLegible
 import com.example.sennaccess.ui.fechaRelativa
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
+import com.example.sennaccess.ui.theme.verdeMarca
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -53,9 +55,30 @@ fun Dashboards2FaPendientes() {
 
     // Reto en pantalla: null = nada que mostrar.
     var retoVisible by remember { mutableStateOf<TwoFactorReto?>(null) }
+    // Evita el doble tap en Sí/No y avisa qué se resolvió antes de cerrar.
+    var respondiendo by remember { mutableStateOf(false) }
+    var avisoRespuesta by remember { mutableStateOf<String?>(null) }
 
     // Polling cada 8 s mientras el componente esté montado (el dashboard activo).
+    // Si el correo trajo un deep link (store), se consulta de inmediato sin esperar
+    // los 8 s para que el "¿Eres tú?" salga al instante en el dispositivo confiable.
+    val retoLinkId = DeepLink2FaStore.challengeId.value
     LaunchedEffect(Unit) {
+        suspend fun traerPendiente(): Boolean {
+            val token = SessionManager.token ?: return false
+            return try {
+                val pendientes = repo.pendientes(token)
+                if (pendientes.pending == true && pendientes.challenge != null && retoVisible == null) {
+                    retoVisible = pendientes.challenge
+                    DeepLink2FaStore.limpiar()
+                    true
+                } else false
+            } catch (_: Exception) {
+                false
+            }
+        }
+        // Primer intento inmediato (deep link o arranque): si hay reto se muestra ya.
+        if (retoLinkId != null) traerPendiente()
         while (true) {
             delay(8000)
             val token = SessionManager.token ?: continue
@@ -64,6 +87,7 @@ fun Dashboards2FaPendientes() {
                 val pendientes = repo.pendientes(token)
                 if (pendientes.pending == true && pendientes.challenge != null) {
                     retoVisible = pendientes.challenge
+                    DeepLink2FaStore.limpiar()
                 }
             } catch (_: Exception) {
                 // Sin red: se reintenta en la siguiente vuelta, sin avisos molestos.
@@ -77,7 +101,7 @@ fun Dashboards2FaPendientes() {
             containerColor = colors.cardBackground.copy(alpha = 0.98f),
             shape = RoundedCornerShape(24.dp),
             icon = {
-                Icon(Icons.Default.Shield, contentDescription = null, tint = SenaGreen, modifier = Modifier.size(44.dp))
+                Icon(Icons.Default.Shield, contentDescription = null, tint = verdeMarca(), modifier = Modifier.size(44.dp))
             },
             title = {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -100,6 +124,7 @@ fun Dashboards2FaPendientes() {
             confirmButton = {
                 Button(
                     onClick = {
+                        if (respondiendo) return@Button
                         val id = reto.challenge_id ?: run {
                             retoVisible = null
                             return@Button
@@ -109,17 +134,24 @@ fun Dashboards2FaPendientes() {
                             retoVisible = null
                             return@Button
                         }
+                        // Se responde una sola vez: el dispositivo que intenta entrar lo
+                        // detecta por polling y avanza sin quedarse esperando en la app.
+                        respondiendo = true
                         scope.launch {
                             try {
                                 repo.aprobar(token, id, "aprobar")
+                                avisoRespuesta = "Acceso aprobado desde este dispositivo."
                             } catch (_: Exception) {
                                 // Si ya se resolvió, solo se limpia la tarjeta.
+                                avisoRespuesta = "Intento ya resuelto."
                             }
+                            retoVisible = null
+                            respondiendo = false
                         }
-                        retoVisible = null
                     },
+                    enabled = !respondiendo,
                     colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(28.dp)
                 ) {
                     Text("SÍ, SOY YO", fontWeight = FontWeight.ExtraBold, fontSize = 13.sp)
                 }
@@ -127,6 +159,7 @@ fun Dashboards2FaPendientes() {
             dismissButton = {
                 TextButton(
                     onClick = {
+                        if (respondiendo) return@TextButton
                         val id = reto.challenge_id ?: run {
                             retoVisible = null
                             return@TextButton
@@ -136,16 +169,38 @@ fun Dashboards2FaPendientes() {
                             retoVisible = null
                             return@TextButton
                         }
+                        respondiendo = true
                         scope.launch {
                             try {
                                 repo.aprobar(token, id, "denegar")
+                                avisoRespuesta = "Intento bloqueado. Si no fuiste tú, cambia tu contraseña."
                             } catch (_: Exception) {
+                                avisoRespuesta = "Intento ya resuelto."
                             }
+                            retoVisible = null
+                            respondiendo = false
                         }
-                        retoVisible = null
-                    }
+                    },
+                    enabled = !respondiendo
                 ) {
                     Text("NO SOY YO", color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
+                }
+            }
+        )
+    }
+    // Confirmación visible de lo respondido (antes se cerraba sin avisar y el otro
+    // dispositivo parecía no avanzar, aunque el backend sí resolvía el reto).
+    avisoRespuesta?.let { aviso ->
+        AlertDialog(
+            onDismissRequest = { avisoRespuesta = null },
+            containerColor = colors.cardBackground.copy(alpha = 0.98f),
+            shape = RoundedCornerShape(20.dp),
+            icon = { Icon(Icons.Default.Shield, contentDescription = null, tint = verdeMarca()) },
+            title = { Text("Verificación en dos pasos", color = colors.textPrimary, fontWeight = FontWeight.Bold) },
+            text = { Text(aviso, color = colors.textSecondary, fontSize = 13.sp, textAlign = TextAlign.Center) },
+            confirmButton = {
+                TextButton(onClick = { avisoRespuesta = null }) {
+                    Text("ENTENDIDO", color = verdeMarca(), fontWeight = FontWeight.Bold)
                 }
             }
         )
@@ -157,10 +212,10 @@ private fun FilasInfo(reto: TwoFactorReto) {
     val colors = LocalAppColors.current
 
     Spacer(Modifier.height(8.dp))
-    FilaIcono(Icons.Default.Laptop, "Dispositivo", reto.user_agent?.take(60) ?: "—")
-    FilaIcono(Icons.Default.Shield, "Hora", fechaRelativa(reto.created_at))
+    FilaIcono(Icons.Default.Laptop, "Dispositivo", reto.user_agent?.take(80) ?: "—")
+    FilaIcono(Icons.Default.Shield, "Fecha y hora", "${fechaLegible(reto.created_at)} (${fechaRelativa(reto.created_at)})")
     reto.ip?.let {
-        FilaIcono(Icons.Default.Laptop, "IP", it)
+        FilaIcono(Icons.Default.Laptop, "IP / Lugar", it)
     }
     Text(
         "Si no fuiste tú, este acceso será bloqueado.",
@@ -178,7 +233,7 @@ private fun FilaIcono(icono: androidx.compose.ui.graphics.vector.ImageVector, la
         modifier = Modifier.padding(vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icono, null, tint = SenaGreen, modifier = Modifier.size(17.dp))
+        Icon(icono, null, tint = verdeMarca(), modifier = Modifier.size(17.dp))
         Spacer(Modifier.width(8.dp))
         Text("$label:", fontWeight = FontWeight.SemiBold, color = colors.textPrimary, fontSize = 13.sp)
         Spacer(Modifier.width(4.dp))

@@ -11,10 +11,9 @@ import com.example.sennaccess.data.UsuarioApi
 // Conjunto de datos de ejemplo que sirve como respaldo de la app cuando no hay
 // conexión real: alimenta las pantallas en modo demo y evita que queden vacías.
 
-/**
- * Datos de ejemplo usados como respaldo cuando no hay sesión activa
- * (botones demo) o cuando la API falla, para que la app nunca quede vacía.
- */
+// Datos de ejemplo usados como respaldo cuando no hay sesión activa
+// (botones demo) o cuando la API falla, para que la app nunca quede vacía.
+
 object MockData {
 
     // Roles de referencia que se asignan a los usuarios de ejemplo.

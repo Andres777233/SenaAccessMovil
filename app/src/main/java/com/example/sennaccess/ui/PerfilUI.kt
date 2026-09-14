@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
+import com.example.sennaccess.ui.theme.verdeMarca
 
 // Cabecera del perfil: avatar grande con anillo y brillo verde, nombre del
 // usuario y su rol como chip. Se usa en las tres pantallas de perfil.
@@ -70,11 +71,11 @@ fun PerfilHeader(fotoPath: String?, nombre: String, rol: String) {
                 .padding(horizontal = 12.dp, vertical = 5.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.Badge, null, tint = SenaGreen, modifier = Modifier.size(15.dp))
+            Icon(Icons.Default.Badge, null, tint = verdeMarca(), modifier = Modifier.size(15.dp))
             Spacer(modifier = Modifier.width(6.dp))
             Text(
                 rol.uppercase(),
-                color = SenaGreen,
+                color = verdeMarca(),
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 0.5.sp
@@ -99,7 +100,7 @@ fun FilaDato(icono: ImageVector, label: String, valor: String) {
                 .background(SenaGreen.copy(alpha = 0.12f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Icon(icono, null, tint = SenaGreen, modifier = Modifier.size(21.dp))
+            Icon(icono, null, tint = verdeMarca(), modifier = Modifier.size(21.dp))
         }
         Spacer(modifier = Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {

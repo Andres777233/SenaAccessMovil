@@ -1,1 +1,2 @@
-/build
+# Credenciales de firma release (NUNCA subir al repositorio)
+keystore.properties

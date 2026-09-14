@@ -23,16 +23,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.sennaccess.ui.theme.ErrorRed
+import com.example.sennaccess.ui.campoVisible
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
+import com.example.sennaccess.ui.theme.verdeMarca
 import com.example.sennaccess.ui.ios.GlassCornerRadius
 import com.example.sennaccess.ui.ios.IosCollapsibleHeader
 import com.example.sennaccess.ui.ios.glassSurface
 import com.example.sennaccess.ui.ios.pressScale
 
-/**
- * Formulario de novedades del ADMINISTRADOR (contenido de pestaña).
- */
+// Formulario de novedades del ADMINISTRADOR (contenido de pestaña).
+
 @Composable
 fun ReporteNovedadesContent(onNavigate: (AdminScreen) -> Unit) {
     val colors = LocalAppColors.current
@@ -50,6 +51,8 @@ fun ReporteNovedadesContent(onNavigate: (AdminScreen) -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(scrollState)
+            // El contenido se encoge sobre el teclado para no quedar tapado.
+            .imePadding()
     ) {
         // Encabezado de la pantalla de novedades.
         IosCollapsibleHeader(
@@ -77,8 +80,8 @@ fun ReporteNovedadesContent(onNavigate: (AdminScreen) -> Unit) {
         ) {
             // Fecha y hora del reporte en fila de dos columnas.
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(value = fecha, onValueChange = { fecha = it }, label = { Text("Fecha") }, modifier = Modifier.weight(1f), colors = campoRepColors())
-                OutlinedTextField(value = hora, onValueChange = { hora = it }, label = { Text("Hora") }, modifier = Modifier.weight(1f), colors = campoRepColors())
+                OutlinedTextField(value = fecha, onValueChange = { fecha = it }, label = { Text("Fecha") }, modifier = Modifier.weight(1f).campoVisible(), colors = campoRepColors())
+                OutlinedTextField(value = hora, onValueChange = { hora = it }, label = { Text("Hora") }, modifier = Modifier.weight(1f).campoVisible(), colors = campoRepColors())
             }
         }
         Box(
@@ -107,9 +110,9 @@ fun ReporteNovedadesContent(onNavigate: (AdminScreen) -> Unit) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .shadow(10.dp, RoundedCornerShape(12.dp))
-                .background(colors.errorBackground, RoundedCornerShape(12.dp))
-                .border(1.dp, ErrorRed.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                .shadow(10.dp, RoundedCornerShape(28.dp))
+                .background(colors.errorBackground, RoundedCornerShape(28.dp))
+                .border(1.dp, ErrorRed.copy(alpha = 0.3f), RoundedCornerShape(28.dp))
                 .padding(12.dp)
         ) {
             Text(
@@ -122,7 +125,7 @@ fun ReporteNovedadesContent(onNavigate: (AdminScreen) -> Unit) {
         Button(
             onClick = { onNavigate(AdminScreen.PANEL) },
             modifier = Modifier.fillMaxWidth().height(50.dp).pressScale(pressedScale = 0.97f),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(28.dp),
             colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = colors.textPrimary)
         ) { Text("Enviar", fontWeight = FontWeight.Bold, fontSize = 16.sp) }
         Spacer(modifier = Modifier.height(20.dp))
@@ -135,7 +138,8 @@ private fun CampoReporte(label: String, value: String, onChange: (String) -> Uni
     OutlinedTextField(
         value = value, onValueChange = onChange,
         label = { Text(label) },
-        modifier = Modifier.fillMaxWidth(),
+        // Al enfocarse, el scroll lleva el campo a la vista (no se queda arriba).
+        modifier = Modifier.fillMaxWidth().campoVisible(),
         colors = campoRepColors()
     )
 }
@@ -143,7 +147,7 @@ private fun CampoReporte(label: String, value: String, onChange: (String) -> Uni
 // Paleta de colores común para los campos del formulario de novedades.
 @Composable
 private fun campoRepColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = SenaGreen, unfocusedBorderColor = LocalAppColors.current.textSecondary,
-    focusedLabelColor = SenaGreen, unfocusedLabelColor = LocalAppColors.current.textSecondary,
-    cursorColor = SenaGreen, focusedTextColor = LocalAppColors.current.textPrimary, unfocusedTextColor = LocalAppColors.current.textPrimary
+    focusedBorderColor = verdeMarca(), unfocusedBorderColor = LocalAppColors.current.textSecondary,
+    focusedLabelColor = verdeMarca(), unfocusedLabelColor = LocalAppColors.current.textSecondary,
+    cursorColor = verdeMarca(), focusedTextColor = LocalAppColors.current.textPrimary, unfocusedTextColor = LocalAppColors.current.textPrimary
 )

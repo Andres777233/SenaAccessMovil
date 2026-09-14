@@ -8,10 +8,12 @@ import com.google.gson.JsonObject
 import com.google.gson.annotations.SerializedName
 
 // Credenciales enviadas al endpoint de login. Los nombres de campo respetan el formato
-// que espera el backend (user_email / user_password).
+// que espera el backend (user_email / user_password). device_id identifica ESTE teléfono
+// para que el 2FA solo se exija desde dispositivos distintos al original (ver DispositivoStore).
 data class LoginRequest(
     @SerializedName("user_email") val user_email: String,
-    @SerializedName("user_password") val user_password: String
+    @SerializedName("user_password") val user_password: String,
+    @SerializedName("device_id") val device_id: String? = null
 )
 
 
@@ -64,6 +66,12 @@ data class ValidarCodigo2FaRequest(
 
 // Cuerpo para desactivar el 2FA (exige la contraseña actual).
 data class Desactivar2FaRequest(
+    @SerializedName("user_password") val user_password: String
+)
+
+// Cuerpo para verificar la contraseña actual con la sesión (POST
+// /my-profile/verificar-password): se usa al registrar la huella sin disparar 2FA.
+data class VerificarPasswordRequest(
     @SerializedName("user_password") val user_password: String
 )
 
@@ -279,6 +287,8 @@ data class ResetRequest(
 // Cuerpo para actualizar el perfil propio (PUT /my-profile). La contraseña es
 // opcional: solo se cambia cuando viene llena. ficha y programa son opcionales
 // porque solo el Aprendiz los tiene; admin e instructor los envían null.
+// two_factor_code: si el usuario tiene 2FA activo y cambia su contraseña, el
+// backend exige el código de 6 dígitos enviado a su correo (ver EditarPerfilView).
 data class UpdateProfileRequest(
     @SerializedName("user_identification") val user_identification: String,
     @SerializedName("user_name") val user_name: String,
@@ -286,7 +296,8 @@ data class UpdateProfileRequest(
     @SerializedName("user_email") val user_email: String,
     @SerializedName("user_password") val user_password: String? = null,
     @SerializedName("user_coursenumber") val user_coursenumber: Int? = null,
-    @SerializedName("user_program") val user_program: String? = null
+    @SerializedName("user_program") val user_program: String? = null,
+    @SerializedName("two_factor_code") val two_factor_code: String? = null
 )
 
 // Ambiente de formación: datos generales, responsable y los instructores/asignados.

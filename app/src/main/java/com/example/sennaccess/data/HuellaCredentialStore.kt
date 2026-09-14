@@ -38,8 +38,8 @@ object HuellaCredentialStore {
     )
 
     // Recupera la llave biométrica del Keystore o la genera la primera vez:
-    // requiere autenticación del usuario en CADA operación y no se invalida
-    // cuando se registran huellas nuevas en Ajustes.
+    // requiere autenticación en CADA operación y SE invalida con huellas nuevas
+    // (si alguien agrega su huella, se fuerza re-registro en vez de heredar acceso).
     private fun obtenerLlave(): SecretKey {
         val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
         (keyStore.getEntry(ALIAS, null) as? KeyStore.SecretKeyEntry)?.let { return it.secretKey }
@@ -52,7 +52,7 @@ object HuellaCredentialStore {
                 .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
                 .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
                 .setUserAuthenticationRequired(true)
-                .setInvalidatedByBiometricEnrollment(false)
+                .setInvalidatedByBiometricEnrollment(true)
                 .build()
         )
         return generador.generateKey()
@@ -62,6 +62,15 @@ object HuellaCredentialStore {
     fun hayGuardada(context: Context): Boolean =
         prefs(context).contains(KEY_CIFRADO) && prefs(context).contains(KEY_IV)
 
+    // Elimina solo la entrada de la llave en el Keystore (sin tocar prefs).
+    // Se usa cuando la llave quedó invalidada para regenerarla limpiamente.
+    fun borrarLlave() {
+        try {
+            val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+            if (keyStore.containsAlias(ALIAS)) keyStore.deleteEntry(ALIAS)
+        } catch (_: Exception) { /* si no se puede borrar, se regenera igual */ }
+    }
+
     // Prepara un Cipher en modo cifrado para el registro. Debe envolverse en un
     // BiometricPrompt.CryptoObject para que el sistema autorice la operación
     // con la huella antes de llamar a guardar().
@@ -69,6 +78,24 @@ object HuellaCredentialStore {
         val cipher = nuevoCipher()
         cipher.init(Cipher.ENCRYPT_MODE, obtenerLlave())
         return cipher
+    }
+
+    // Versión segura del cifrado: si la llave anterior quedó invalidada (p. ej.
+    // tras borrar la huella o cambiar la biometría del sistema), la purga del
+    // Keystore y genera una nueva en vez de lanzar "Error al probar la llave".
+    fun prepararCifradoSeguro(): Cipher {
+        try {
+            return prepararCifrado()
+        } catch (e: KeyPermanentlyInvalidatedException) {
+            borrarLlave()
+            return prepararCifrado()
+        } catch (e: java.security.InvalidKeyException) {
+            borrarLlave()
+            return prepararCifrado()
+        } catch (e: javax.crypto.IllegalBlockSizeException) {
+            borrarLlave()
+            return prepararCifrado()
+        }
     }
 
     // Cifra y persiste las credenciales con el Cipher YA AUTORIZADO por la huella
@@ -84,7 +111,7 @@ object HuellaCredentialStore {
     // Prepara un Cipher en modo descifrado con el IV guardado para lanzar el
     // BiometricPrompt. Devuelve null si la llave quedó invalidada (por ejemplo
     // al cambiar la credencial biométrica del sistema): en ese caso borra lo
-    // guardado para forzar un registro nuevo en el próximo login manual.
+    // guardado y la llave para forzar un registro nuevo en el próximo login.
     fun prepararDescifrado(context: Context): Cipher? {
         if (!hayGuardada(context)) return null
         return try {
@@ -94,9 +121,12 @@ object HuellaCredentialStore {
             cipher
         } catch (e: KeyPermanentlyInvalidatedException) {
             borrar(context)
+            borrarLlave()
             null
         } catch (e: Exception) {
+            // IV corrupto o llave inválida: se limpia todo para regenerar.
             borrar(context)
+            borrarLlave()
             null
         }
     }
@@ -114,5 +144,13 @@ object HuellaCredentialStore {
     // futuros registros; no contiene información sensible por sí misma).
     fun borrar(context: Context) {
         prefs(context).edit().clear().apply()
+    }
+
+    // Borrado total: credenciales + llave del Keystore. Se usa al eliminar la
+    // huella desde el perfil para que el próximo registro parta de una llave
+    // nueva y no falle con "Error al probar la llave de seguridad".
+    fun borrarTodo(context: Context) {
+        borrar(context)
+        borrarLlave()
     }
 }

@@ -37,7 +37,10 @@ import com.example.sennaccess.ui.ios.glassSurface
 import com.example.sennaccess.ui.ios.pressScale
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.OrangeAmber
-import com.example.sennaccess.ui.theme.SenaGreen// Vista de notificaciones: encabezado, botón de leídas y lista de tarjetas.
+import com.example.sennaccess.ui.theme.SenaGreen
+import com.example.sennaccess.ui.theme.verdeMarca
+
+// Vista de notificaciones: encabezado, botón de leídas y lista de tarjetas.
 @Composable
 fun NotificacionesView(
     estado: CargaUiState<List<Notificacion>>,
@@ -74,7 +77,7 @@ fun NotificacionesView(
                 Button(
                     onClick = onMarcarTodasLeidas,
                     modifier = Modifier.fillMaxWidth().height(48.dp).pressScale(pressedScale = 0.97f),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(28.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black)
                 ) {
                     Icon(Icons.Default.CheckCircle, null, modifier = Modifier.size(18.dp))
@@ -133,7 +136,7 @@ private fun TarjetaNotificacion(notificacion: Notificacion, onClick: () -> Unit)
             modifier = Modifier.size(44.dp).clip(CircleShape).background(SenaGreen.copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(icono, contentDescription = null, tint = SenaGreen, modifier = Modifier.size(22.dp))
+            Icon(icono, contentDescription = null, tint = verdeMarca(), modifier = Modifier.size(22.dp))
         }
         Spacer(modifier = Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
@@ -146,7 +149,7 @@ private fun TarjetaNotificacion(notificacion: Notificacion, onClick: () -> Unit)
                     modifier = Modifier.weight(1f)
                 )
                 if (!leida) {
-                    Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(SenaGreen))
+                    Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(verdeMarca()))
                 }
             }
             Text(fechaRelativa(notificacion.created_at), color = colors.textSecondary, fontSize = 11.sp)

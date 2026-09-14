@@ -46,6 +46,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.IntOffset
@@ -56,10 +58,12 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import com.example.sennaccess.data.SessionManager
+import com.example.sennaccess.data.TwoFactorRepository
 import com.example.sennaccess.data.UpdateProfileRequest
 import com.example.sennaccess.data.UsuarioApi
 import com.example.sennaccess.data.UsuarioRepository
 import com.example.sennaccess.ui.CargaUiState
+import com.example.sennaccess.ui.campoVisible
 import com.example.sennaccess.ui.EstadoContenido
 import com.example.sennaccess.ui.ios.GlassCornerRadius
 import com.example.sennaccess.ui.ios.IosCollapsibleHeader
@@ -68,6 +72,7 @@ import com.example.sennaccess.ui.ios.pressScale
 import com.example.sennaccess.ui.theme.ErrorRed
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
+import com.example.sennaccess.ui.theme.verdeMarca
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
 import kotlin.math.min
@@ -107,6 +112,20 @@ fun EditarPerfilView(
     var errorMensaje by remember { mutableStateOf<String?>(null) }
     var guardado by remember { mutableStateOf(false) }
 
+    // Puerta 2FA para el cambio de clave desde el perfil: con verificación activa,
+    // cambiar la contraseña exige el código de 6 dígitos enviado al correo.
+    val repo2Fa = remember { TwoFactorRepository() }
+    var dosFaActivo by remember { mutableStateOf(false) }
+    var pedirCodigoClave by remember { mutableStateOf(false) }
+    var codigoClave by remember { mutableStateOf("") }
+    var errorCodigoClave by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        val token = SessionManager.token ?: return@LaunchedEffect
+        try {
+            dosFaActivo = repo2Fa.estadoConfig(token).two_factor_enabled == true
+        } catch (_: Exception) { /* sin red: se guarda sin puerta y el backend decide */ }
+    }
+
     // Foto de perfil: al elegir de la galería se abre primero el recortador
     // circular; solo el resultado recortado se guarda en fotoBitmap.
     val contexto = LocalContext.current
@@ -132,6 +151,8 @@ fun EditarPerfilView(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(scrollState)
+            // El contenido se encoge sobre el teclado para no quedar tapado.
+            .imePadding()
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null, tint = colors.textPrimary) }
@@ -178,12 +199,12 @@ fun EditarPerfilView(
                             model = urlServidor, contentDescription = null,
                             modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop
                         )
-                        else -> Icon(Icons.Default.Person, null, tint = SenaGreen, modifier = Modifier.size(50.dp))
+                        else -> Icon(Icons.Default.Person, null, tint = verdeMarca(), modifier = Modifier.size(50.dp))
                     }
                 }
                 Spacer(modifier = Modifier.height(6.dp))
                 androidx.compose.material3.TextButton(onClick = { selectorFoto.launch("image/*") }) {
-                    Text("CAMBIAR FOTO", color = SenaGreen, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text("CAMBIAR FOTO", color = verdeMarca(), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 }
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(usuario.nombreCompleto, color = colors.textPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
@@ -205,11 +226,12 @@ fun EditarPerfilView(
                 }
 
                 // Contraseña nueva (opcional): si se deja vacía no se modifica.
+                // Con 2FA activo, cambiarla exige el código del correo (ver diálogo abajo).
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
                     label = { Text("Nueva contraseña (opcional)", color = colors.textSecondary) },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().campoVisible(),
                     singleLine = true,
                     visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
@@ -228,7 +250,7 @@ fun EditarPerfilView(
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it },
                     label = { Text("Confirmar contraseña", color = colors.textSecondary) },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().campoVisible(),
                     singleLine = true,
                     visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                     colors = campoPerfilColors()
@@ -242,50 +264,41 @@ fun EditarPerfilView(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Botón guardar: valida, envía PUT /my-profile y avisa al terminar.
-                Button(
-                    onClick = {
-                        if (guardando) return@Button
-                        if (password != confirmPassword) {
-                            errorMensaje = "Las contraseñas no coinciden."
-                            return@Button
-                        }
-                        if (password.isNotBlank() && password.length < 6) {
-                            errorMensaje = "La contraseña debe tener al menos 6 caracteres."
-                            return@Button
-                        }
-                        val fichaNum = if (mostrarFichaPrograma) ficha.trim().toIntOrNull() else null
-                        if (mostrarFichaPrograma && fichaNum == null) {
-                            errorMensaje = "El número de ficha debe ser numérico."
-                            return@Button
-                        }
-                        // Sin ficha/programa visibles (admin e instructor) se envían null
-                        // para que el backend los deje vacíos; el aprendiz conserva los suyos.
-                        val fichaFinal = if (mostrarFichaPrograma) fichaNum else null
-                        val programaFinal = if (mostrarFichaPrograma) programa.trim() else null
-                        errorMensaje = null
-                        guardando = true
-                        scope.launch {
-                            try {
-                                // Con foto recortada se envía multipart (campo "image");
-                                // la imagen sale cuadrada 512px en JPEG para que la
-                                // subida nunca falle por tamaño o formato.
-                                 val perfilActualizado = if (fotoBitmap != null) {
-                                     val bytes = bitmapAJpeg(fotoBitmap!!)
-                                     val parteFoto = okhttp3.MultipartBody.Part.createFormData(
-                                         "image", "perfil.jpg", bytes.toRequestBody("image/jpeg".toMediaType())
-                                     )
-                                    UsuarioRepository().actualizarConFoto(
-                                        SessionManager.token!!,
-                                        parteFoto,
-                                        identificacion.trim(),
-                                        nombres.trim(),
-                                        apellidos.trim(),
-                                        correo.trim(),
-                                        fichaFinal,
-                                        programaFinal
-                                    )
-                                } else {
+                // Botón guardar: valida, pide código 2FA si cambia la clave con 2FA
+                // activo, envía PUT /my-profile y avisa al terminar.
+                // Guarda el perfil (datos + foto + clave opcional con código 2FA).
+                fun guardarPerfil(codigo: String?) {
+                    if (guardando) return
+                    if (password != confirmPassword) {
+                        errorMensaje = "Las contraseñas no coinciden."
+                        return
+                    }
+                    if (password.isNotBlank() && password.length < 8) {
+                        errorMensaje = "La contraseña debe tener al menos 8 caracteres."
+                        return
+                    }
+                    val fichaNum = if (mostrarFichaPrograma) ficha.trim().toIntOrNull() else null
+                    if (mostrarFichaPrograma && fichaNum == null) {
+                        errorMensaje = "El número de ficha debe ser numérico."
+                        return
+                    }
+                    // Sin ficha/programa visibles (admin e instructor) se envían null
+                    // para que el backend los deje vacíos; el aprendiz conserva los suyos.
+                    val fichaFinal = if (mostrarFichaPrograma) fichaNum else null
+                    val programaFinal = if (mostrarFichaPrograma) programa.trim() else null
+                    // Con 2FA activo, la clave nueva viaja con su código del correo: el
+                    // backend lo envía al primer guardado y responde 422 con la palabra
+                    // "código" para abrir el diálogo (ver catch abajo). No se abre el
+                    // diálogo antes de llamar, o el correo nunca se enviaría.
+                    errorMensaje = null
+                    guardando = true
+                    scope.launch {
+                        try {
+                            val codigoLimpio = codigo?.ifBlank { null }
+                            val perfilActualizado = if (fotoBitmap != null) {
+                                // Con foto y clave nueva: primero los datos con la clave por
+                                // JSON (el multipart no lleva contraseña) y luego la foto.
+                                if (password.isNotBlank()) {
                                     UsuarioRepository().updateMyProfile(
                                         SessionManager.token!!,
                                         UpdateProfileRequest(
@@ -293,26 +306,72 @@ fun EditarPerfilView(
                                             user_name = nombres.trim(),
                                             user_lastname = apellidos.trim(),
                                             user_email = correo.trim(),
-                                            user_password = password.ifBlank { null },
+                                            user_password = password,
                                             user_coursenumber = fichaFinal,
-                                            user_program = programaFinal
+                                            user_program = programaFinal,
+                                            two_factor_code = codigoLimpio
                                         )
                                     )
                                 }
-                                SessionManager.savePhoto(perfilActualizado.profile_photo_path)
-                                guardando = false
-                                guardado = true
-                            } catch (e: retrofit2.HttpException) {
-                                guardando = false
-                                errorMensaje = com.example.sennaccess.ui.detalleHttp(e)
-                            } catch (e: Exception) {
-                                guardando = false
-                                errorMensaje = "Fallo de conexión: ${e.message ?: e.javaClass.simpleName}"
+                                // Con foto recortada se envía multipart (campo "image");
+                                // la imagen sale cuadrada 512px en JPEG para que la
+                                // subida nunca falle por tamaño o formato.
+                                val bytes = bitmapAJpeg(fotoBitmap!!)
+                                val parteFoto = okhttp3.MultipartBody.Part.createFormData(
+                                    "image", "perfil.jpg", bytes.toRequestBody("image/jpeg".toMediaType())
+                                )
+                                UsuarioRepository().actualizarConFoto(
+                                    SessionManager.token!!,
+                                    parteFoto,
+                                    identificacion.trim(),
+                                    nombres.trim(),
+                                    apellidos.trim(),
+                                    correo.trim(),
+                                    fichaFinal,
+                                    programaFinal
+                                )
+                            } else {
+                                UsuarioRepository().updateMyProfile(
+                                    SessionManager.token!!,
+                                    UpdateProfileRequest(
+                                        user_identification = identificacion.trim(),
+                                        user_name = nombres.trim(),
+                                        user_lastname = apellidos.trim(),
+                                        user_email = correo.trim(),
+                                        user_password = password.ifBlank { null },
+                                        user_coursenumber = fichaFinal,
+                                        user_program = programaFinal,
+                                        two_factor_code = codigoLimpio
+                                    )
+                                )
                             }
+                            SessionManager.savePhoto(perfilActualizado.profile_photo_path)
+                            guardando = false
+                            guardado = true
+                            codigoClave = ""
+                        } catch (e: retrofit2.HttpException) {
+                            guardando = false
+                            // Código 2FA malo, vencido o recién enviado: se abre el diálogo
+                            // para escribirlo/reintentar (manda el backend con "código").
+                            val detalle = com.example.sennaccess.ui.detalleHttp(e)
+                            if (password.isNotBlank() && e.code() == 422 &&
+                                detalle.contains("código", ignoreCase = true)
+                            ) {
+                                pedirCodigoClave = true
+                                errorCodigoClave = detalle
+                            } else {
+                                errorMensaje = detalle
+                            }
+                        } catch (e: Exception) {
+                            guardando = false
+                            errorMensaje = "Fallo de conexión: ${e.message ?: e.javaClass.simpleName}"
                         }
-                    },
+                    }
+                }
+                Button(
+                    onClick = { guardarPerfil(codigoClave.ifBlank { null }) },
                     modifier = Modifier.fillMaxWidth().height(50.dp).pressScale(pressedScale = 0.97f),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(28.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black)
                 ) { Text(if (guardando) "GUARDANDO..." else "GUARDAR CAMBIOS", fontWeight = FontWeight.Bold, fontSize = 15.sp) }
 
@@ -320,9 +379,63 @@ fun EditarPerfilView(
                 OutlinedButton(
                     onClick = onBack,
                     modifier = Modifier.fillMaxWidth().height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(28.dp),
                     border = BorderStroke(1.dp, colors.textSecondary)
                 ) { Text("CANCELAR", color = colors.textSecondary, fontWeight = FontWeight.Bold) }
+
+                // Diálogo del código 2FA para cambiar la clave: con verificación activa
+                // el backend envía 6 dígitos al correo; al confirmar se reanuda el guardado.
+                if (pedirCodigoClave) {
+                    var codigoTmp by remember { mutableStateOf(codigoClave) }
+                    AlertDialog(
+                        onDismissRequest = { pedirCodigoClave = false },
+                        containerColor = colors.cardBackground.copy(alpha = 0.98f),
+                        shape = RoundedCornerShape(20.dp),
+                        icon = { Icon(Icons.Default.CheckCircle, contentDescription = null, tint = verdeMarca(), modifier = Modifier.size(36.dp)) },
+                        title = { Text("Confirma tu cambio de clave", color = colors.textPrimary, fontWeight = FontWeight.Bold) },
+                        text = {
+                            Column {
+                                Text(
+                                    "Enviamos un código de 6 dígitos a tu correo. Escríbelo para autorizar la nueva contraseña.",
+                                    color = colors.textSecondary,
+                                    fontSize = 13.sp
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                OutlinedTextField(
+                                    value = codigoTmp,
+                                    onValueChange = { v -> if (v.length <= 6 && v.all { it.isDigit() }) codigoTmp = v },
+                                    label = { Text("Código de 6 dígitos") },
+                                    modifier = Modifier.fillMaxWidth().campoVisible(),
+                                    singleLine = true,
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    shape = RoundedCornerShape(28.dp)
+                                )
+                                if (errorCodigoClave != null) {
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(errorCodigoClave!!, color = ErrorRed, fontSize = 12.sp)
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    if (codigoTmp.length != 6) {
+                                        errorCodigoClave = "Escribe el código de 6 dígitos."
+                                        return@TextButton
+                                    }
+                                    codigoClave = codigoTmp
+                                    pedirCodigoClave = false
+                                    guardarPerfil(codigoTmp)
+                                }
+                            ) { Text("CONFIRMAR", fontWeight = FontWeight.Bold, color = verdeMarca()) }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { pedirCodigoClave = false; codigoTmp = "" }) {
+                                Text("CANCELAR", color = colors.textSecondary)
+                            }
+                        }
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(20.dp))
         }
@@ -334,14 +447,14 @@ fun EditarPerfilView(
             onDismissRequest = { guardado = false },
             containerColor = colors.cardBackground.copy(alpha = 0.98f),
             shape = RoundedCornerShape(24.dp),
-            icon = { Icon(Icons.Default.CheckCircle, contentDescription = null, tint = SenaGreen, modifier = Modifier.size(40.dp)) },
+            icon = { Icon(Icons.Default.CheckCircle, contentDescription = null, tint = verdeMarca(), modifier = Modifier.size(40.dp)) },
             title = { Text("Perfil actualizado", color = colors.textPrimary, fontWeight = FontWeight.Bold) },
             text = { Text("Tus datos se guardaron correctamente.", color = colors.textSecondary) },
             confirmButton = {
                 Button(
                     onClick = { guardado = false; onGuardado() },
                     colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(28.dp),
                     contentPadding = PaddingValues(horizontal = 24.dp, vertical = 10.dp)
                 ) { Text("Okey", fontWeight = FontWeight.ExtraBold) }
             }
@@ -356,7 +469,8 @@ private fun campoPerfil(value: String, onValueChange: (String) -> Unit, label: S
         value = value,
         onValueChange = onValueChange,
         label = { Text(label, color = LocalAppColors.current.textSecondary) },
-        modifier = Modifier.fillMaxWidth(),
+        // Al enfocarse, el scroll lleva el campo a la vista (no se queda arriba).
+        modifier = Modifier.fillMaxWidth().campoVisible(),
         singleLine = true,
         colors = campoPerfilColors()
     )
@@ -365,11 +479,11 @@ private fun campoPerfil(value: String, onValueChange: (String) -> Unit, label: S
 // Paleta de colores común para los campos del formulario (verde al enfocar).
 @Composable
 private fun campoPerfilColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = SenaGreen,
+    focusedBorderColor = verdeMarca(),
     unfocusedBorderColor = LocalAppColors.current.textSecondary.copy(alpha = 0.5f),
-    focusedLabelColor = SenaGreen,
+    focusedLabelColor = verdeMarca(),
     unfocusedLabelColor = LocalAppColors.current.textSecondary,
-    cursorColor = SenaGreen,
+    cursorColor = verdeMarca(),
     focusedTextColor = LocalAppColors.current.textPrimary,
     unfocusedTextColor = LocalAppColors.current.textPrimary
 )
@@ -467,10 +581,11 @@ private fun RecortarFotoDialog(
             val limiteY = if (img != null) ((img.height * escalaTotal - ladoPx) / 2f).coerceAtLeast(0f) else 0f
             val dx = desplazamiento.x.coerceIn(-limiteX, limiteX)
             val dy = desplazamiento.y.coerceIn(-limiteY, limiteY)
+            val verdeRecorte = verdeMarca()
 
             Box(modifier = Modifier.size(ladoDp)) {
                 if (img == null) {
-                    CircularProgressIndicator(color = SenaGreen, modifier = Modifier.align(Alignment.Center))
+                    CircularProgressIndicator(color = verdeMarca(), modifier = Modifier.align(Alignment.Center))
                 } else {
                     // Imagen transformada (zoom + arrastre), recortada al marco.
                     Canvas(
@@ -506,7 +621,7 @@ private fun RecortarFotoDialog(
                             addOval(Rect(Offset(centro, centro), centro))
                         }
                         drawPath(ruta, Color.Black.copy(alpha = 0.65f))
-                        drawCircle(SenaGreen, style = Stroke(width = 3.dp.toPx()))
+                        drawCircle(verdeRecorte, style = Stroke(width = 3.dp.toPx()))
                     }
                 }
             }
@@ -531,7 +646,7 @@ private fun RecortarFotoDialog(
                 },
                 enabled = imagen != null,
                 modifier = Modifier.fillMaxWidth().height(50.dp).pressScale(pressedScale = 0.97f),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(28.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black)
             ) { Text("RECORTAR", fontWeight = FontWeight.Bold, fontSize = 15.sp) }
 
@@ -539,7 +654,7 @@ private fun RecortarFotoDialog(
             OutlinedButton(
                 onClick = onCancel,
                 modifier = Modifier.fillMaxWidth().height(48.dp),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(28.dp),
                 border = BorderStroke(1.dp, Color.White.copy(alpha = 0.5f))
             ) { Text("CANCELAR", color = Color.White, fontWeight = FontWeight.Bold) }
         }

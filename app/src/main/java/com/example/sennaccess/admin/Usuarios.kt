@@ -10,8 +10,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,21 +35,21 @@ import com.example.sennaccess.data.UsuarioApi
 import com.example.sennaccess.ui.CargaUiState
 import com.example.sennaccess.ui.EstadoContenido
 import com.example.sennaccess.ui.EstadoVacio
+import com.example.sennaccess.ui.detalleHttp
+import com.example.sennaccess.ui.ds.SenaSearchField
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
+import com.example.sennaccess.ui.theme.verdeMarca
 import com.example.sennaccess.ui.UsuariosViewModel
 import com.example.sennaccess.ui.ios.GlassCornerRadius
 import com.example.sennaccess.ui.ios.IosCollapsibleHeader
 import com.example.sennaccess.ui.ios.glassSurface
 import com.example.sennaccess.ui.ios.pressScale
 
-/**
- * Gestión de usuarios del ADMINISTRADOR (contenido de la pestaña USUARIOS).
- *
- * Muestra un menú con dos categorías separadas (Instructores / Aprendices),
- * cada una con su propia vista conectada a la API (GET /admin/users).
- * En modo demo (sin sesión) o si la API falla, el ViewModel usa datos de ejemplo.
- */
+// Gestión de usuarios del ADMINISTRADOR (contenido de la pestaña USUARIOS).
+// Muestra un menú con dos categorías separadas (Instructores / Aprendices),
+// cada una con su propia vista conectada a la API (GET /admin/users).
+// En modo demo (sin sesión) o si la API falla, el ViewModel usa datos de ejemplo.
 @Composable
 fun UsuariosContent(
     onNavigate: (AdminScreen) -> Unit,
@@ -71,6 +69,8 @@ fun UsuariosContent(
     // Usuario pendiente de confirmar eliminación (activa el overlay).
     var usuarioAEliminar by remember { mutableStateOf<UsuarioApi?>(null) }
     var borrando by remember { mutableStateOf(false) }
+    // Error del DELETE: se muestra dentro del diálogo sin cerrarlo.
+    var errorEliminar by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -88,7 +88,7 @@ fun UsuariosContent(
                 onReintentar = viewModel::cargarUsuarios,
                 onAgregarUsuario = { onNavigate(AdminScreen.CREAR_USUARIO) },
                 onEditar = { onEditarUsuario(it) },
-                onBorrar = { usuarioAEliminar = it }
+                onBorrar = { usuarioAEliminar = it; errorEliminar = null }
             )
             // Vista de lista de aprendices, filtrada por el rol "Aprendiz".
             "APRENDICES" -> VistaListaUsuarios(
@@ -102,7 +102,7 @@ fun UsuariosContent(
                 onReintentar = viewModel::cargarUsuarios,
                 onAgregarUsuario = { onNavigate(AdminScreen.CREAR_USUARIO) },
                 onEditar = { onEditarUsuario(it) },
-                onBorrar = { usuarioAEliminar = it }
+                onBorrar = { usuarioAEliminar = it; errorEliminar = null }
             )
             // Menú raíz: elige entre las dos categorías disponibles.
             else -> MenuUsuarios(
@@ -111,25 +111,33 @@ fun UsuariosContent(
             )
         }
 
-        // Diálogo de confirmación antes de eliminar: pregunta explícitamente
-        // antes de llamar al DELETE y refrescar la lista.
+        // Diálogo de confirmación antes de eliminar: si el DELETE falla se muestra
+        // el error dentro del diálogo y NO se cierra (antes se tragaba el error y
+        // el usuario seguía en la lista sin avisar).
         if (usuarioAEliminar != null) {
             EliminarUsuarioDialog(
                 usuario = usuarioAEliminar!!,
+                error = errorEliminar,
                 onConfirmar = {
                     val id = usuarioAEliminar!!.id_usuario ?: return@EliminarUsuarioDialog
+                    if (borrando) return@EliminarUsuarioDialog
                     borrando = true
+                    errorEliminar = null
                     scope.launch {
                         try {
                             viewModel.eliminarUsuario(id)
+                            borrando = false
+                            usuarioAEliminar = null
+                        } catch (e: retrofit2.HttpException) {
+                            borrando = false
+                            errorEliminar = detalleHttp(e)
                         } catch (e: Exception) {
-                            // Si falla la red se mantiene la lista sin cambios.
+                            borrando = false
+                            errorEliminar = "No se pudo conectar al servidor."
                         }
-                        borrando = false
-                        usuarioAEliminar = null
                     }
                 },
-                onCancelar = { usuarioAEliminar = null },
+                onCancelar = { if (!borrando) { usuarioAEliminar = null; errorEliminar = null } },
                 borrando = borrando
             )
         }
@@ -184,11 +192,11 @@ private fun CategoriaUsuarioRow(
                 .background(SenaGreen.copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(icono, contentDescription = null, tint = SenaGreen, modifier = Modifier.size(26.dp))
+            Icon(icono, contentDescription = null, tint = verdeMarca(), modifier = Modifier.size(26.dp))
         }
         Spacer(modifier = Modifier.width(14.dp))
         Text(titulo, color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 17.sp, modifier = Modifier.weight(1f))
-        Icon(Icons.Default.KeyboardArrowRight, contentDescription = null, tint = SenaGreen, modifier = Modifier.size(28.dp))
+        Icon(Icons.Default.KeyboardArrowRight, contentDescription = null, tint = verdeMarca(), modifier = Modifier.size(28.dp))
     }
 }
 
@@ -221,8 +229,8 @@ private fun VistaListaUsuarios(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = SenaGreen)
+            IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = verdeMarca())
             }
             Spacer(modifier = Modifier.weight(1f))
         }
@@ -241,9 +249,9 @@ private fun VistaListaUsuarios(
             onClick = onAgregarUsuario,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp)
+                .height(52.dp)
                 .pressScale(pressedScale = 0.97f),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(28.dp),
             colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black)
         ) {
             Icon(Icons.Default.PersonAdd, null, modifier = Modifier.size(18.dp))
@@ -254,16 +262,10 @@ private fun VistaListaUsuarios(
         Spacer(modifier = Modifier.height(12.dp))
 
         // Campo de búsqueda en vivo por nombre dentro de la categoría seleccionada.
-        OutlinedTextField(
-            value = busqueda,
-            onValueChange = onBusqueda,
-            placeholder = { Text("Buscar $titulo por nombre...", color = colors.textSecondary) },
-            modifier = Modifier.fillMaxWidth(),
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = colors.textSecondary) },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = SenaGreen, unfocusedBorderColor = colors.borderLight,
-                cursorColor = SenaGreen, focusedTextColor = colors.textPrimary, unfocusedTextColor = colors.textPrimary
-            )
+        SenaSearchField(
+            valor = busqueda,
+            onValor = onBusqueda,
+            placeholder = "Buscar $titulo por nombre..."
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -287,10 +289,12 @@ private fun VistaListaUsuarios(
                     }
                 )
             } else {
-                // Tarjetas de usuarios filtrados en fila horizontal deslizable.
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(filtrados) { usuario ->
-                        TarjetaUsuario(usuario, onEditar = { onEditar(usuario) }, onBorrar = { onBorrar(usuario) })
+                // Lista vertical dentro del scroll padre (sin Lazy anidado).
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    filtrados.forEach { usuario ->
+                        key(usuario.id_usuario ?: usuario.user_email ?: usuario.hashCode()) {
+                            TarjetaUsuario(usuario, onEditar = { onEditar(usuario) }, onBorrar = { onBorrar(usuario) })
+                        }
                     }
                 }
             }
@@ -304,6 +308,7 @@ private fun VistaListaUsuarios(
 @Composable
 private fun EliminarUsuarioDialog(
     usuario: UsuarioApi,
+    error: String? = null,
     onConfirmar: () -> Unit,
     onCancelar: () -> Unit,
     borrando: Boolean = false
@@ -312,22 +317,28 @@ private fun EliminarUsuarioDialog(
     AlertDialog(
         onDismissRequest = onCancelar,
         containerColor = colors.cardBackground.copy(alpha = 0.98f),
-        shape = RoundedCornerShape(24.dp),
-        icon = { Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red, modifier = Modifier.size(36.dp)) },
+        shape = RoundedCornerShape(28.dp),
+        icon = { Icon(Icons.Default.Delete, contentDescription = "Eliminar usuario", tint = Color.Red, modifier = Modifier.size(36.dp)) },
         title = { Text("Eliminar usuario", color = colors.textPrimary, fontWeight = FontWeight.Bold) },
         text = {
-            Text(
-                "¿Seguro que deseas eliminar a ${usuario.nombreCompleto}? " +
-                    "Esta acción no se puede deshacer.",
-                color = colors.textSecondary
-            )
+            Column {
+                Text(
+                    "¿Seguro que deseas eliminar a ${usuario.nombreCompleto}? " +
+                        "Esta acción no se puede deshacer.",
+                    color = colors.textSecondary
+                )
+                if (error != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(error, color = Color.Red, fontSize = 13.sp)
+                }
+            }
         },
         confirmButton = {
             Button(
                 onClick = onConfirmar,
                 enabled = !borrando,
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.White),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(28.dp)
             ) { Text(if (borrando) "Eliminando..." else "Eliminar", fontWeight = FontWeight.Bold) }
         },
         dismissButton = {
@@ -342,7 +353,7 @@ fun TarjetaUsuario(usuario: UsuarioApi, onEditar: () -> Unit, onBorrar: () -> Un
     val colors = LocalAppColors.current
     Box(
         modifier = Modifier
-            .width(220.dp)
+            .fillMaxWidth()
             .glassSurface(cornerRadius = GlassCornerRadius)
     ) {
         // Contenido centrado: avatar, nombre, rol y datos de identificación.
@@ -350,30 +361,30 @@ fun TarjetaUsuario(usuario: UsuarioApi, onEditar: () -> Unit, onBorrar: () -> Un
             Box(
                 modifier = Modifier.size(60.dp).clip(CircleShape).background(SenaGreen.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
-            ) { Icon(Icons.Default.Person, contentDescription = null, tint = SenaGreen, modifier = Modifier.size(40.dp)) }
+            ) { Icon(Icons.Default.Person, contentDescription = null, tint = verdeMarca(), modifier = Modifier.size(40.dp)) }
             Spacer(modifier = Modifier.height(8.dp))
             Text(usuario.nombreCompleto, color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-            Text(usuario.role?.rol_name ?: "", color = SenaGreen, fontSize = 12.sp)
+            Text(usuario.role?.rol_name ?: "", color = verdeMarca(), fontSize = 12.sp)
             Spacer(modifier = Modifier.height(6.dp))
             Text("CC: ${usuario.user_identification ?: ""}", color = colors.textSecondary, fontSize = 11.sp)
             Text("Ficha ${usuario.user_coursenumber ?: 0}", color = colors.textSecondary, fontSize = 11.sp)
             Text(usuario.user_program ?: "", color = colors.textSecondary, fontSize = 11.sp)
             Text(usuario.user_email ?: "", color = colors.textSecondary, fontSize = 11.sp)
             Spacer(modifier = Modifier.height(8.dp))
-            // Acciones de la tarjeta: editar (verde) y eliminar (rojo).
+            // Acciones de la tarjeta: editar (verde) y eliminar (rojo), táctil 48dp.
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(
                     onClick = onEditar,
-                    modifier = Modifier.height(32.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    border = BorderStroke(1.dp, SenaGreen)
-                ) { Icon(Icons.Default.Edit, null, tint = SenaGreen, modifier = Modifier.size(16.dp)) }
+                    modifier = Modifier.heightIn(min = 48.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, verdeMarca())
+                ) { Icon(Icons.Default.Edit, contentDescription = "Editar usuario", tint = verdeMarca(), modifier = Modifier.size(18.dp)) }
                 OutlinedButton(
                     onClick = onBorrar,
-                    modifier = Modifier.height(32.dp),
-                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.heightIn(min = 48.dp),
+                    shape = RoundedCornerShape(16.dp),
                     border = BorderStroke(1.dp, Color.Red)
-                ) { Icon(Icons.Default.Delete, null, tint = Color.Red, modifier = Modifier.size(16.dp)) }
+                ) { Icon(Icons.Default.Delete, contentDescription = "Eliminar usuario", tint = Color.Red, modifier = Modifier.size(18.dp)) }
             }
         }
     }

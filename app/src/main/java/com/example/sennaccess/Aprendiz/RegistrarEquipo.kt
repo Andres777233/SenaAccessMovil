@@ -28,14 +28,17 @@ import androidx.compose.ui.unit.sp
 import com.example.sennaccess.data.Accesorio
 import com.example.sennaccess.data.EquipoRepository
 import com.example.sennaccess.data.IngresoEquipoRequest
+import com.example.sennaccess.data.RolSeguro
 import com.example.sennaccess.data.SessionManager
 import com.example.sennaccess.data.UsuarioApi
 import com.example.sennaccess.data.UsuarioRepository
+import com.example.sennaccess.ui.campoVisible
 import com.example.sennaccess.ui.ios.GlassCornerRadius
 import com.example.sennaccess.ui.ios.IosCollapsibleHeader
 import com.example.sennaccess.ui.ios.glassSurface
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
+import com.example.sennaccess.ui.theme.verdeMarca
 import kotlinx.coroutines.launch
 
 // Tipos de accesorio disponibles para el portátil.
@@ -121,10 +124,11 @@ fun RegistrarEquipoView(onBack: () -> Unit, onRegistrado: () -> Unit, adminMode:
         AlertDialog(
             onDismissRequest = {},
             containerColor = colors.cardBackground,
-            title = { Text("Equipo registrado", color = SenaGreen, fontWeight = FontWeight.Bold) },
+            shape = RoundedCornerShape(28.dp),
+            title = { Text("Equipo registrado", color = verdeMarca(), fontWeight = FontWeight.Bold) },
             text = { Text("El comprobante de ingreso del equipo se guardó correctamente.", color = colors.textPrimary) },
             confirmButton = {
-                TextButton(onClick = onRegistrado) { Text("Okey", color = SenaGreen, fontWeight = FontWeight.Bold) }
+                TextButton(onClick = onRegistrado) { Text("Okey", color = verdeMarca(), fontWeight = FontWeight.Bold) }
             }
         )
     }
@@ -133,8 +137,10 @@ fun RegistrarEquipoView(onBack: () -> Unit, onRegistrado: () -> Unit, adminMode:
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(scrollState)
+            // El contenido se encoge sobre el teclado para no quedar tapado.
+            .imePadding()
     ) {
-        IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null, tint = colors.textPrimary) }
+        IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) { Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = colors.textPrimary) }
 
         IosCollapsibleHeader(
             title = "Registrar Equipo",
@@ -170,7 +176,7 @@ fun RegistrarEquipoView(onBack: () -> Unit, onRegistrado: () -> Unit, adminMode:
                 when {
                     cargandoDuenos -> CircularProgressIndicator(
                         modifier = Modifier.size(22.dp),
-                        color = SenaGreen,
+                        color = verdeMarca(),
                         strokeWidth = 2.dp
                     )
                     usuariosDisponibles.isEmpty() -> Text(
@@ -189,7 +195,7 @@ fun RegistrarEquipoView(onBack: () -> Unit, onRegistrado: () -> Unit, adminMode:
                             colors = camposEquipoColors(),
                             trailingIcon = {
                                 IconButton(onClick = { menuDuenoAbierto = !menuDuenoAbierto }) {
-                                    Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = SenaGreen)
+                                    Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = verdeMarca())
                                 }
                             }
                         )
@@ -291,10 +297,12 @@ fun RegistrarEquipoView(onBack: () -> Unit, onRegistrado: () -> Unit, adminMode:
                                 equipo_accesorios = accesorios.ifEmpty { null }
                             )
                             // El admin registra vía /admin/equipment con dueño asignado;
-                            // el resto de roles (legacy) vía /my-equipment o /admin/equipment.
+                            // el resto de roles vía /my-equipment o /admin/equipment.
+                            // Rol normalizado (case-insensitive): evita que "aprendiz"
+                            // caiga al endpoint de admin por mayúsculas.
                             if (adminMode) {
                                 EquipoRepository().registrar(token, request)
-                            } else if (SessionManager.userRole == "Aprendiz") {
+                            } else if (RolSeguro.normalizar(SessionManager.userRole) == "aprendiz") {
                                 EquipoRepository().registrarPropio(token, request)
                             } else {
                                 EquipoRepository().registrar(token, request)
@@ -310,7 +318,7 @@ fun RegistrarEquipoView(onBack: () -> Unit, onRegistrado: () -> Unit, adminMode:
                 enabled = datosValidos && accesoriosValidos && !guardando,
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(28.dp)
             ) {
                 if (guardando) {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.Black, strokeWidth = 2.dp)
@@ -325,7 +333,7 @@ fun RegistrarEquipoView(onBack: () -> Unit, onRegistrado: () -> Unit, adminMode:
 // Título de una sección dentro del formulario (p. ej. DATOS DEL PORTÁTIL).
 @Composable
 private fun TituloSeccion(texto: String) {
-    Text(texto, color = SenaGreen, fontWeight = FontWeight.Bold, fontSize = 13.sp, letterSpacing = 1.sp)
+    Text(texto, color = verdeMarca(), fontWeight = FontWeight.Bold, fontSize = 13.sp, letterSpacing = 1.sp)
     Spacer(modifier = Modifier.height(8.dp))
 }
 
@@ -342,11 +350,12 @@ private fun CampoFormulario(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label, color = colors.textSecondary, fontSize = 14.sp) },
-        modifier = Modifier.fillMaxWidth(),
+        // Al enfocarse, el scroll lleva el campo a la vista (no se queda arriba).
+        modifier = Modifier.fillMaxWidth().campoVisible(),
         singleLine = true,
         keyboardOptions = if (numero) KeyboardOptions(keyboardType = KeyboardType.Number) else KeyboardOptions.Default,
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = SenaGreen,
+            focusedBorderColor = verdeMarca(),
             unfocusedBorderColor = colors.divider,
             focusedTextColor = colors.textPrimary,
             unfocusedTextColor = colors.textPrimary,
@@ -359,11 +368,11 @@ private fun CampoFormulario(
 // Paleta de colores común para los campos del formulario de equipo.
 @Composable
 private fun camposEquipoColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = SenaGreen,
+    focusedBorderColor = verdeMarca(),
     unfocusedBorderColor = LocalAppColors.current.textSecondary.copy(alpha = 0.5f),
-    focusedLabelColor = SenaGreen,
+    focusedLabelColor = verdeMarca(),
     unfocusedLabelColor = LocalAppColors.current.textSecondary,
-    cursorColor = SenaGreen,
+    cursorColor = verdeMarca(),
     focusedTextColor = LocalAppColors.current.textPrimary,
     unfocusedTextColor = LocalAppColors.current.textPrimary,
     focusedContainerColor = LocalAppColors.current.surfaceVariant.copy(alpha = 0.5f),

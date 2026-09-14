@@ -22,8 +22,10 @@ import com.example.sennaccess.data.Excusa
 import com.example.sennaccess.data.ExcusaRepository
 import com.example.sennaccess.data.SessionManager
 import com.example.sennaccess.ui.detalleHttp
+import com.example.sennaccess.ui.campoVisible
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
+import com.example.sennaccess.ui.theme.verdeMarca
 import com.example.sennaccess.ui.theme.ErrorRed
 import com.example.sennaccess.ui.ios.GlassCornerRadius
 import com.example.sennaccess.ui.ios.glassSurface
@@ -50,9 +52,9 @@ fun ValidarExcusaView(onBack: () -> Unit) {
 
     LaunchedEffect(Unit) { cargarPendientes() }
 
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).imePadding()) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null, tint = SenaGreen) }
+            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null, tint = verdeMarca()) }
             Text("Validar salida (PIN)", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
             Spacer(modifier = Modifier.weight(1f))
             IconButton(onClick = { scope.launch { cargarPendientes() } }) { Icon(Icons.Default.Refresh, null, tint = colors.textSecondary) }
@@ -65,7 +67,8 @@ fun ValidarExcusaView(onBack: () -> Unit) {
             onValueChange = { v -> pin = v.filter { it.isDigit() }.take(4) },
             label = { Text("PIN de excusa") },
             placeholder = { Text("ej. 1232") },
-            modifier = Modifier.fillMaxWidth(),
+            // Al enfocarse, el scroll lleva el campo a la vista.
+            modifier = Modifier.fillMaxWidth().campoVisible(),
             singleLine = true
         )
         Spacer(modifier = Modifier.height(12.dp))
@@ -76,9 +79,9 @@ fun ValidarExcusaView(onBack: () -> Unit) {
             Box(modifier = Modifier.fillMaxWidth().glassSurface(cornerRadius = GlassCornerRadius).padding(16.dp)) {
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.CheckCircle, null, tint = SenaGreen, modifier = Modifier.size(22.dp))
+                        Icon(Icons.Default.CheckCircle, null, tint = verdeMarca(), modifier = Modifier.size(22.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(mensaje ?: "Salida autorizada", color = SenaGreen, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text(mensaje ?: "Salida autorizada", color = verdeMarca(), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     }
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(ex.aprendiz?.nombreCompleto ?: "Aprendiz #${ex.fk_id_aprendiz}", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
@@ -92,7 +95,7 @@ fun ValidarExcusaView(onBack: () -> Unit) {
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Button(onClick = { exito = null; pin = ""; error = null; mensaje = null; scope.launch { cargarPendientes() } }, modifier = Modifier.fillMaxWidth().height(44.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = SenaGreen.copy(0.18f), contentColor = SenaGreen)) { Text("Validar otro PIN") }
+            Button(onClick = { exito = null; pin = ""; error = null; mensaje = null; scope.launch { cargarPendientes() } }, modifier = Modifier.fillMaxWidth().height(44.dp), shape = RoundedCornerShape(28.dp), colors = ButtonDefaults.buttonColors(containerColor = SenaGreen.copy(0.18f), contentColor = verdeMarca())) { Text("Validar otro PIN") }
             Spacer(modifier = Modifier.height(12.dp))
         }
 
@@ -115,13 +118,13 @@ fun ValidarExcusaView(onBack: () -> Unit) {
             },
             enabled = !validando && pin.length == 4,
             modifier = Modifier.fillMaxWidth().height(48.dp),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(28.dp),
             colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black)
         ) { if (validando) CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(16.dp), strokeWidth = 2.dp) else Text("VALIDAR Y REGISTRAR SALIDA", fontWeight = FontWeight.Bold) }
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        Text("EXCUSAS PENDIENTES (${pendientes.size})", color = SenaGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+        Text("EXCUSAS PENDIENTES (${pendientes.size})", color = verdeMarca(), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
         Spacer(modifier = Modifier.height(8.dp))
         if (pendientes.isEmpty()) {
             Box(modifier = Modifier.fillMaxWidth().glassSurface(cornerRadius = 12.dp).padding(16.dp), contentAlignment = Alignment.Center) {

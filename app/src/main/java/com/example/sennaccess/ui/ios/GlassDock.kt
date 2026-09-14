@@ -39,15 +39,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.sennaccess.ui.theme.LocalAppColors
-import com.example.sennaccess.ui.theme.DesignMode
-import com.example.sennaccess.ui.theme.LocalDesignMode
 import com.example.sennaccess.ui.theme.SenaGreen
-import com.example.sennaccess.ui.theme.NewSenaGreen
+import com.example.sennaccess.ui.theme.verdeMarca
 import androidx.compose.ui.graphics.luminance
 
-/**
- * Item del dock flotante.
- */
+// Item del dock flotante.
 data class GlassDockItem(
     val key: String,
     val icon: ImageVector,
@@ -55,20 +51,10 @@ data class GlassDockItem(
     val contentDescription: String = label
 )
 
-/**
- * Barra de navegación flotante suspendida estilo dock de iOS.
- *
- *  - Fondo con glassmorphism (translúcido + highlight + borde).
- *  - Esquinas muy redondas (35dp).
- *  - Sombra suave de baja opacidad.
- *  - Indicador animado (pill) tras la pestaña activa + escala/color animados.
- *
- * NO altera la lógica: solo notifica [onSelect] con la key del item.
- *
- * @param items   lista de pestañas (máx ~5 recomendado).
- * @param selectedKey  key actualmente activa.
- * @param onSelect  callback con la key al pulsar.
- */
+// Barra de navegación flotante suspendida estilo dock de iOS.
+// Fondo con glassmorphism (translúcido + highlight + borde), esquinas muy
+// redondas (35dp), sombra suave y pill animado tras la pestaña activa con
+// escala/color animados. NO altera la lógica: solo notifica [onSelect].
 @Composable
 fun GlassDock(
     items: List<GlassDockItem>,
@@ -77,19 +63,15 @@ fun GlassDock(
     modifier: Modifier = Modifier
 ) {
     val colors = LocalAppColors.current
-    val designMode = LocalDesignMode.current
     val shape = RoundedCornerShape(35.dp)
     val isLight = colors.background.luminance() > 0.5f
 
-    // En renovado el dock aprovecha más el ancho con menos aire lateral.
+    // Dock que aprovecha el ancho con aire lateral equilibrado.
     Box(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(
-                horizontal = if (designMode == DesignMode.RENOVADO) 12.dp else 20.dp,
-                vertical = if (designMode == DesignMode.RENOVADO) 10.dp else 14.dp
-            ),
+            .padding(horizontal = 12.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center
     ) {
         // Fondo de vidrio del dock: sombra y borde adaptados al tema.
@@ -97,51 +79,36 @@ fun GlassDock(
             modifier = Modifier
                 .fillMaxWidth()
                 .shadow(
-                    elevation = if (designMode == DesignMode.RENOVADO) {
-                        if (isLight) 18.dp else 28.dp
-                    } else {
-                        if (isLight) 14.dp else 24.dp
-                    },
+                    elevation = if (isLight) 18.dp else 28.dp,
                     shape = shape,
                     clip = false,
                     ambientColor = if (isLight) {
-                        if (designMode == DesignMode.RENOVADO) Color.Black.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.12f)
+                        Color.Black.copy(alpha = 0.15f)
                     } else {
-                        if (designMode == DesignMode.RENOVADO) Color.Black.copy(alpha = 0.4f) else Color.Black.copy(alpha = 0.35f)
+                        Color.Black.copy(alpha = 0.4f)
                     },
                     spotColor = if (isLight) {
-                        if (designMode == DesignMode.RENOVADO) Color.Black.copy(alpha = 0.19f) else Color.Black.copy(alpha = 0.16f)
+                        Color.Black.copy(alpha = 0.19f)
                     } else {
-                        if (designMode == DesignMode.RENOVADO) Color.Black.copy(alpha = 0.5f) else Color.Black.copy(alpha = 0.45f)
+                        Color.Black.copy(alpha = 0.5f)
                     }
                 )
                 .clip(shape)
                 .background(
                     Brush.verticalGradient(
-                        colors = if (designMode == DesignMode.RENOVADO) {
-                            listOf(
-                                colors.surface.copy(alpha = if (isLight) 0.96f else 0.8f),
-                                colors.surface.copy(alpha = if (isLight) 0.9f else 0.65f)
-                            )
-                        } else {
-                            listOf(
-                                colors.surface.copy(alpha = if (isLight) 0.92f else 0.75f),
-                                colors.surface.copy(alpha = if (isLight) 0.85f else 0.55f)
-                            )
-                        }
+                        colors = listOf(
+                            colors.surface.copy(alpha = if (isLight) 0.96f else 0.8f),
+                            colors.surface.copy(alpha = if (isLight) 0.9f else 0.65f)
+                        )
                     )
                 )
-                .background(Color.White.copy(alpha = if (isLight) {
-                    if (designMode == DesignMode.RENOVADO) 0.05f else 0.0f
-                } else {
-                    if (designMode == DesignMode.RENOVADO) 0.08f else 0.05f
-                }))
+                .background(Color.White.copy(alpha = if (isLight) 0.05f else 0.08f))
                 .border(
-                    if (designMode == DesignMode.RENOVADO) 1.2.dp else 1.dp,
+                    1.2.dp,
                     if (isLight) {
-                        if (designMode == DesignMode.RENOVADO) colors.border.copy(alpha = 0.95f) else colors.border.copy(alpha = 0.9f)
+                        colors.border.copy(alpha = 0.95f)
                     } else {
-                        if (designMode == DesignMode.RENOVADO) colors.borderLight.copy(alpha = 0.25f) else colors.borderLight.copy(alpha = 0.18f)
+                        colors.borderLight.copy(alpha = 0.25f)
                     },
                     shape
                 )
@@ -171,8 +138,9 @@ private fun DockItem(
     modifier: Modifier = Modifier
 ) {
     val colors = LocalAppColors.current
-    val designMode = LocalDesignMode.current
     val interactionSource = remember { MutableInteractionSource() }
+    // Acento de marca: en tema claro se oscurece para mantener el contraste.
+    val acento = if (colors.background.luminance() > 0.5f) verdeMarca() else SenaGreen
 
     // Animaciones del item: escala, opacidad y visibilidad del indicador según el estado.
     val iconScale by animateFloatAsState(
@@ -210,22 +178,14 @@ private fun DockItem(
                     .fillMaxSize()
                     .scale(iconScale)
                     .clip(RoundedCornerShape(18.dp))
-                    .background(
-                        if (designMode == DesignMode.RENOVADO) {
-                            NewSenaGreen.copy(alpha = 0.22f * pillAlpha)
-                        } else {
-                            SenaGreen.copy(alpha = 0.18f * pillAlpha)
-                        }
-                    )
+                    .background(acento.copy(alpha = 0.22f * pillAlpha))
             )
             Icon(
                 imageVector = item.icon,
                 contentDescription = item.contentDescription,
-                tint = if (selected) {
-                    if (designMode == DesignMode.RENOVADO) NewSenaGreen else SenaGreen
-                } else colors.textSecondary,
+                tint = if (selected) acento else colors.textSecondary,
                 modifier = Modifier
-                    .size(if (designMode == DesignMode.RENOVADO) 26.dp else 24.dp)
+                    .size(26.dp)
                     .graphicsLayer {
                         this.alpha = iconAlpha
                         scaleX = iconScale
@@ -235,10 +195,8 @@ private fun DockItem(
         }
         Text(
             text = item.label,
-            color = if (selected) {
-                if (designMode == DesignMode.RENOVADO) NewSenaGreen else SenaGreen
-            } else colors.textSecondary,
-            fontSize = if (designMode == DesignMode.RENOVADO) 11.sp else 10.sp,
+            color = if (selected) acento else colors.textSecondary,
+            fontSize = 11.sp,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
             modifier = Modifier.graphicsLayer {
                 alpha = iconAlpha

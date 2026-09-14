@@ -1,32 +1,26 @@
 package com.example.sennaccess.ui.theme
 
-// Definición de la paleta de colores de SennAccess.
-// Aquí viven el color de marca (verde SENA), los colores semánticos de estado
-// y las paletas clara y oscura agrupadas en AppColors.
+// Definición de la paleta de colores de SennAccess: verde institucional SENA
+// (único color de marca), semánticos de estado y las paletas oscura y clara.
+// Todo el app consume estos colores vía LocalAppColors, nunca colores sueltos.
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 
-// Colores por defecto de la plantilla Material 3. Se conservan por compatibilidad;
-// la paleta real de la app se consume a través de AppColors.
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
-
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
-
-// Verde institucional SENA: color primario de la marca. Marca elementos activos,
-// acentos, navegación y estados de éxito.
+// Verde institucional SENA: color de marca y acento global (tono original).
 val SenaGreen = Color(0xFF02D914)
+// Variante de marca para fondos claros: mismo tono de marca (decisión de diseño:
+// se usa el verde original también en tema claro).
+val SenaGreenOnLight = Color(0xFF02D914)
+// Verde utilizado para TEXTO de marca en cualquier tema (usa la variante clara
+// solo cuando el fondo es claro), mediante verdeMarca().
+val ErrorText = Color(0xFFC62828)
 // Colores semánticos de estado: advertencias, errores y acentos cálidos.
 val WarningYellow = Color(0xFFFFC107)
 val ErrorRed = Color(0xFFFF6B6B)
 val OrangeAmber = Color(0xFFFFA726)
-
-// Fondo translúcido usado por las superficies de vidrio (glassmorphism).
-val GlassBackground = Color(0xFF13161C).copy(alpha = 0.8f)
-// Color de texto base para superficies de vidrio oscuras.
-val ThemeText = Color.White
 
 // Contenedor de todos los colores de la UI, agrupados por rol semántico.
 // Cada tema (claro y oscuro) proporciona su propia instancia.
@@ -78,144 +72,69 @@ data class AppColors(
     val buttonSecondaryText: Color,
 )
 
-// Nuevo verde más vibrante para el modo renovado
-val NewSenaGreen = Color(0xFF00E676)
-
-// Paleta renovada con mejor contraste y colores más vibrantes
-fun darkAppColorsRenovado() = AppColors(
+// Paleta oscura: fondo casi negro, superficies gris-azuladas y acentos en el
+// verde SENA vibrante. Favorece el contraste del estilo vidrio.
+fun darkAppColors() = AppColors(
     background = Color(0xFF05070B),
-    surface = Color(0xFF0F1217),
+    surface = Color(0xFF0E1217),
     surfaceVariant = Color(0xFF161D24),
-    textPrimary = Color(0xFFE6E6E6),
-    textSecondary = Color(0xFFA0A0A0),
-    textOnPrimary = Color.White,
+    textPrimary = Color(0xFFF2F4F6),
+    textSecondary = Color(0xFF9BA1A8),
+    textOnPrimary = Color(0xFF04100A),
     border = Color.White.copy(alpha = 0.08f),
-    borderLight = Color.White.copy(alpha = 0.25f),
-    cardBackground = Color(0xFF0F1217).copy(alpha = 0.9f),
-    inputBackground = Color(0xFF0F1217).copy(alpha = 0.95f),
-    successBackground = NewSenaGreen.copy(alpha = 0.12f),
-    warningBackground = WarningYellow.copy(alpha = 0.12f),
-    errorBackground = ErrorRed.copy(alpha = 0.12f),
+    borderLight = Color.White.copy(alpha = 0.22f),
+    cardBackground = Color(0xFF0E1217).copy(alpha = 0.92f),
+    inputBackground = Color(0xFF0E1217).copy(alpha = 0.96f),
+    successBackground = SenaGreen.copy(alpha = 0.13f),
+    warningBackground = WarningYellow.copy(alpha = 0.14f),
+    errorBackground = ErrorRed.copy(alpha = 0.14f),
     bottomNavBar = Color.Black.copy(alpha = 0.98f),
-    topBarBackground = Color(0xFF0B1A0F),
-    iconTint = Color(0xFFE6E6E6),
+    topBarBackground = Color(0xFF07120A),
+    iconTint = Color(0xFFF2F4F6),
     divider = Color.White.copy(alpha = 0.08f),
-    inputText = Color(0xFFE6E6E6),
-    inputLabel = Color(0xFFA0A0A0),
-    navigationIndicator = NewSenaGreen.copy(alpha = 0.2f),
-    headerText = Color(0xFFE6E6E6),
-    subtitleText = Color(0xFFA0A0A0),
-    statCardBackground = Color(0xFF0F1217).copy(alpha = 0.9f),
-    tableRowEven = Color(0xFF0F1217).copy(alpha = 0.6f),
+    inputText = Color(0xFFF2F4F6),
+    inputLabel = Color(0xFF9BA1A8),
+    navigationIndicator = SenaGreen.copy(alpha = 0.22f),
+    headerText = Color(0xFFF2F4F6),
+    subtitleText = Color(0xFF9BA1A8),
+    statCardBackground = Color(0xFF0E1217).copy(alpha = 0.92f),
+    tableRowEven = Color(0xFF0E1217).copy(alpha = 0.6f),
     tableRowOdd = Color(0xFF161D24).copy(alpha = 0.6f),
     tableHeaderBackground = Color(0xFF0B1215),
     scrollbarThumb = Color(0xFF5A5A5A),
     overlayBackground = Color.Black.copy(alpha = 0.6f),
-    chipBackground = Color(0xFF0F1217).copy(alpha = 0.9f),
-    chipText = Color(0xFFE6E6E6),
-    buttonSecondaryBackground = Color(0xFF0F1217).copy(alpha = 0.9f),
-    buttonSecondaryText = Color(0xFFE6E6E6),
+    chipBackground = Color(0xFF161D24).copy(alpha = 0.92f),
+    chipText = Color(0xFFF2F4F6),
+    buttonSecondaryBackground = Color(0xFF161D24).copy(alpha = 0.92f),
+    buttonSecondaryText = Color(0xFFF2F4F6),
 )
 
-// Paleta clara renovada con mejor contraste
-fun lightAppColorsRenovado() = AppColors(
-    background = Color(0xFFFAFAFA),
+// Paleta clara: fondo gris muy suave, superficies blancas y texto oscuro.
+// Ajustada para que las tarjetas de vidrio se lean como tarjetas definidas
+// y el texto contraste sin esfuerzo.
+fun lightAppColors() = AppColors(
+    background = Color(0xFFF6F8FA),
     surface = Color(0xFFFFFFFF),
-    surfaceVariant = Color(0xFFEDEDED),
-    textPrimary = Color(0xFF1A1A1A),
-    textSecondary = Color(0xFF5A5A5A),
-    textOnPrimary = Color.White,
-    border = Color.Black.copy(alpha = 0.1f),
-    borderLight = NewSenaGreen.copy(alpha = 0.4f),
+    surfaceVariant = Color(0xFFEDEFF3),
+    textPrimary = Color(0xFF14161A),
+    textSecondary = Color(0xFF5B6470),
+    textOnPrimary = Color(0xFF04100A),
+    border = Color.Black.copy(alpha = 0.10f),
+    borderLight = SenaGreen.copy(alpha = 0.40f),
     cardBackground = Color.White,
     inputBackground = Color.White,
-    successBackground = NewSenaGreen.copy(alpha = 0.15f),
+    successBackground = SenaGreen.copy(alpha = 0.16f),
     warningBackground = WarningYellow.copy(alpha = 0.15f),
     errorBackground = ErrorRed.copy(alpha = 0.15f),
     bottomNavBar = Color.White.copy(alpha = 0.99f),
-    topBarBackground = Color(0xFFE8F5E9),
-    iconTint = Color(0xFF1A1A1A),
+    topBarBackground = Color(0xFFEAF6EE),
+    iconTint = Color(0xFF14161A),
     divider = Color.Black.copy(alpha = 0.08f),
-    inputText = Color(0xFF1A1A1A),
-    inputLabel = Color(0xFF5A5A5A),
-    navigationIndicator = NewSenaGreen.copy(alpha = 0.22f),
-    headerText = Color(0xFF1A1A1A),
-    subtitleText = Color(0xFF5A5A5A),
-    statCardBackground = Color.White,
-    tableRowEven = Color.White,
-    tableRowOdd = Color(0xFFF8F8F8),
-    tableHeaderBackground = Color(0xFFF0F0F0),
-    scrollbarThumb = Color(0xFF888888),
-    overlayBackground = Color.Black.copy(alpha = 0.3f),
-    chipBackground = Color.White,
-    chipText = Color(0xFF1A1A1A),
-    buttonSecondaryBackground = Color.White,
-    buttonSecondaryText = Color(0xFF1A1A1A),
-)
-
-// Paleta oscura (por defecto de la app): fondo casi negro, superficies gris-azuladas
-// y acentos en verde SENA. Favorece el contraste del estilo vidrio.
-fun darkAppColors() = AppColors(
-    background = Color(0xFF07090D),
-    surface = Color(0xFF13161C),
-    surfaceVariant = Color(0xFF1A2128),
-    textPrimary = Color.White,
-    textSecondary = Color.White.copy(alpha = 0.5f),
-    textOnPrimary = Color.White,
-    border = Color.White.copy(alpha = 0.05f),
-    borderLight = Color.White.copy(alpha = 0.2f),
-    cardBackground = Color(0xFF13161C).copy(alpha = 0.8f),
-    inputBackground = Color(0xFF13161C).copy(alpha = 0.85f),
-    successBackground = SenaGreen.copy(alpha = 0.08f),
-    warningBackground = WarningYellow.copy(alpha = 0.08f),
-    errorBackground = ErrorRed.copy(alpha = 0.08f),
-    bottomNavBar = Color.Black.copy(alpha = 0.95f),
-    topBarBackground = Color(0xFF0E2013),
-    iconTint = Color.White,
-    divider = Color.White.copy(alpha = 0.05f),
-    inputText = Color.White,
-    inputLabel = Color.White.copy(alpha = 0.5f),
-    navigationIndicator = SenaGreen.copy(alpha = 0.15f),
-    headerText = Color.White,
-    subtitleText = Color.White.copy(alpha = 0.5f),
-    statCardBackground = Color(0xFF13161C).copy(alpha = 0.8f),
-    tableRowEven = Color(0xFF13161C).copy(alpha = 0.5f),
-    tableRowOdd = Color(0xFF1A2128).copy(alpha = 0.5f),
-    tableHeaderBackground = Color(0xFF0E1417),
-    scrollbarThumb = Color.Gray,
-    overlayBackground = Color.Black.copy(alpha = 0.5f),
-    chipBackground = Color(0xFF13161C).copy(alpha = 0.8f),
-    chipText = Color.White,
-    buttonSecondaryBackground = Color(0xFF13161C).copy(alpha = 0.8f),
-    buttonSecondaryText = Color.White,
-)
-
-// Paleta clara: fondo gris claro, superficies blancas y texto oscuro.
-// Ajustada para que las tarjetas de vidrio se lean como tarjetas definidas
-// (no "cajas blancas fantasma" debajo del texto) y las filas tengan contraste.
-fun lightAppColors() = AppColors(
-    background = Color(0xFFF0F2F5),
-    surface = Color(0xFFFFFFFF),
-    surfaceVariant = Color(0xFFE8EAF0),
-    textPrimary = Color(0xFF1C1B1F),
-    textSecondary = Color(0xFF6B7280),
-    textOnPrimary = Color.White,
-    border = Color.Black.copy(alpha = 0.13f),
-    borderLight = SenaGreen.copy(alpha = 0.35f),
-    cardBackground = Color.White,
-    inputBackground = Color.White,
-    successBackground = SenaGreen.copy(alpha = 0.10f),
-    warningBackground = WarningYellow.copy(alpha = 0.12f),
-    errorBackground = ErrorRed.copy(alpha = 0.10f),
-    bottomNavBar = Color.White.copy(alpha = 0.97f),
-    topBarBackground = Color(0xFFE9F5EC),
-    iconTint = Color(0xFF1C1B1F),
-    divider = Color.Black.copy(alpha = 0.10f),
-    inputText = Color(0xFF1C1B1F),
-    inputLabel = Color(0xFF6B7280),
-    navigationIndicator = SenaGreen.copy(alpha = 0.18f),
-    headerText = Color(0xFF1C1B1F),
-    subtitleText = Color(0xFF6B7280),
+    inputText = Color(0xFF14161A),
+    inputLabel = Color(0xFF5B6470),
+    navigationIndicator = SenaGreen.copy(alpha = 0.22f),
+    headerText = Color(0xFF14161A),
+    subtitleText = Color(0xFF5B6470),
     statCardBackground = Color.White,
     tableRowEven = Color.White,
     tableRowOdd = Color(0xFFF2F4F7),
@@ -223,7 +142,16 @@ fun lightAppColors() = AppColors(
     scrollbarThumb = Color(0xFF9AA0A6),
     overlayBackground = Color.Black.copy(alpha = 0.32f),
     chipBackground = Color.White,
-    chipText = Color(0xFF1C1B1F),
+    chipText = Color(0xFF14161A),
     buttonSecondaryBackground = Color.White,
-    buttonSecondaryText = Color(0xFF1C1B1F),
+    buttonSecondaryText = Color(0xFF14161A),
 )
+
+// Verde de marca (tono original 0xFF02D914). Se usa igual en ambos temas por
+// decisión de diseño del dueño (el texto de marca en tema claro tiene ~1.8:1).
+// Uso: Text(..., color = verdeMarca())
+@Composable
+fun verdeMarca(): Color {
+    val colors = LocalAppColors.current
+    return if (colors.background.luminance() > 0.5f) SenaGreenOnLight else SenaGreen
+}

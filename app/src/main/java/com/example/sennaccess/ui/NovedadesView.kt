@@ -41,16 +41,14 @@ import com.example.sennaccess.ui.theme.ErrorRed
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.OrangeAmber
 import com.example.sennaccess.ui.theme.SenaGreen
+import com.example.sennaccess.ui.theme.verdeMarca
 import kotlinx.coroutines.launch
 
-/**
- * Vista de Novedades compartida para INSTRUCTOR y ADMIN.
- * Muestra el listado de novedades y permite reportar una nueva (solo instructor).
- *
- * - [estado] == null → solo datos de ejemplo (la API no expone novedades).
- * - [estado] != null → carga desde la API con respaldo a mocks.
- * Respeta colores SENA y estilo glassmorphism iOS.
- */
+// Vista de Novedades compartida para INSTRUCTOR y ADMIN.
+// Muestra el listado de novedades y permite reportar una nueva (solo instructor).
+// - [estado] == null → solo datos de ejemplo (la API no expone novedades).
+// - [estado] != null → carga desde la API con respaldo a mocks.
+// Respeta colores SENA y estilo glassmorphism iOS.
 @Composable
 fun NovedadesView(
     estado: CargaUiState<List<Novedad>>? = null,
@@ -157,7 +155,7 @@ fun NovedadesView(
                     .fillMaxWidth()
                     .height(50.dp)
                     .pressScale(pressedScale = 0.97f),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(28.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black)
             ) {
                 Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
@@ -251,7 +249,7 @@ fun NovedadesView(
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = ErrorRed, contentColor = Color.White),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(28.dp)
                 ) { Text(if (eliminando) "Eliminando..." else "Eliminar", fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
@@ -361,13 +359,13 @@ private fun FormularioNovedad(
             Button(
                 onClick = onEnviar,
                 modifier = Modifier.weight(1f).height(48.dp).pressScale(pressedScale = 0.97f),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(28.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black)
             ) { Text(if (enviando) "ENVIANDO..." else "ENVIAR", fontWeight = FontWeight.Bold) }
             OutlinedButton(
                 onClick = onCancelar,
                 modifier = Modifier.weight(1f).height(48.dp),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(28.dp),
                 border = BorderStroke(1.dp, colors.textSecondary)
             ) { Text("CANCELAR", color = colors.textPrimary) }
         }
@@ -385,9 +383,9 @@ private fun TarjetaNovedadEnviada(onAceptar: () -> Unit) {
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(Icons.Default.WarningAmber, contentDescription = null, tint = SenaGreen, modifier = Modifier.size(64.dp))
+        Icon(Icons.Default.WarningAmber, contentDescription = null, tint = verdeMarca(), modifier = Modifier.size(64.dp))
         Spacer(modifier = Modifier.height(16.dp))
-        Text("Novedad Reportada", color = SenaGreen, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Text("Novedad Reportada", color = verdeMarca(), fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             "Tu reporte fue registrado. Solo tu y el administrador podran verlo.",
@@ -399,7 +397,7 @@ private fun TarjetaNovedadEnviada(onAceptar: () -> Unit) {
         Button(
             onClick = onAceptar,
             modifier = Modifier.fillMaxWidth().height(48.dp).pressScale(pressedScale = 0.97f),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(28.dp),
             colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black)
         ) { Text("ACEPTAR", fontWeight = FontWeight.Bold) }
     }
@@ -408,11 +406,11 @@ private fun TarjetaNovedadEnviada(onAceptar: () -> Unit) {
 // Esquema de colores SENA para los campos del formulario.
 @Composable
 private fun novedadCamposColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = SenaGreen,
+    focusedBorderColor = verdeMarca(),
     unfocusedBorderColor = LocalAppColors.current.textSecondary.copy(alpha = 0.5f),
-    focusedLabelColor = SenaGreen,
+    focusedLabelColor = verdeMarca(),
     unfocusedLabelColor = LocalAppColors.current.textSecondary,
-    cursorColor = SenaGreen,
+    cursorColor = verdeMarca(),
     focusedTextColor = LocalAppColors.current.textPrimary,
     unfocusedTextColor = LocalAppColors.current.textPrimary
 )

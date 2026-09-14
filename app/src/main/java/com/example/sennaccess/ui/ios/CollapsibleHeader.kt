@@ -31,20 +31,19 @@ import androidx.compose.ui.util.lerp
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
 
-/**
- * Encabezado grande colapsable tipo iOS ("Large Header").
- *
- * Comportamiento:
- *  - Con [scrollOffset] pequeño muestra el título GRANDE (34sp) al estilo iOS.
- *  - Al hacer scroll, se encoge y se funde en una barra superior de vidrio.
- *
- * La barra superior de vidrio aparece progresivamente con el scroll.
- *
- * @param title   texto grande.
- * @param scrollOffset  valor actual del scroll (p.ej. scrollState.value).
- * @param collapseRange  px de scroll en los que colapsa por completo.
- * @param trailing  acciones a la derecha en la barra colapsada (iconos).
- */
+// Encabezado grande colapsable tipo iOS ("Large Header").
+// 
+// Comportamiento:
+// - Con [scrollOffset] pequeño muestra el título GRANDE (34sp) al estilo iOS.
+// - Al hacer scroll, se encoge y se funde en una barra superior de vidrio.
+// 
+// La barra superior de vidrio aparece progresivamente con el scroll.
+// 
+// @param title   texto grande.
+// @param scrollOffset  valor actual del scroll (p.ej. scrollState.value).
+// @param collapseRange  px de scroll en los que colapsa por completo.
+// @param trailing  acciones a la derecha en la barra colapsada (iconos).
+
 @Composable
 fun IosCollapsibleHeader(
     title: String,
@@ -78,7 +77,7 @@ fun IosCollapsibleHeader(
         Box(
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 16.dp)
                 .graphicsLayer {
                     scaleX = largeScale
                     scaleY = largeScale
@@ -121,7 +120,7 @@ fun IosCollapsibleHeader(
                         )
                     )
                 )
-                .padding(horizontal = 20.dp, vertical = 12.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             androidx.compose.foundation.layout.Row(
                 Modifier.fillMaxWidth(),
@@ -140,10 +139,9 @@ fun IosCollapsibleHeader(
     }
 }
 
-/**
- * Variante simple de barra superior de vidrio (sin título grande),
- * para reemplazar los TopBars actuales con estética iOS.
- */
+// Variante simple de barra superior de vidrio (sin título grande),
+// para reemplazar los TopBars actuales con estética iOS.
+
 @Composable
 fun IosGlassTopBar(
     modifier: Modifier = Modifier,
@@ -163,7 +161,7 @@ fun IosGlassTopBar(
                 )
             )
             .background(colors.surface.copy(alpha = 0.15f))
-            .padding(horizontal = 24.dp, vertical = 14.dp)
+            .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
         androidx.compose.foundation.layout.Row(
             Modifier.fillMaxWidth(),

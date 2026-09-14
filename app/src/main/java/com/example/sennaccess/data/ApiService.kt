@@ -99,6 +99,11 @@ interface ApiService {
     @PUT("my-profile")
     suspend fun updateMyProfile(@Header("Authorization") auth: String, @Body body: UpdateProfileRequest): UsuarioApi
 
+    // 4b2. POST /api/my-profile/verificar-password: confirma la contraseña actual
+    // con la sesión. No crea retos 2FA ni envía correos (para registrar la huella).
+    @POST("my-profile/verificar-password")
+    suspend fun verificarPassword(@Header("Authorization") auth: String, @Body body: VerificarPasswordRequest): MessageResponse
+
     // 4c. POST /api/my-profile con _method=PUT y multipart/form-data: misma actualización
     //     del perfil pero incluyendo la foto (campo "image") para subirla al servidor.
     //     Laravel interpreta el campo "_method" como PUT real sobre la ruta my-profile.

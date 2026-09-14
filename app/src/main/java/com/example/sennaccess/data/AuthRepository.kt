@@ -7,8 +7,9 @@ package com.example.sennaccess.data
 class AuthRepository {
 
     // Autentica al usuario con correo y contraseña y devuelve la respuesta del login.
-    suspend fun login(email: String, password: String): LoginResponse =
-        RetrofitClient.conServicio { it.login(LoginRequest(email, password)) }
+    // device_id identifica ESTE teléfono para el 2FA por dispositivo (ver DispositivoStore).
+    suspend fun login(email: String, password: String, deviceId: String? = null): LoginResponse =
+        RetrofitClient.conServicio { it.login(LoginRequest(email, password, deviceId)) }
 
     // Registra una cuenta nueva (rol Aprendiz por defecto en el backend).
     suspend fun register(body: RegisterRequest): RegisterResponse =

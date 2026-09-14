@@ -34,6 +34,7 @@ import com.example.sennaccess.ui.ios.IosCollapsibleHeader
 import com.example.sennaccess.ui.ios.glassSurface
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
+import com.example.sennaccess.ui.theme.verdeMarca
 import kotlinx.coroutines.launch
 
 @Composable
@@ -59,7 +60,7 @@ fun MisAmbientesView(
 
     LaunchedEffect(Unit) { cargar() }
 
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).imePadding()) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             if (onBack != null) {
                 IconButton(onClick = onBack) { Icon(Icons.Default.MeetingRoom, null, tint = colors.textPrimary) }
@@ -95,8 +96,8 @@ private fun MisAmbienteCard(amb: Ambiente, onClick: () -> Unit) {
     val colors = LocalAppColors.current
     Box(modifier = Modifier.fillMaxWidth().glassSurface(cornerRadius = GlassCornerRadius).clickable(onClick = onClick).padding(14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(SenaGreen.copy(0.15f)), contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.MeetingRoom, null, tint = SenaGreen, modifier = Modifier.size(24.dp))
+            Box(modifier = Modifier.size(48.dp).clip(RoundedCornerShape(28.dp)).background(SenaGreen.copy(0.15f)), contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.MeetingRoom, null, tint = verdeMarca(), modifier = Modifier.size(24.dp))
             }
             Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {

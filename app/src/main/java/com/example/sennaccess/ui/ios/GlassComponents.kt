@@ -27,43 +27,38 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.sennaccess.ui.theme.LocalAppColors
-import com.example.sennaccess.ui.theme.DesignMode
-import com.example.sennaccess.ui.theme.LocalDesignMode
 import com.example.sennaccess.ui.theme.SenaGreen
-import com.example.sennaccess.ui.theme.NewSenaGreen
 import androidx.compose.ui.graphics.luminance
 
-/**
- * Sistema de diseño Glassmorphism (vidrio esmerilado) estilo iOS.
- *
- * Características:
- *  - Fondo semitransparente con highlight superior (luz).
- *  - Borde sutil traslúcido blanco (0.15) de 1dp.
- *  - Radio de curvatura pronunciado (24–32dp).
- *  - Backdrop blur real en API 31+ (RenderEffect); fallback translúcido abajo.
- *
- * Paleta SENA respetada: usa [LocalAppColors] y [SenaGreen].
- */
+// Sistema de diseño Glassmorphism (vidrio esmerilado) estilo iOS.
+// 
+// Características:
+// - Fondo semitransparente con highlight superior (luz).
+// - Borde sutil traslúcido blanco (0.15) de 1dp.
+// - Radio de curvatura pronunciado (24–32dp).
+// - Backdrop blur real en API 31+ (RenderEffect); fallback translúcido abajo.
+// 
+// Paleta SENA respetada: usa [LocalAppColors] y [SenaGreen].
+
 
 // ---- Radios estándar ----
 val GlassCornerRadius: Dp = 24.dp
 val GlassCornerRadiusLg: Dp = 28.dp
 val GlassCornerRadiusXl: Dp = 32.dp
 
-/**
- * Capa de "glow spheres": luces ambientales suaves detrás de las tarjetas
- * para acentuar el efecto de vidrio. Colócalo en el fondo de la pantalla.
- *
- * Uso:
- *   Box(Modifier.fillMaxSize()) {
- *       GlowSpheres()
- *       // contenido...
- *   }
- */
+// Capa de "glow spheres": luces ambientales suaves detrás de las tarjetas
+// para acentuar el efecto de vidrio. Colócalo en el fondo de la pantalla.
+// 
+// Uso:
+// Box(Modifier.fillMaxSize()) {
+// GlowSpheres()
+// // contenido...
+// }
+
 @Composable
 fun GlowSpheres(modifier: Modifier = Modifier, isDark: Boolean = true) {
-    // La opacidad de las esferas se reduce en tema claro para no ensuciar el fondo.
-    val sphereAlpha = if (isDark) 1f else 0.5f
+    // La opacidad se reduce en claro para no ensuciar el fondo ni romper simetría.
+    val sphereAlpha = if (isDark) 1f else 0.28f
     Box(modifier.fillMaxSize()) {
         // Esfera verde SENA (arriba-izquierda)
         Box(
@@ -113,135 +108,92 @@ fun GlowSpheres(modifier: Modifier = Modifier, isDark: Boolean = true) {
     }
 }
 
-/**
- * Modifier reutilizable de superficie de vidrio.
- * Aplica sombra suave + fondo semitransparente con highlight + borde traslúcido.
- *
- * @param cornerRadius radio de esquinas.
- * @param elevated  si true, sombra un poco más presente.
- */
+// Modifier reutilizable de superficie de vidrio.
+// Aplica sombra suave + fondo semitransparente con highlight + borde traslúcido.
+// 
+// @param cornerRadius radio de esquinas.
+// @param elevated  si true, sombra un poco más presente.
+
 @Composable
 fun Modifier.glassSurface(
     cornerRadius: Dp = GlassCornerRadius,
     elevated: Boolean = false
 ): Modifier {
     val colors = LocalAppColors.current
-    val designMode = LocalDesignMode.current
-    // En renovado las tarjetas usan un radio un poco mayor y aprovechan mejor el ancho.
-    val shape = if (designMode == DesignMode.RENOVADO) RoundedCornerShape(cornerRadius + 4.dp) else RoundedCornerShape(cornerRadius)
+    // El radio se respeta exacto (sin +4dp): lo que se pide es lo que se pinta.
+    val shape = RoundedCornerShape(cornerRadius)
     // Detecta tema claro por luminancia del fondo (claro > 0.5).
     val isLight = colors.background.luminance() > 0.5f
 
     // Fondo: en claro la tarjeta debe ser casi opaca para que el texto oscuro
     // contraste bien y no se vea como "caja blanca fantasma" bajo el texto.
     val base = if (isLight) {
-        if (designMode == DesignMode.RENOVADO) {
-            colors.cardBackground.copy(alpha = 0.96f)
-        } else {
-            colors.cardBackground.copy(alpha = 0.92f)
-        }
+        colors.cardBackground.copy(alpha = 0.96f)
     } else {
-        if (designMode == DesignMode.RENOVADO) {
-            colors.cardBackground.copy(alpha = 0.6f)
-        } else {
-            colors.cardBackground.copy(alpha = 0.5f)
-        }
+        colors.cardBackground.copy(alpha = 0.6f)
     }
 
     // Highlight superior: en claro necesita brillo más marcado (blanco sobre blanco
     // al 0.10 era invisible); en oscuro se mantiene sutil.
     val highlight = if (isLight) {
-        if (designMode == DesignMode.RENOVADO) {
-            Brush.linearGradient(
-                colors = listOf(
-                    Color.White.copy(alpha = 0.7f),
-                    Color.White.copy(alpha = 0.3f),
-                    Color.Transparent
-                ),
-                start = Offset(0f, 0f),
-                end = Offset(0f, Float.POSITIVE_INFINITY)
-            )
-        } else {
-            Brush.linearGradient(
-                colors = listOf(
-                    Color.White.copy(alpha = 0.55f),
-                    Color.White.copy(alpha = 0.18f),
-                    Color.Transparent
-                ),
-                start = Offset(0f, 0f),
-                end = Offset(0f, Float.POSITIVE_INFINITY)
-            )
-        }
+        Brush.linearGradient(
+            colors = listOf(
+                Color.White.copy(alpha = 0.7f),
+                Color.White.copy(alpha = 0.3f),
+                Color.Transparent
+            ),
+            start = Offset(0f, 0f),
+            end = Offset(0f, Float.POSITIVE_INFINITY)
+        )
     } else {
-        if (designMode == DesignMode.RENOVADO) {
-            Brush.linearGradient(
-                colors = listOf(
-                    Color.White.copy(alpha = 0.18f),
-                    Color.White.copy(alpha = 0.05f),
-                    Color.Transparent
-                ),
-                start = Offset(0f, 0f),
-                end = Offset(0f, Float.POSITIVE_INFINITY)
-            )
-        } else {
-            Brush.linearGradient(
-                colors = listOf(
-                    Color.White.copy(alpha = 0.10f),
-                    Color.White.copy(alpha = 0.02f),
-                    Color.Transparent
-                ),
-                start = Offset(0f, 0f),
-                end = Offset(0f, Float.POSITIVE_INFINITY)
-            )
-        }
+        Brush.linearGradient(
+            colors = listOf(
+                Color.White.copy(alpha = 0.18f),
+                Color.White.copy(alpha = 0.05f),
+                Color.Transparent
+            ),
+            start = Offset(0f, 0f),
+            end = Offset(0f, Float.POSITIVE_INFINITY)
+        )
     }
 
     return this
         .shadow(
             elevation = if (isLight) {
-                if (elevated) {
-                    if (designMode == DesignMode.RENOVADO) 20.dp else 16.dp
-                } else {
-                    if (designMode == DesignMode.RENOVADO) 12.dp else 8.dp
-                }
+                if (elevated) 20.dp else 12.dp
             } else {
-                if (elevated) {
-                    if (designMode == DesignMode.RENOVADO) 28.dp else 24.dp
-                } else {
-                    if (designMode == DesignMode.RENOVADO) 18.dp else 14.dp
-                }
+                if (elevated) 28.dp else 18.dp
             },
             shape = shape,
             clip = false,
             ambientColor = if (isLight) {
-                if (designMode == DesignMode.RENOVADO) Color.Black.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.10f)
+                Color.Black.copy(alpha = 0.15f)
             } else {
-                if (designMode == DesignMode.RENOVADO) Color.Black.copy(alpha = 0.5f) else Color.Black.copy(alpha = 0.4f)
+                Color.Black.copy(alpha = 0.5f)
             },
             spotColor = if (isLight) {
-                if (designMode == DesignMode.RENOVADO) Color.Black.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.14f)
+                Color.Black.copy(alpha = 0.18f)
             } else {
-                if (designMode == DesignMode.RENOVADO) Color.Black.copy(alpha = 0.6f) else Color.Black.copy(alpha = 0.5f)
+                Color.Black.copy(alpha = 0.6f)
             }
         )
         .clip(shape)
         .background(base)
         .background(highlight)
         .border(
-            if (designMode == DesignMode.RENOVADO) 1.2.dp else 1.dp,
+            1.2.dp,
             if (isLight) {
-                if (designMode == DesignMode.RENOVADO) colors.border.copy(alpha = 0.95f) else colors.border.copy(alpha = 0.9f)
+                colors.border.copy(alpha = 0.95f)
             } else {
-                if (designMode == DesignMode.RENOVADO) colors.borderLight.copy(alpha = 0.25f) else colors.borderLight.copy(alpha = 0.15f)
+                colors.borderLight.copy(alpha = 0.25f)
             },
             shape
         )
 }
 
-/**
- * Tarjeta de vidrio reutilizable (reemplazo iOS de la antigua GlassCard).
- * Mantiene la firma simple: contenido en un [BoxScope].
- */
+// Tarjeta de vidrio reutilizable (reemplazo iOS de la antigua GlassCard).
+// Mantiene la firma simple: contenido en un [BoxScope].
+
 @Composable
 fun IosGlassCard(
     modifier: Modifier = Modifier,
@@ -254,9 +206,8 @@ fun IosGlassCard(
     )
 }
 
-/**
- * Contenedor de vidrio en columna (reemplazo iOS de AdminGlassContainer).
- */
+// Contenedor de vidrio en columna (reemplazo iOS de AdminGlassContainer).
+
 @Composable
 fun IosGlassContainer(
     modifier: Modifier = Modifier,
@@ -269,11 +220,10 @@ fun IosGlassContainer(
     )
 }
 
-/**
- * Menú desplegable de vidrio (reemplazo iOS del DropdownMenu Material por defecto).
- * Mantiene la firma de [DropdownMenu] y aplica el estilo glass de la app: fondo
- * translúcido de tarjeta, esquinas redondeadas, borde sutil y sombra elevada.
- */
+// Menú desplegable de vidrio (reemplazo iOS del DropdownMenu Material por defecto).
+// Mantiene la firma de [DropdownMenu] y aplica el estilo glass de la app: fondo
+// translúcido de tarjeta, esquinas redondeadas, borde sutil y sombra elevada.
+
 @Composable
 fun IosGlassDropdownMenu(
     expanded: Boolean,
@@ -285,7 +235,7 @@ fun IosGlassDropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismissRequest,
         containerColor = colors.cardBackground.copy(alpha = 0.98f),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
         border = BorderStroke(1.dp, colors.borderLight.copy(alpha = 0.25f)),
         shadowElevation = 16.dp,
         content = content

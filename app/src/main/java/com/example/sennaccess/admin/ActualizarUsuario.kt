@@ -29,19 +29,21 @@ import com.example.sennaccess.data.UsuarioApi
 import com.example.sennaccess.data.UsuarioRepository
 import com.example.sennaccess.ui.CargaUiState
 import com.example.sennaccess.ui.EstadoContenido
+import com.example.sennaccess.ui.detalleHttp
+import com.example.sennaccess.ui.campoVisible
 import com.example.sennaccess.ui.theme.ErrorRed
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
+import com.example.sennaccess.ui.theme.verdeMarca
 import com.example.sennaccess.ui.ios.GlassCornerRadius
 import com.example.sennaccess.ui.ios.IosCollapsibleHeader
 import com.example.sennaccess.ui.ios.glassSurface
 import com.example.sennaccess.ui.ios.pressScale
 import kotlinx.coroutines.launch
 
-/**
- * Formulario para actualizar usuario del ADMINISTRADOR (sub-pantalla).
- * Prellena los campos con los datos reales del GET /admin/users.
- */
+// Formulario para actualizar usuario del ADMINISTRADOR (sub-pantalla).
+// Prellena los campos con los datos reales del GET /admin/users.
+
 @Composable
 fun ActualizarUsuarioContent(
     usuario: UsuarioApi,
@@ -71,6 +73,8 @@ fun ActualizarUsuarioContent(
     // Envía los cambios a PUT /admin/users/{id}; en éxito muestra el overlay.
     fun guardarCambios() {
         val rolId = rolSeleccionado?.id_rol ?: run { errorMsj = "Seleccione un rol"; return }
+        if (contrasena.isNotBlank() && contrasena.length < 8) { errorMsj = "La contraseña debe tener mínimo 8 caracteres"; return }
+        if (correo.trim().isBlank()) { errorMsj = "El correo es obligatorio"; return }
         guardando = true
         errorMsj = null
         scope.launch {
@@ -94,9 +98,12 @@ fun ActualizarUsuarioContent(
                 )
                 guardando = false
                 actualizado = true
+            } catch (e: retrofit2.HttpException) {
+                guardando = false
+                errorMsj = detalleHttp(e)
             } catch (e: Exception) {
                 guardando = false
-                errorMsj = e.message ?: "No se pudo actualizar el usuario"
+                errorMsj = "No se pudo conectar al servidor."
             }
         }
     }
@@ -106,6 +113,8 @@ fun ActualizarUsuarioContent(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
+                // El contenido se encoge sobre el teclado para no quedar tapado.
+                .imePadding()
         ) {
             // Encabezado de la pantalla de edicion.
             IosCollapsibleHeader(
@@ -129,18 +138,18 @@ fun ActualizarUsuarioContent(
                 // derecha (apellidos, ID, programa).
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Column(modifier = Modifier.weight(1f)) {
-                        OutlinedTextField(value = nombres, onValueChange = { nombres = it }, label = { Text("Nombres") }, modifier = Modifier.fillMaxWidth(), colors = campoColors())
+                        OutlinedTextField(value = nombres, onValueChange = { nombres = it }, label = { Text("Nombres") }, modifier = Modifier.fillMaxWidth().campoVisible(), colors = campoColors())
                         Spacer(modifier = Modifier.height(12.dp))
-                        OutlinedTextField(value = correo, onValueChange = { correo = it }, label = { Text("Correo Electronico") }, modifier = Modifier.fillMaxWidth(), colors = campoColors())
+                        OutlinedTextField(value = correo, onValueChange = { correo = it }, label = { Text("Correo Electronico") }, modifier = Modifier.fillMaxWidth().campoVisible(), colors = campoColors())
                         Spacer(modifier = Modifier.height(12.dp))
-                        OutlinedTextField(value = ficha, onValueChange = { ficha = it }, label = { Text("Ficha") }, modifier = Modifier.fillMaxWidth(), colors = campoColors())
+                        OutlinedTextField(value = ficha, onValueChange = { ficha = it }, label = { Text("Ficha") }, modifier = Modifier.fillMaxWidth().campoVisible(), colors = campoColors())
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        OutlinedTextField(value = apellidos, onValueChange = { apellidos = it }, label = { Text("Apellidos") }, modifier = Modifier.fillMaxWidth(), colors = campoColors())
+                        OutlinedTextField(value = apellidos, onValueChange = { apellidos = it }, label = { Text("Apellidos") }, modifier = Modifier.fillMaxWidth().campoVisible(), colors = campoColors())
                         Spacer(modifier = Modifier.height(12.dp))
-                        OutlinedTextField(value = numeroId, onValueChange = { numeroId = it }, label = { Text("Numero De Identificacion") }, modifier = Modifier.fillMaxWidth(), colors = campoColors())
+                        OutlinedTextField(value = numeroId, onValueChange = { numeroId = it }, label = { Text("Numero De Identificacion") }, modifier = Modifier.fillMaxWidth().campoVisible(), colors = campoColors())
                         Spacer(modifier = Modifier.height(12.dp))
-                        OutlinedTextField(value = programa, onValueChange = { programa = it }, label = { Text("Programa de Formacion") }, modifier = Modifier.fillMaxWidth(), colors = campoColors())
+                        OutlinedTextField(value = programa, onValueChange = { programa = it }, label = { Text("Programa de Formacion") }, modifier = Modifier.fillMaxWidth().campoVisible(), colors = campoColors())
                     }
                 }
                 Spacer(modifier = Modifier.height(12.dp))
@@ -153,25 +162,25 @@ fun ActualizarUsuarioContent(
                     "PAS" to "Pasaporte"
                 )
                 val docSeleccionado = tiposDoc.firstOrNull { it.first == documentoTipo } ?: tiposDoc.first()
-                Box(modifier = Modifier.fillMaxWidth()) {
+                @OptIn(ExperimentalMaterial3Api::class)
+                ExposedDropdownMenuBox(
+                    expanded = docDropdownAbierto,
+                    onExpandedChange = { docDropdownAbierto = it },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     OutlinedTextField(
                         value = "${docSeleccionado.first}: ${docSeleccionado.second}",
                         onValueChange = {},
                         readOnly = true,
                         singleLine = true,
-                        label = { Text("Tipo de Documento") },
-                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Tipo de Documento - toca para elegir") },
+                        modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
                         colors = campoColors(),
-                        trailingIcon = {
-                            IconButton(onClick = { docDropdownAbierto = true }) {
-                                Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = SenaGreen)
-                            }
-                        }
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = docDropdownAbierto) }
                     )
-                    DropdownMenu(
+                    ExposedDropdownMenu(
                         expanded = docDropdownAbierto,
-                        onDismissRequest = { docDropdownAbierto = false },
-                        modifier = Modifier.fillMaxWidth()
+                        onDismissRequest = { docDropdownAbierto = false }
                     ) {
                         tiposDoc.forEach { (codigo, significado) ->
                             DropdownMenuItem(
@@ -179,13 +188,14 @@ fun ActualizarUsuarioContent(
                                 onClick = {
                                     documentoTipo = codigo
                                     docDropdownAbierto = false
-                                }
+                                },
+                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
                             )
                         }
                     }
                 }
                 Spacer(modifier = Modifier.height(12.dp))
-                OutlinedTextField(value = telefono, onValueChange = { telefono = it }, label = { Text("Telefono de contacto (opcional)") }, modifier = Modifier.fillMaxWidth(), colors = campoColors())
+                OutlinedTextField(value = telefono, onValueChange = { telefono = it }, label = { Text("Telefono de contacto (opcional)") }, modifier = Modifier.fillMaxWidth().campoVisible(), colors = campoColors())
                 Spacer(modifier = Modifier.height(12.dp))
                 // Dropdown de rol prellenado con el rol actual del usuario.
                 EstadoContenido(estado = roles, onReintentar = onReintentarRoles) { listaRoles ->
@@ -199,7 +209,7 @@ fun ActualizarUsuarioContent(
                             colors = campoColors(),
                             trailingIcon = {
                                 IconButton(onClick = { dropdownAbierto = true }) {
-                                    Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = SenaGreen)
+                                    Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = verdeMarca())
                                 }
                             }
                         )
@@ -222,34 +232,35 @@ fun ActualizarUsuarioContent(
                 }
                 Spacer(modifier = Modifier.height(12.dp))
                 // Campo opcional: solo se envía si se escribe una contraseña nueva.
-                OutlinedTextField(value = contrasena, onValueChange = { contrasena = it }, label = { Text("Nueva contraseña (opcional)") }, modifier = Modifier.fillMaxWidth(), colors = campoColors())
+                OutlinedTextField(value = contrasena, onValueChange = { contrasena = it }, label = { Text("Nueva contraseña (opcional)") }, modifier = Modifier.fillMaxWidth().campoVisible(), colors = campoColors())
                 Spacer(modifier = Modifier.height(32.dp))
                 // Mensaje de error de validación o red, si lo hay.
                 if (errorMsj != null) {
                     Text(errorMsj!!, color = ErrorRed, fontSize = 13.sp, modifier = Modifier.fillMaxWidth())
                     Spacer(modifier = Modifier.height(8.dp))
                 }
-                // Acciones: cancelar (vuelve al panel) y actualizar (envía a la API).
+                // Acciones: cancelar (vuelve a la lista) y actualizar (envía a la API).
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedButton(
-                        onClick = { onNavigate(AdminScreen.PANEL) },
-                        modifier = Modifier.weight(1f).height(50.dp).pressScale(pressedScale = 0.97f),
-                        shape = RoundedCornerShape(12.dp),
+                        onClick = { onNavigate(AdminScreen.USUARIOS) },
+                        modifier = Modifier.weight(1f).height(52.dp).pressScale(pressedScale = 0.97f),
+                        shape = RoundedCornerShape(28.dp),
                         border = BorderStroke(1.dp, colors.textSecondary)
                     ) { Text("CANCELAR", color = colors.textSecondary, fontWeight = FontWeight.Bold) }
                     Button(
                         onClick = { guardarCambios() },
                         enabled = !guardando,
-                        modifier = Modifier.weight(1f).height(50.dp).pressScale(pressedScale = 0.97f),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = colors.textPrimary)
+                        modifier = Modifier.weight(1f).height(52.dp).pressScale(pressedScale = 0.97f),
+                        shape = RoundedCornerShape(28.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black)
                     ) { Text(if (guardando) "GUARDANDO..." else "ACTUALIZAR", fontWeight = FontWeight.Bold) }
                 }
             }
             Spacer(modifier = Modifier.height(20.dp))
         }
 
-        // Tras actualizar, overlay de exito sobre el formulario.
+        // Tras actualizar, overlay de exito: OK lo cierra y se queda en esta misma
+        // pantalla (antes mandaba al dashboard y tocaba volver a entrar).
         if (actualizado) {
             Box(
                 modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)),
@@ -262,9 +273,9 @@ fun ActualizarUsuarioContent(
                         .padding(32.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(Icons.Default.CheckCircle, null, tint = SenaGreen, modifier = Modifier.size(80.dp))
+                    Icon(Icons.Default.CheckCircle, null, tint = verdeMarca(), modifier = Modifier.size(80.dp))
                     Spacer(modifier = Modifier.height(24.dp))
-                    Text("¡Actualizacion Exitosa!", color = SenaGreen, fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                    Text("¡Actualizacion Exitosa!", color = verdeMarca(), fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         "Los datos de ${usuario.nombreCompleto} han sido actualizados correctamente.",
@@ -272,11 +283,11 @@ fun ActualizarUsuarioContent(
                     )
                     Spacer(modifier = Modifier.height(32.dp))
                     Button(
-                        onClick = { onNavigate(AdminScreen.PANEL) },
-                        modifier = Modifier.fillMaxWidth().height(50.dp).pressScale(pressedScale = 0.97f),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = colors.textPrimary)
-                    ) { Text("Volver al panel", fontWeight = FontWeight.Bold, fontSize = 16.sp) }
+                        onClick = { actualizado = false },
+                        modifier = Modifier.fillMaxWidth().height(52.dp).pressScale(pressedScale = 0.97f),
+                        shape = RoundedCornerShape(28.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black)
+                    ) { Text("OK", fontWeight = FontWeight.Bold, fontSize = 16.sp) }
                 }
             }
         }
@@ -286,7 +297,7 @@ fun ActualizarUsuarioContent(
 // Paleta de colores comun de los campos del formulario de actualizacion.
 @Composable
 private fun campoColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = SenaGreen, unfocusedBorderColor = LocalAppColors.current.textSecondary,
-    focusedLabelColor = SenaGreen, unfocusedLabelColor = LocalAppColors.current.textSecondary,
-    cursorColor = SenaGreen, focusedTextColor = LocalAppColors.current.textPrimary, unfocusedTextColor = LocalAppColors.current.textPrimary
+    focusedBorderColor = verdeMarca(), unfocusedBorderColor = LocalAppColors.current.textSecondary,
+    focusedLabelColor = verdeMarca(), unfocusedLabelColor = LocalAppColors.current.textSecondary,
+    cursorColor = verdeMarca(), focusedTextColor = LocalAppColors.current.textPrimary, unfocusedTextColor = LocalAppColors.current.textPrimary
 )

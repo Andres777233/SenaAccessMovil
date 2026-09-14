@@ -29,16 +29,15 @@ import com.example.sennaccess.ui.ios.IosCollapsibleHeader
 import com.example.sennaccess.ui.ios.glassSurface
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
+import com.example.sennaccess.ui.theme.verdeMarca
 
 // Catálogo de pantallas del módulo admin; usado por la navegación interna.
 enum class AdminScreen { PANEL, USUARIOS, CREAR_USUARIO, ACTUALIZAR_USUARIO,
     ACCESO_APRENDICES, ACCESO_INSTRUCTORES, REPORTE_NOVEDADES, PERFIL,
     EQUIPOS, NOTIFICACIONES, AMBIENTES, VALIDAR_EXCUSA, VERIFICACION_2FA }
 
-/**
- * Panel de inicio del ADMINISTRADOR (contenido de la pestaña INICIO).
- * Resumen del día: historial de ingresos del centro con sus horarios.
- */
+// Panel de inicio del ADMINISTRADOR (contenido de la pestaña INICIO).
+// Resumen del día: historial de ingresos del centro con sus horarios.
 @Composable
 fun AdminPanelResumen(resumen: CargaUiState<List<Ingreso>>, onReintentar: () -> Unit) {
     val colors = LocalAppColors.current
@@ -62,7 +61,7 @@ fun AdminPanelResumen(resumen: CargaUiState<List<Ingreso>>, onReintentar: () -> 
         // Título de sección que introduce el listado de ingresos del día.
         Text(
             "HISTORIAL DEL DÍA",
-            color = SenaGreen,
+            color = verdeMarca(),
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 2.sp,
@@ -114,7 +113,7 @@ private fun AccesoResumenCard(nombre: String, tipo: String, hora: String) {
                 .background(SenaGreen.copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.Schedule, null, tint = SenaGreen, modifier = Modifier.size(22.dp))
+            Icon(Icons.Default.Schedule, null, tint = verdeMarca(), modifier = Modifier.size(22.dp))
         }
         Spacer(modifier = Modifier.width(14.dp))
         // Columna principal: nombre y tipo de acceso del usuario.
@@ -123,6 +122,6 @@ private fun AccesoResumenCard(nombre: String, tipo: String, hora: String) {
             Text(tipo, color = colors.textSecondary, fontSize = 12.sp)
         }
         // Hora del acceso resaltada a la derecha.
-        Text(hora, color = SenaGreen, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        Text(hora, color = verdeMarca(), fontSize = 14.sp, fontWeight = FontWeight.Bold)
     }
 }

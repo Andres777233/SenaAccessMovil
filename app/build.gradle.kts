@@ -3,6 +3,12 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+import java.util.Properties
+
+val keystoreProps = Properties().apply {
+    file("keystore.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
+}
+
 android {
     namespace = "com.example.sennaccess"
     compileSdk {
@@ -18,14 +24,20 @@ android {
             keyAlias = "androiddebugkey"
             keyPassword = "android"
         }
+        create("release") {
+            storeFile = file(keystoreProps.getProperty("storeFile", "release.keystore"))
+            storePassword = keystoreProps.getProperty("storePassword")
+            keyAlias = keystoreProps.getProperty("keyAlias", "senaaccess")
+            keyPassword = keystoreProps.getProperty("keyPassword")
+        }
     }
 
     defaultConfig {
         applicationId = "com.example.sennaccess"
         minSdk = 24
         targetSdk = 36
-        versionCode = 4
-        versionName = "1.3"
+        versionCode = 9
+        versionName = "3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -37,7 +49,7 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

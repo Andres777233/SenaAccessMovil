@@ -41,11 +41,13 @@ import com.example.sennaccess.data.UsuarioApi
 import com.example.sennaccess.ui.CargaUiState
 import com.example.sennaccess.ui.CargandoBox
 import com.example.sennaccess.ui.ErrorBox
+import com.example.sennaccess.ui.campoVisible
 import com.example.sennaccess.ui.ios.GlassCornerRadius
 import com.example.sennaccess.ui.ios.glassSurface
 import com.example.sennaccess.ui.ios.IosCollapsibleHeader
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
+import com.example.sennaccess.ui.theme.verdeMarca
 import com.example.sennaccess.ui.theme.ErrorRed
 import kotlinx.coroutines.launch
 
@@ -100,7 +102,7 @@ fun AmbientesAdminView(onBack: () -> Unit) {
         return
     }
 
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).imePadding()) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null, tint = colors.textPrimary) }
             Text("Ambientes", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.padding(start = 4.dp))
@@ -114,7 +116,7 @@ fun AmbientesAdminView(onBack: () -> Unit) {
             onClick = { mostrarCrear = true },
             modifier = Modifier.fillMaxWidth().height(48.dp),
             colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(28.dp)
         ) {
             Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(6.dp))
@@ -177,7 +179,7 @@ fun AmbientesAdminView(onBack: () -> Unit) {
                         } catch (e: retrofit2.HttpException) { eliminando = false; errorEliminar = "Error ${e.code()}: ${e.message()}" }
                         catch (e: Exception) { eliminando = false; errorEliminar = "Fallo de conexión" }
                     }
-                }, colors = ButtonDefaults.buttonColors(containerColor = ErrorRed, contentColor = Color.White), shape = RoundedCornerShape(12.dp)) { Text(if (eliminando) "Eliminando..." else "Eliminar", fontWeight = FontWeight.Bold) }
+                }, colors = ButtonDefaults.buttonColors(containerColor = ErrorRed, contentColor = Color.White), shape = RoundedCornerShape(28.dp)) { Text(if (eliminando) "Eliminando..." else "Eliminar", fontWeight = FontWeight.Bold) }
             },
             dismissButton = { TextButton(onClick = { ambienteAEliminar = null }) { Text("Cancelar", color = colors.textSecondary) } }
         )
@@ -191,14 +193,14 @@ private fun AmbienteAdminCard(ambiente: Ambiente, onEditar: () -> Unit, onElimin
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(modifier = Modifier.size(42.dp).clip(RoundedCornerShape(10.dp)).background(SenaGreen.copy(0.15f)), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.MeetingRoom, null, tint = SenaGreen, modifier = Modifier.size(22.dp))
+                    Icon(Icons.Default.MeetingRoom, null, tint = verdeMarca(), modifier = Modifier.size(22.dp))
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(ambiente.ambiente_nombre ?: "Sin nombre", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (!ambiente.ambiente_ubicacion.isNullOrBlank()) Text(ambiente.ambiente_ubicacion!!, color = colors.textSecondary, fontSize = 12.sp)
-                        if (!ambiente.ambiente_jornada.isNullOrBlank()) { Spacer(modifier = Modifier.width(8.dp)); Box(modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(SenaGreen.copy(0.15f)).padding(horizontal = 6.dp, vertical = 2.dp)) { Text(ambiente.ambiente_jornada!!, color = SenaGreen, fontSize = 10.sp, fontWeight = FontWeight.Bold) } }
+                        if (!ambiente.ambiente_jornada.isNullOrBlank()) { Spacer(modifier = Modifier.width(8.dp)); Box(modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(SenaGreen.copy(0.15f)).padding(horizontal = 6.dp, vertical = 2.dp)) { Text(ambiente.ambiente_jornada!!, color = verdeMarca(), fontSize = 10.sp, fontWeight = FontWeight.Bold) } }
                     }
                 }
                 IconButton(onClick = onEditar) { Icon(Icons.Default.Edit, null, tint = colors.textSecondary) }
@@ -206,7 +208,7 @@ private fun AmbienteAdminCard(ambiente: Ambiente, onEditar: () -> Unit, onElimin
             }
             Spacer(modifier = Modifier.height(10.dp))
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Icon(Icons.Default.Person, null, tint = SenaGreen, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.Person, null, tint = verdeMarca(), modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(6.dp))
                 val nombres = ambiente.instructores?.takeIf { it.isNotEmpty() }?.joinToString(", ") { it.nombreCompleto } ?: "Sin instructor asignado"
                 Text(nombres, color = colors.textSecondary, fontSize = 12.sp, modifier = Modifier.weight(1f))
@@ -247,25 +249,25 @@ private fun AmbienteFormDialog(ambiente: Ambiente?, instructoresDisponibles: Lis
         shape = RoundedCornerShape(24.dp),
         title = { Text(if (ambiente == null) "Crear ambiente" else "Editar ambiente", color = colors.textPrimary, fontWeight = FontWeight.Bold) },
         text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                OutlinedTextField(value = nombre, onValueChange = { nombre = it }, label = { Text("Nombre *") }, placeholder = { Text("Ambiente 101") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            Column(modifier = Modifier.verticalScroll(rememberScrollState()).imePadding()) {
+                OutlinedTextField(value = nombre, onValueChange = { nombre = it }, label = { Text("Nombre *") }, placeholder = { Text("Ambiente 101") }, modifier = Modifier.fillMaxWidth().campoVisible(), singleLine = true)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = capacidad, onValueChange = { capacidad = it }, label = { Text("Capacidad") }, modifier = Modifier.weight(1f), singleLine = true)
-                    OutlinedTextField(value = ubicacion, onValueChange = { ubicacion = it }, label = { Text("Ubicación") }, placeholder = { Text("CCyS / Ciudad Jardín") }, modifier = Modifier.weight(1f), singleLine = true)
+                    OutlinedTextField(value = capacidad, onValueChange = { capacidad = it }, label = { Text("Capacidad") }, modifier = Modifier.weight(1f).campoVisible(), singleLine = true)
+                    OutlinedTextField(value = ubicacion, onValueChange = { ubicacion = it }, label = { Text("Ubicación") }, placeholder = { Text("CCyS / Ciudad Jardín") }, modifier = Modifier.weight(1f).campoVisible(), singleLine = true)
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 var menuJornada by remember { mutableStateOf(false) }
                 ExposedDropdownMenuBox(expanded = menuJornada, onExpandedChange = { menuJornada = !menuJornada }) {
                     OutlinedTextField(value = jornada, onValueChange = {}, readOnly = true, label = { Text("Jornada") }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = menuJornada) }, modifier = Modifier.fillMaxWidth().menuAnchor())
                     ExposedDropdownMenu(expanded = menuJornada, onDismissRequest = { menuJornada = false }) {
-                        jornadas.forEach { j -> DropdownMenuItem(text = { Text(j) }, onClick = { jornada = j; menuJornada = false }, leadingIcon = { Icon(Icons.Default.Check, null, tint = if (jornada == j) SenaGreen else Color.Transparent, modifier = Modifier.size(18.dp)) }) }
+                        jornadas.forEach { j -> DropdownMenuItem(text = { Text(j) }, onClick = { jornada = j; menuJornada = false }, leadingIcon = { Icon(Icons.Default.Check, null, tint = if (jornada == j) verdeMarca() else Color.Transparent, modifier = Modifier.size(18.dp)) }) }
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = horaInicio, onValueChange = { horaInicio = it }, label = { Text("Hora inicio") }, placeholder = { Text("13:00") }, modifier = Modifier.weight(1f), singleLine = true)
-                    OutlinedTextField(value = horaFin, onValueChange = { horaFin = it }, label = { Text("Hora fin") }, placeholder = { Text("18:00") }, modifier = Modifier.weight(1f), singleLine = true)
+                    OutlinedTextField(value = horaInicio, onValueChange = { horaInicio = it }, label = { Text("Hora inicio") }, placeholder = { Text("13:00") }, modifier = Modifier.weight(1f).campoVisible(), singleLine = true)
+                    OutlinedTextField(value = horaFin, onValueChange = { horaFin = it }, label = { Text("Hora fin") }, placeholder = { Text("18:00") }, modifier = Modifier.weight(1f).campoVisible(), singleLine = true)
                 }
                 Spacer(modifier = Modifier.height(12.dp))
                 Text("Instructores asignados (uno puede estar en varios ambientes)", color = colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
@@ -308,7 +310,7 @@ private fun AmbienteFormDialog(ambiente: Ambiente?, instructoresDisponibles: Lis
                     } catch (e: retrofit2.HttpException) { guardando = false; error = "Error ${e.code()}: ${e.message()}" }
                     catch (e: Exception) { guardando = false; error = "Fallo de conexión: ${e.message}" }
                 }
-            }, enabled = !guardando, colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black), shape = RoundedCornerShape(12.dp)) { if (guardando) CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(16.dp), strokeWidth = 2.dp) else Text("Guardar", fontWeight = FontWeight.Bold) }
+            }, enabled = !guardando, colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black), shape = RoundedCornerShape(28.dp)) { if (guardando) CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(16.dp), strokeWidth = 2.dp) else Text("Guardar", fontWeight = FontWeight.Bold) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
     )

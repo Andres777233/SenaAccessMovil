@@ -24,6 +24,11 @@ class UsuarioRepository {
     suspend fun updateMyProfile(token: String, body: UpdateProfileRequest): UsuarioApi =
         RetrofitClient.conServicio { it.updateMyProfile("Bearer $token", body) }
 
+    // Verifica la contraseña actual con la sesión (para registrar la huella sin
+    // disparar el 2FA ni enviar correos).
+    suspend fun verificarPassword(token: String, contrasena: String): MessageResponse =
+        RetrofitClient.conServicio { it.verificarPassword("Bearer $token", VerificarPasswordRequest(contrasena)) }
+
     // Actualiza el perfil incluyendo la foto elegida (POST my-profile multipart con
     // _method=PUT). Los campos de texto viajan como partes de texto y la imagen como
     // parte "image"; el backend la sube y guarda su URL en profile_photo_path.

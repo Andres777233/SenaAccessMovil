@@ -39,16 +39,14 @@ import com.example.sennaccess.BuildConfig
 import com.example.sennaccess.ui.ios.IosSpring
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
+import com.example.sennaccess.ui.theme.verdeMarca
 import kotlinx.coroutines.delay
 
-/**
- * Splash con animación de logo tipo iOS:
- *  - Entrada del logo con curva elástica de rebote (spring físico + elasticOut).
- *  - Fondo oscuro profundo con resplandor radial verde SENA detrás del logo.
- *  - Transición de salida con Fade + Scale hacia la pantalla principal.
- *
- * Conserva la firma original (isDark, onFinished) -> no altera la navegación.
- */
+// Splash con animación de logo tipo iOS:
+//  - Entrada del logo con curva elástica de rebote (spring físico + elasticOut).
+//  - Fondo oscuro profundo con resplandor radial verde SENA detrás del logo.
+//  - Transición de salida con Fade + Scale hacia la pantalla principal.
+// Conserva la firma original (isDark, onFinished) -> no altera la navegación.
 @Composable
 fun SplashScreen(isDark: Boolean = true, onFinished: () -> Unit) {
 
@@ -96,7 +94,7 @@ fun SplashScreen(isDark: Boolean = true, onFinished: () -> Unit) {
         onFinished()
     }
 
-    val bg = if (isDark) Color(0xFF07090D) else Color(0xFFF0F2F5)
+    val bg = LocalAppColors.current.background
 
     // Contenedor de la pantalla: aplica la transición de salida y centra el contenido.
     Box(
@@ -150,14 +148,14 @@ fun SplashScreen(isDark: Boolean = true, onFinished: () -> Unit) {
 
             Text(
                 "SENA ACCESS",
-                color = SenaGreen,
+                color = verdeMarca(),
                 fontWeight = FontWeight.Bold,
                 fontSize = 28.sp,
                 modifier = Modifier.alpha(subtitleAlpha)
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                "v${BuildConfig.VERSION_NAME}",
+                "Versión ${BuildConfig.VERSION_NAME}",
                 color = LocalAppColors.current.textSecondary,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,

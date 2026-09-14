@@ -22,14 +22,14 @@ import com.example.sennaccess.ui.EstadoContenido
 import com.example.sennaccess.ui.EstadoVacio
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
+import com.example.sennaccess.ui.theme.verdeMarca
 import com.example.sennaccess.ui.ios.GlassCornerRadius
 import com.example.sennaccess.ui.ios.IosCollapsibleHeader
 import com.example.sennaccess.ui.ios.glassSurface
 
-/**
- * Pantalla de acceso de APRENDICES del ADMINISTRADOR (sub-pantalla).
- * Consume el historial real del ViewModel y filtra solo los aprendices.
- */
+// Pantalla de acceso de APRENDICES del ADMINISTRADOR (sub-pantalla).
+// Consume el historial real del ViewModel y filtra solo los aprendices.
+
 @Composable
 fun AccesoAprendicesContent(
     estado: CargaUiState<HistorialAdminData>,
@@ -54,7 +54,7 @@ fun AccesoAprendicesContent(
                 Icon(
                     Icons.Default.ArrowBack,
                     contentDescription = "Volver",
-                    tint = SenaGreen
+                    tint = verdeMarca()
                 )
             }
         }
@@ -94,7 +94,7 @@ fun AccesoAprendicesContent(
 
             // Acceso directo a la pantalla de registros de instructores.
             TextButton(onClick = { onNavigate(AdminScreen.ACCESO_INSTRUCTORES) }) {
-                Text("Ver registro de instructores >", color = SenaGreen)
+                Text("Ver registro de instructores >", color = verdeMarca())
             }
         }
     }

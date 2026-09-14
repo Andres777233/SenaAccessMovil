@@ -1,84 +1,59 @@
 package com.example.sennaccess.ui.theme
 
-// Punto de entrada del tema de la app. Aplica el esquema de color claro u
-// oscuro según el sistema y usa el color dinámico de Android 12+ cuando existe.
-import android.app.Activity
-import android.os.Build
+// Tema raíz de la app: provee la paleta SENA (clara u oscura según el modo del
+// sistema, sobrescrita por el toggle del usuario) y la tipografía propia.
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.platform.LocalContext
-import com.example.sennaccess.ui.theme.DesignMode
-import com.example.sennaccess.ui.theme.LocalDesignMode
-import com.example.sennaccess.ui.theme.darkAppColors
-import com.example.sennaccess.ui.theme.lightAppColors
-import com.example.sennaccess.ui.theme.darkAppColorsRenovado
-import com.example.sennaccess.ui.theme.lightAppColorsRenovado
 import androidx.compose.ui.graphics.Color
 
-// Esquemas Material 3 por defecto de la plantilla (colores "purple" de muestra).
-// La paleta real de la app se consume vía LocalAppColors definida en AppColors.
+// Esquemas Material 3 derivados de la identidad SENA. Estos colores alimentan a
+// los componentes M3 básicos; las superficies propias usan LocalAppColors.
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = SenaGreen,
+    onPrimary = Color(0xFF04100A),
+    secondary = Color(0xFF02D914),
+    onSecondary = Color(0xFF04100A),
+    background = Color(0xFF05070B),
+    onBackground = Color(0xFFF2F4F6),
+    surface = Color(0xFF0E1217),
+    onSurface = Color(0xFFF2F4F6),
+    surfaceVariant = Color(0xFF161D24),
+    onSurfaceVariant = Color(0xFF9BA1A8),
+    error = ErrorRed,
+    onError = Color(0xFF2B0000)
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    primary = SenaGreen,
+    onPrimary = Color(0xFF04100A),
+    secondary = Color(0xFF02D914),
+    onSecondary = Color(0xFF04100A),
+    background = Color(0xFFF6F8FA),
+    onBackground = Color(0xFF14161A),
+    surface = Color(0xFFFFFFFF),
+    onSurface = Color(0xFF14161A),
+    surfaceVariant = Color(0xFFEDEFF3),
+    onSurfaceVariant = Color(0xFF5B6470),
+    error = ErrorRed,
+    onError = Color(0xFFFFFFFF)
 )
 
-// Tema raíz: elige el esquema según el modo del sistema y el color dinámico.
+// Tema raíz: elige el esquema según el modo del sistema (oscilable con el toggle
+// de la app) y provee la paleta SENA activa a toda la UI.
 @Composable
 fun SennaccessTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
-    designMode: DesignMode = DesignMode.ORIGINAL,
     content: @Composable () -> Unit
 ) {
-    // El color dinámico solo aplica en Android 12+ y deriva de la imagen de fondo.
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
+    val appColors = if (darkTheme) darkAppColors() else lightAppColors()
 
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
-
-    // Obtener la paleta según el modo de diseño y tema
-    val appColors = when {
-        designMode == DesignMode.RENOVADO && darkTheme -> darkAppColorsRenovado()
-        designMode == DesignMode.RENOVADO && !darkTheme -> lightAppColorsRenovado()
-        !darkTheme -> lightAppColors()
-        else -> darkAppColors()
-    }
-
-    CompositionLocalProvider(
-        LocalAppColors provides appColors,
-        LocalDesignMode provides designMode
-    ) {
+    CompositionLocalProvider(LocalAppColors provides appColors) {
         MaterialTheme(
-            colorScheme = colorScheme,
+            colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme,
             typography = Typography,
             content = content
         )

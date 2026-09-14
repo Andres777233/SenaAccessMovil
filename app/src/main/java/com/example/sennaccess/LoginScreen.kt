@@ -5,13 +5,11 @@
 // (HuellaCredentialStore) para hacer el login contra el backend.
 // Al autenticarse devuelve el rol al MainActivity para redirigir al dashboard.
 // Paquete donde está este archivo
-package com.example.sennaccess.ui.theme
+package com.example.sennaccess
 
 // Importamos herramientas que vamos a usar en la interfaz
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,38 +26,40 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.rememberAsyncImagePainter
 import kotlinx.coroutines.launch
 import com.example.sennaccess.R
 import com.example.sennaccess.data.HuellaCredentialStore
+import com.example.sennaccess.data.DispositivoStore
 import com.example.sennaccess.data.SessionManager
 import com.example.sennaccess.ui.BiometricAuth
+import com.example.sennaccess.ui.campoVisible
 import androidx.biometric.BiometricPrompt
-import androidx.fragment.app.FragmentActivity
 import com.example.sennaccess.ui.theme.LocalAppColors
+import com.example.sennaccess.ui.theme.SenaGreen
+import com.example.sennaccess.ui.theme.verdeMarca
 import com.example.sennaccess.ui.LoginViewModel
 import com.example.sennaccess.ui.LoginUiState
 import com.example.sennaccess.ui.verificacion2fa.Verificacion2FaScreen
+import com.example.sennaccess.ui.ios.AuthField
+import com.example.sennaccess.ui.ios.ErrorBox
+import com.example.sennaccess.ui.ios.GlowOutlinedButton
 import com.example.sennaccess.ui.ios.GlowSpheres
-import com.example.sennaccess.ui.ios.glassSurface
-import com.example.sennaccess.ui.ios.GlassCornerRadiusLg
-import com.example.sennaccess.ui.ios.pressScale
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.LightMode
+import com.example.sennaccess.ui.ios.IosGlassCard
+import com.example.sennaccess.ui.ios.PrimaryNeonButton
+import com.example.sennaccess.ui.ios.ThemeToggleButton
 
 
 // ESTA ES LA PANTALLA PRINCIPAL DEL LOGIN
@@ -72,6 +72,9 @@ fun LoginScreen(
     onLoginSuccess: (String) -> Unit,
     isDark: Boolean = true,
     onToggleTheme: () -> Unit = {},
+    // Reto 2FA llegado por deep link (correo): se muestra directo sin login previo.
+    retoInicialId: String? = null,
+    onRetoConsumido: () -> Unit = {},
     viewModel: LoginViewModel = viewModel()
 ) {
     val colors = LocalAppColors.current
@@ -80,6 +83,9 @@ fun LoginScreen(
 
     // Contexto para el diálogo biométrico del sistema y el almacén de credenciales.
     val context = LocalContext.current
+    // Id estable de ESTE teléfono: viaja en cada login para que el backend solo pida
+    // 2FA desde dispositivos distintos al original (ver DispositivoStore).
+    val deviceId = remember { DispositivoStore.obtenerId(context) }
 
     // Mensaje de error del botón INGRESAR CON HUELLA (biometría local).
     var huellaError by remember { mutableStateOf<String?>(null) }
@@ -93,6 +99,35 @@ fun LoginScreen(
     // Reto de verificación en dos pasos pendiente: si no es null se muestra el
     // overlay de 2FA (código del correo + aprobación desde otro dispositivo).
     var reto2FaById by remember { mutableStateOf<String?>(null) }
+    // Error de rol desconocido: por seguridad nunca se navega a un dashboard
+    // si el backend no devolvió un rol válido (antes caía a admin por defecto).
+    var errorRol by remember { mutableStateOf<String?>(null) }
+
+    // Deriva el reto 2FA desde el estado del ViewModel fuera de la composición:
+    // hacerlo dentro del @Composable provocaba recomposiciones y mostraba el
+    // diálogo de huella en el mismo frame que el overlay de verificación.
+    LaunchedEffect(uiState) {
+        val estado = uiState
+        if (estado is LoginUiState.Success) {
+            val res = estado.response
+            if (res.two_factor_required == true && res.two_factor_id != null) {
+                askSaveBiometric = false
+                reto2FaById = res.two_factor_id
+                viewModel.reset()
+            }
+        }
+    }
+
+    // Deep link del correo ("Sí/No soy yo"): si la app se abrió con un
+    // challenge_id, se muestra el overlay aunque no hubo login previo aquí.
+    LaunchedEffect(retoInicialId) {
+        if (!retoInicialId.isNullOrBlank() && reto2FaById == null) {
+            askSaveBiometric = false
+            viewModel.reset()
+            reto2FaById = retoInicialId
+            onRetoConsumido()
+        }
+    }
 
     // Si el login con huella falla (credenciales guardadas inválidas), borra lo
     // guardado para forzar un nuevo registro en el próximo login manual.
@@ -126,50 +161,34 @@ fun LoginScreen(
         // Luces ambientales detrás del vidrio (acentúan el glassmorphism).
         GlowSpheres(isDark = isDark)
 
-        // Overlay de verificación en dos pasos: a pantalla completa, tapa el login
-        // cuando el backend responde two_factor_required en lugar de un token.
-        reto2FaById?.let { challengeId ->
-            Verificacion2FaScreen(
-                challengeId = challengeId,
-                isDark = isDark,
-                onCancel = {
-                    reto2FaById = null
-                    viewModel.reset()
-                },
-                onLoginSuccess = { role ->
-                    reto2FaById = null
-                    viewModel.reset()
-                    onLoginSuccess(role)
-                }
-            )
-        }
-
+        // Tarjeta de login: se oculta mientras el reto 2FA está activo para que
+        // nunca quede compuesta detrás del overlay de verificación (antes el
+        // orden del Box pintaba el login encima y se veían superpuestos).
+        if (reto2FaById == null) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .imePadding()
                 .padding(16.dp),
             contentAlignment = Alignment.Center
         ) {
-        IconButton(
-            onClick = onToggleTheme,
+        ThemeToggleButton(
+            isDark = isDark,
+            onToggleTheme = onToggleTheme,
             modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)
-        ) {
-            Icon(
-                imageVector = if (isDark) Icons.Default.LightMode else Icons.Default.DarkMode,
-                contentDescription = if (isDark) "Modo claro" else "Modo oscuro",
-                tint = colors.textPrimary
-            )
-        }
+        )
 
         // Tarjeta principal del login
-        GlassCard {
+        IosGlassCard(modifier = Modifier.fillMaxWidth(0.95f).padding(vertical = 20.dp)) {
 
             // Column sirve para poner elementos uno debajo del otro
-            Column(
-                modifier = Modifier
-                    .padding(horizontal = 24.dp, vertical = 32.dp)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
+                Column(
+                    modifier = Modifier
+                        .padding(horizontal = 24.dp, vertical = 32.dp)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        // El contenido se encoge sobre el teclado para no quedar tapado.
+                        .imePadding(),
 
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -193,7 +212,7 @@ fun LoginScreen(
                         // Esta parte pone "Access" verde y en negrita
                         withStyle(
                             style = SpanStyle(
-                                color = SenaGreen,
+                                color = verdeMarca(),
                                 fontWeight = FontWeight.Bold
                             )
                         ) {
@@ -210,7 +229,7 @@ fun LoginScreen(
                 Text(
                     "Acceso CCyS",
                     fontSize = 16.sp,
-                    color = SenaGreen.copy(alpha = 0.8f)
+                    color = verdeMarca()
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -235,6 +254,7 @@ fun LoginScreen(
                     onRecoveryClick = onNavigateToRecovery,
                     viewModel = viewModel,
                     uiState = uiState,
+                    deviceId = deviceId,
 
                         // Ingreso con huella (biometría local): el sistema pide el dedo
                         // y solo entonces se descifran las credenciales guardadas para
@@ -242,18 +262,24 @@ fun LoginScreen(
                         onBiometricLogin = {
                             if (!huellaOcupado) {
                                 huellaError = null
+                                errorRol = null
                                 when {
-                                    !BiometricAuth.isAvailable(context) ->
+                                    // Se exige biometría fuerte para descifrar: el PIN no puede
+                                    // abrir el CryptoObject y antes eso cerraba la app.
+                                    !BiometricAuth.isAvailable(context, forCrypto = true) ->
                                         huellaError = "Tu dispositivo no tiene huella configurada. Regístrala en Ajustes del sistema."
                                     !HuellaCredentialStore.hayGuardada(context) ->
                                         huellaError = "Aún no tienes una huella registrada. Inicia sesión con tu contraseña y acepta registrarla."
                                     else -> {
                                         val cipher = HuellaCredentialStore.prepararDescifrado(context)
-                                        val activity = context as? FragmentActivity
+                                        // Sin !! ni cast directo: si no hay actividad o cipher, se
+                                        // informa en pantalla en vez de lanzar una excepción.
+                                        val activity = BiometricAuth.activityDe(context)
                                         if (cipher == null || activity == null) {
                                             huellaError = "Tu huella se desvinculó. Inicia sesión con tu contraseña y regístrala de nuevo."
                                         } else {
                                             huellaOcupado = true
+                                            try {
                                             BiometricAuth.authenticate(
                                                 activity = activity,
                                                 title = "Ingresa con tu huella",
@@ -262,24 +288,32 @@ fun LoginScreen(
                                                 onSuccess = { result ->
                                                     huellaOcupado = false
                                                     try {
-                                                        val credenciales = HuellaCredentialStore.leer(
-                                                            context,
-                                                            result.cryptoObject!!.cipher!!
-                                                        )
+                                                        val seguro = result.cryptoObject?.cipher
+                                                        if (seguro == null) {
+                                                            huellaError = "No se pudo verificar tu huella. Inténtalo de nuevo."
+                                                            return@authenticate
+                                                        }
+                                                        val credenciales = HuellaCredentialStore.leer(context, seguro)
                                                         loginDesdeHuella = true
-                                                        viewModel.login(credenciales.first, credenciales.second)
+                                                        viewModel.login(credenciales.first, credenciales.second, deviceId.ifBlank { null })
                                                     } catch (e: Exception) {
                                                         HuellaCredentialStore.borrar(context)
+                                                        HuellaCredentialStore.borrarLlave()
                                                         huellaError = "No se pudieron leer tus credenciales. Inicia sesión y registra tu huella de nuevo."
                                                     }
                                                 },
                                                 onError = { motivo ->
                                                     huellaOcupado = false
-                                                    if (!motivo.contains("cancel", ignoreCase = true)) {
-                                                        huellaError = motivo
-                                                    }
+                                                    huellaError = motivo
+                                                },
+                                                onFailed = { aviso ->
+                                                    huellaError = aviso
                                                 }
                                             )
+                                            } catch (e: Exception) {
+                                                huellaOcupado = false
+                                                huellaError = "No se pudo iniciar la huella. Usa tu contraseña."
+                                            }
                                         }
                                     }
                                 }
@@ -292,15 +326,20 @@ fun LoginScreen(
 
                 // Éxito del login (manual o con huella): si ya hay una huella registrada
                 // navega directo al dashboard; si no, ofrece registrarla para poder usar
-                // el botón INGRESAR CON HUELLA la próxima vez.
+                // el botón INGRESAR CON HUELLA la próxima vez. El caso 2FA ya se derivó
+                // en el LaunchedEffect superior y no llega aquí (se reseteó a Idle).
                 if (uiState is LoginUiState.Success) {
                     val res = (uiState as LoginUiState.Success).response
-                    // Si el backend pide segundo factor, este intento aún no tiene
-                    // token: se muestra el overlay de 2FA y no se avanza al dashboard.
-                    if (res.two_factor_required == true && res.two_factor_id != null) {
-                        reto2FaById = res.two_factor_id
-                        viewModel.reset()
-                    }
+                    // Guardia de rol: sin rol válido no se navega (MainActivity también
+                    // bloquea, pero aquí se muestra el motivo en vez de quedar en negro).
+                    val rolNormalizado = com.example.sennaccess.data.RolSeguro.normalizar(res.role)
+                    if (rolNormalizado == null) {
+                        LaunchedEffect(res) {
+                            errorRol = "Tu cuenta no tiene un rol válido. Contacta al administrador."
+                            com.example.sennaccess.data.SessionManager.clear()
+                            viewModel.reset()
+                        }
+                    } else {
                     // Se evalúan una vez por intento de login exitoso.
                     var yaTieneHuella by remember(res) { mutableStateOf(HuellaCredentialStore.hayGuardada(context)) }
                     var navegando by remember(res) { mutableStateOf(false) }
@@ -339,14 +378,18 @@ fun LoginScreen(
                                 Button(
                                     onClick = {
                                         askSaveBiometric = false
-                                        val activity = context as? FragmentActivity
+                                        // Resuelve la actividad aunque el contexto venga envuelto;
+                                        // el cast directo devolvía null y rompía el registro.
+                                        val activity = BiometricAuth.activityDe(context)
                                         if (activity == null) {
                                             viewModel.reset()
                                             onLoginSuccess(res.role ?: "")
                                             return@Button
                                         }
                                         try {
-                                            val cipher = HuellaCredentialStore.prepararCifrado()
+                                            // Llave segura: si la anterior quedó invalidada se
+                                            // regenera en vez de lanzar y cerrar la app.
+                                            val cipher = HuellaCredentialStore.prepararCifradoSeguro()
                                             huellaOcupado = true
                                             BiometricAuth.authenticate(
                                                 activity = activity,
@@ -356,12 +399,17 @@ fun LoginScreen(
                                                 onSuccess = { result ->
                                                     huellaOcupado = false
                                                     try {
-                                                        HuellaCredentialStore.guardar(
-                                                            context,
-                                                            result.cryptoObject!!.cipher!!,
-                                                            res.user?.user_email ?: email.trim(),
-                                                            password
-                                                        )
+                                                        val seguro = result.cryptoObject?.cipher
+                                                        if (seguro == null) {
+                                                            huellaError = "No se pudo activar la huella. Regístrala desde tu perfil."
+                                                        } else {
+                                                            HuellaCredentialStore.guardar(
+                                                                context,
+                                                                seguro,
+                                                                res.user?.user_email ?: email.trim(),
+                                                                password
+                                                            )
+                                                        }
                                                     } catch (e: Exception) {
                                                         // Si falla el guardado simplemente continúa:
                                                         // podrá registrarse desde MI HUELLA del perfil.
@@ -373,16 +421,20 @@ fun LoginScreen(
                                                     huellaOcupado = false
                                                     viewModel.reset()
                                                     onLoginSuccess(res.role ?: "")
+                                                },
+                                                onFailed = { aviso ->
+                                                    huellaError = aviso
                                                 }
                                             )
                                         } catch (e: Throwable) {
                                             huellaOcupado = false
+                                            huellaError = "No se pudo preparar la huella. Inténtalo desde tu perfil."
                                             viewModel.reset()
                                             onLoginSuccess(res.role ?: "")
                                         }
                                     },
                                     colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black),
-                                    shape = RoundedCornerShape(12.dp),
+                                    shape = RoundedCornerShape(28.dp),
                                     contentPadding = PaddingValues(horizontal = 24.dp, vertical = 10.dp)
                                 ) {
                                     Text("SÍ, REGISTRAR", fontWeight = FontWeight.ExtraBold)
@@ -400,148 +452,39 @@ fun LoginScreen(
                                 }
                             }
                         )
-                    }
+                    } // cierre diálogo ¿Registrar tu huella?
+                    } // cierre rama con rol válido
+                } // cierre if Success
+                // Rol inválido: se informa sin navegar a ningún dashboard.
+                if (errorRol != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    ErrorBox(texto = errorRol!!)
                 }
             }
             }
-        }
-        }
-
-
-
-
-// ESTA FUNCIÓN CREA UNA TARJETA CON ESTILO iOS (VIDRIO ESMERILADO)
-@Composable
-fun GlassCard(
-    modifier: Modifier = Modifier,
-    content: @Composable BoxScope.() -> Unit
-) {
-    Box(
-        modifier = modifier
-            // ancho de la tarjeta
-            .fillMaxWidth(0.95f)
-            // espacio vertical
-            .padding(vertical = 20.dp)
-            // vidrio esmerilado iOS (blur real en API31+, translúcido abajo)
-            .glassSurface(cornerRadius = GlassCornerRadiusLg, elevated = true),
-        content = content
-    )
-}
-
-
-// BOTÓN PRINCIPAL VERDE
-@Composable
-fun PrimaryNeonButton(
-
-    // texto del botón
-    text: String,
-
-    // icono opcional
-    icon: ImageVector? = null,
-
-    // acción al hacer clic
-    onClick: () -> Unit,
-
-    modifier: Modifier = Modifier
-) {
-
-    Button(
-        onClick = onClick,
-
-        modifier = modifier
-            .pressScale(pressedScale = 0.97f)
-            .shadow(
-                15.dp,
-                RoundedCornerShape(12.dp),
-                spotColor = SenaGreen
-            ),
-
-        colors = ButtonDefaults.buttonColors(
-            containerColor = SenaGreen,
-            contentColor = Color.Black
-        ),
-
-        shape = RoundedCornerShape(12.dp),
-
-        contentPadding = PaddingValues(vertical = 14.dp)
-    ) {
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-
-            // Si el botón tiene icono
-            if (icon != null) {
-
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-
-            // Texto del botón
-            Text(
-                text = text.uppercase(),
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 2.sp
+        } // cierre Box interno del login
+        } // cierre if reto2FaById == null: el login no se compone durante el 2FA
+        // Overlay de verificación en dos pasos al FINAL del Box raíz para que pinte
+        // por encima del login (antes estaba primero y el login lo tapaba, por eso
+        // se veían superpuestos). Mientras está activo el login ni se compone.
+        reto2FaById?.let { challengeId ->
+            Verificacion2FaScreen(
+                challengeId = challengeId,
+                isDark = isDark,
+                onCancel = {
+                    reto2FaById = null
+                    viewModel.reset()
+                },
+                onLoginSuccess = { role ->
+                    reto2FaById = null
+                    viewModel.reset()
+                    onLoginSuccess(role)
+                }
             )
         }
-    }
-}
-
-
-// BOTÓN CON BORDE VERDE
-@Composable
-fun GlowOutlinedButton(
-    text: String,
-    icon: ImageVector? = null,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true
-) {
-
-    OutlinedButton(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = modifier.pressScale(pressedScale = 0.97f),
-
-        // borde verde
-        border = BorderStroke(
-            2.dp,
-            SenaGreen.copy(alpha = 0.5f)
-        ),
-
-        colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = LocalAppColors.current.textPrimary
-        ),
-
-        shape = RoundedCornerShape(12.dp),
-        contentPadding = PaddingValues(vertical = 14.dp)
-    ) {
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-
-            // mostrar icono si existe
-            if (icon != null) {
-
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = SenaGreen
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-
-            Text(
-                text = text.uppercase(),
-                letterSpacing = 2.sp
-            )
         }
-    }
-}
+
+
 
 
 // FORMULARIO DE LOGIN NORMAL
@@ -559,6 +502,8 @@ fun NormalLoginForm(
     onRecoveryClick: () -> Unit,
     viewModel: LoginViewModel,
     uiState: LoginUiState,
+    // Id de ESTE teléfono para el 2FA por dispositivo (ver DispositivoStore).
+    deviceId: String = "",
 
     // Ingreso con huella (biometría local): lanza el prompt del sistema y muestra estados.
     onBiometricLogin: () -> Unit,
@@ -567,11 +512,6 @@ fun NormalLoginForm(
 ) {
 
     val colors = LocalAppColors.current
-
-    // Variable para mostrar u ocultar contraseña
-    var showPassword by remember {
-        mutableStateOf(false)
-    }
 
     // Mensaje de error local (campos vacíos)
     var formError by remember { mutableStateOf<String?>(null) }
@@ -582,8 +522,7 @@ fun NormalLoginForm(
     // Título
     Text(
         "Iniciar Sesión",
-        fontSize = 18.sp,
-        fontWeight = FontWeight.Medium,
+        style = MaterialTheme.typography.titleLarge,
         color = colors.textPrimary
     )
 
@@ -602,16 +541,17 @@ fun NormalLoginForm(
         expanded = expandirCorreos && sugerenciasCorreo.isNotEmpty(),
         onExpandedChange = { expandirCorreos = it }
     ) {
-        OutlinedTextField(
-            value = email,
-            onValueChange = {
-                onEmailChange(it)
-                expandirCorreos = true
-            },
-            label = { Text("Correo electrónico") },
-            modifier = Modifier.menuAnchor().fillMaxWidth(),
-            singleLine = true
-        )
+AuthField(
+                value = email,
+                onValueChange = {
+                    onEmailChange(it)
+                    expandirCorreos = true
+                },
+                label = "Correo electrónico",
+                modifier = Modifier.menuAnchor(),
+                keyboardType = KeyboardType.Email,
+                imeAction = ImeAction.Next
+            )
         ExposedDropdownMenu(
             expanded = expandirCorreos && sugerenciasCorreo.isNotEmpty(),
             onDismissRequest = { expandirCorreos = false }
@@ -619,7 +559,7 @@ fun NormalLoginForm(
             sugerenciasCorreo.forEach { correo ->
                 DropdownMenuItem(
                     text = { Text(correo) },
-                    leadingIcon = { Icon(Icons.Default.Person, null, tint = SenaGreen) },
+                    leadingIcon = { Icon(Icons.Default.Person, null, tint = verdeMarca()) },
                     onClick = {
                         onEmailChange(correo)
                         expandirCorreos = false
@@ -631,52 +571,21 @@ fun NormalLoginForm(
 
     Spacer(modifier = Modifier.height(16.dp))
 
-    // Campo contraseña
-    OutlinedTextField(
+    // Campo contraseña con toggle accesible y autofill para gestores.
+    AuthField(
         value = password,
         onValueChange = onPasswordChange,
-
-        label = {
-            Text("Contraseña")
-        },
-
-        modifier = Modifier.fillMaxWidth(),
-        singleLine = true,
-
-        // ocultar o mostrar contraseña
-        visualTransformation =
-            if (showPassword)
-                VisualTransformation.None
-            else
-                PasswordVisualTransformation(),
-
-        // icono ojito
-        trailingIcon = {
-
-            IconButton(
-                onClick = {
-                    showPassword = !showPassword
-                }
-            ) {
-
-                Icon(
-                    imageVector =
-                        if (showPassword)
-                            Icons.Default.VisibilityOff
-                        else
-                            Icons.Default.Visibility,
-
-                    contentDescription = null
-                )
-            }
-        }
+        label = "Contraseña",
+        keyboardType = KeyboardType.Password,
+        imeAction = ImeAction.Done,
+        isPassword = true
     )
 
-    Spacer(modifier = Modifier.height(32.dp))
+    Spacer(modifier = Modifier.height(24.dp))
 
-    // Botón ingresar
+    // Botón ingresar con estado de carga integrado (spinner en el propio botón).
     PrimaryNeonButton(
-        text = if (isLoading) "CARGANDO..." else "INGRESAR",
+        text = "INGRESAR",
         icon = Icons.AutoMirrored.Filled.Login,
         onClick = {
             // Validación local: campos vacíos se reportan sin llamar a la API.
@@ -684,39 +593,25 @@ fun NormalLoginForm(
                 formError = "Ingresa correo y contraseña"
             } else {
                 formError = null
-                viewModel.login(email, password)
+                viewModel.login(email, password, deviceId.ifBlank { null })
             }
         },
+        loading = isLoading,
         modifier = Modifier.fillMaxWidth()
     )
 
-    // Indicador de progreso visible mientras se autentica contra el servidor.
-    if (isLoading) {
-        Spacer(modifier = Modifier.height(12.dp))
-        CircularProgressIndicator(
-            modifier = Modifier.size(28.dp),
-            color = SenaGreen,
-            strokeWidth = 3.dp
-        )
-    }
-
-    // Errores (validación local o error de la API)
+    // Errores (validación local o error de la API) en cajita semántica.
     val errorMsg = formError ?: (uiState as? LoginUiState.Error)?.message
     if (errorMsg != null) {
         Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            text = errorMsg,
-            color = Color.Red,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium
-        )
+        ErrorBox(texto = errorMsg)
     }
 
     // Botón de ingreso con huella: lanza el prompt biométrico del sistema y, al
     // verificar el dedo, descifra las credenciales guardadas e inicia sesión.
     Spacer(modifier = Modifier.height(12.dp))
     GlowOutlinedButton(
-        text = if (huellaLoading) "VERIFICANDO..." else "INGRESAR CON HUELLA",
+        text = "INGRESAR CON HUELLA",
         icon = Icons.Default.Fingerprint,
         onClick = onBiometricLogin,
         enabled = !huellaLoading,
@@ -724,13 +619,7 @@ fun NormalLoginForm(
     )
     if (huellaError != null) {
         Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            text = huellaError,
-            color = Color.Red,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.fillMaxWidth()
-        )
+        ErrorBox(texto = huellaError)
     }
 
     // Éxito: la navegación y el registro de huella se gestionan en LoginScreen.
@@ -745,7 +634,7 @@ fun NormalLoginForm(
                     append("¿No estás registrado? ")
                 }
                 // Segunda parte: Texto verde sólido y en negrita (Sin brillo)
-                withStyle(style = SpanStyle(color = SenaGreen, fontWeight = FontWeight.Bold)) {
+                withStyle(style = SpanStyle(color = verdeMarca(), fontWeight = FontWeight.Bold)) {
                     append("¡Regístrate aquí!")
                 }
             },
@@ -761,7 +650,7 @@ fun NormalLoginForm(
                     append("¿Olvidaste tu contraseña? ")
                 }
                 // Segunda parte: Texto verde sólido y en negrita (Sin brillo)
-                withStyle(style = SpanStyle(color = SenaGreen, fontWeight = FontWeight.Bold)) {
+                withStyle(style = SpanStyle(color = verdeMarca(), fontWeight = FontWeight.Bold)) {
                     append("Recuperar")
                 }
             },

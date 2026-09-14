@@ -5,7 +5,6 @@ package com.example.sennaccess.admin
 // (crear/actualizar usuario y perfil), manteniendo siempre visible la barra
 // superior y el dock flotante de vidrio.
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -16,10 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import coil.compose.rememberAsyncImagePainter
 import com.example.sennaccess.aprendiz.EditarPerfilView
 import com.example.sennaccess.data.Notificacion
 import com.example.sennaccess.data.Novedad
@@ -35,24 +31,19 @@ import com.example.sennaccess.ui.ios.GlassDock
 import com.example.sennaccess.ui.ios.GlassDockItem
 import com.example.sennaccess.ui.ios.GlowSpheres
 import com.example.sennaccess.ui.theme.LocalAppColors
+import com.example.sennaccess.ui.ds.SenaSpacing
+import com.example.sennaccess.ui.ds.dockKeyFor
 import com.example.sennaccess.ui.verificacion2fa.Configuracion2FaView
 import com.example.sennaccess.ui.verificacion2fa.Dashboards2FaPendientes
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-/**
- * Contenedor principal del rol ADMINISTRADOR.
- *
- * Estructura estilo iOS (igual que aprendiz/instructor):
- *  - Fondo con patrón SENA + GlowSpheres.
- *  - Top bar de vidrio (AdminTopBar) con menú de perfil / cerrar sesión.
- *  - Contenido que cambia según la pestaña activa del dock.
- *  - Dock flotante de vidrio con las 5 funciones: Inicio, Novedades,
- *    Usuarios, Equipos e Historial.
- *
- * Las sub-pantallas (crear/actualizar usuario, perfil) son estados internos
- * para mantener el dock siempre visible.
- */
+// Contenedor principal del rol ADMINISTRADOR.
+// Estructura estilo iOS (igual que aprendiz/instructor): fondo + GlowSpheres,
+// top bar de vidrio (AdminTopBar) con menú perfil/cerrar sesión, contenido
+// según la pestaña activa del dock y dock flotante con las funciones.
+// Las sub-pantallas (crear/actualizar usuario, perfil) son estados internos
+// para mantener el dock siempre visible.
 @Composable
 fun AdminDashboard(
     onCerrarSesion: () -> Unit,
@@ -151,14 +142,6 @@ fun AdminDashboard(
             .systemBarsPadding()
             .background(colors.background)
     ) {
-        // Fondo de marca SENA a baja opacidad, decorativo y detrás de todo el contenido.
-        Image(
-            painter = rememberAsyncImagePainter("https://www.sena.edu.co/Style%20Library/alayout/images/pattern.png"),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize().graphicsLayer(alpha = 0.15f),
-            contentScale = ContentScale.Crop
-        )
-
         // Esferas luminosas decorativas que dan el efecto de vidrio al fondo.
         GlowSpheres(isDark = isDark)
 
@@ -188,7 +171,12 @@ fun AdminDashboard(
                 },
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp)
+                    .padding(
+                        start = SenaSpacing.screenH,
+                        end = SenaSpacing.screenH,
+                        top = SenaSpacing.screenV,
+                        bottom = SenaSpacing.dockClearance
+                    )
             ) {
                 // Si hay una sub-pantalla activa se muestra con prioridad; si no,
                 // se pinta el contenido de la pestaña seleccionada en el dock.
@@ -311,7 +299,7 @@ fun AdminDashboard(
                 GlassDockItem("EQUIPOS", Icons.Default.Devices, "Equipos"),
                 GlassDockItem("HISTORIAL", Icons.Default.History, "Historial")
             ),
-            selectedKey = currentTab,
+            selectedKey = dockKeyFor(currentTab, "INICIO"),
             onSelect = { irATab(it) },
             modifier = Modifier.align(Alignment.BottomCenter)
         )

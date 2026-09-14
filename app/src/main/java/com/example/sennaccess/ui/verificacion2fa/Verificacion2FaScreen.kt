@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -51,8 +53,10 @@ import com.example.sennaccess.data.LoginResponse
 import com.example.sennaccess.data.SessionManager
 import com.example.sennaccess.data.TwoFactorRepository
 import com.example.sennaccess.data.Verificacion2FaEstado
+import com.example.sennaccess.ui.campoVisible
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
+import com.example.sennaccess.ui.theme.verdeMarca
 import com.example.sennaccess.ui.ios.GlowSpheres
 import com.example.sennaccess.ui.ios.IosGlassCard
 import com.google.gson.JsonParser
@@ -112,34 +116,44 @@ fun Verificacion2FaScreen(
     val repo = remember { TwoFactorRepository() }
     val scope = rememberCoroutineScope()
 
-    // Código de 6 dígitos del correo (fallback).
+    // Código de 6 dígitos del correo (fallback) con anti-fuerza bruta local.
     var codigo by remember { mutableStateOf("") }
     var enviandoCodigo by remember { mutableStateOf(false) }
     var errorCodigo by remember { mutableStateOf<String?>(null) }
+    var intentos by remember { mutableStateOf(0) }
+    var bloqueadoHasta by remember { mutableStateOf(0L) }
 
     // Mensajes del modo "aprobar desde otro dispositivo".
     var estadoMensaje by remember { mutableStateOf<String?>(null) }
     var resuelto by remember { mutableStateOf(false) }
     var aprobado by remember { mutableStateOf(false) }
 
-    // Polling cada 4 s: mientras el otro dispositivo no apruebe/deniegue, se espera.
+    // Polling cada 4 s con tope de 10 min: evita drenar batería/red en espera
+    // eterna y cancela solo al salir de la pantalla (Dispose).
     LaunchedEffect(challengeId) {
+        val inicio = System.currentTimeMillis()
         while (!resuelto) {
             delay(4000)
             if (resuelto) break
+            // Tope 10 min: el reto expira en servidor; no tiene sentido seguir.
+            if (System.currentTimeMillis() - inicio > 10 * 60 * 1000L) {
+                estadoMensaje = "El intento de acceso expiró. Vuelve a iniciar sesión."
+                resuelto = true
+                break
+            }
             try {
                 val estado = repo.estadoChallenge(challengeId)
-                when (estado.estado) {
-                    "aprobado" -> {
+                when (estado.estado?.trim()?.lowercase()) {
+                    "aprobado", "aprobada", "approved", "aceptado" -> {
                         guardarSesionDesde2Fa(estado)
                         resuelto = true
                         aprobado = true
                     }
-                    "rechazado" -> {
-                        estadoMensaje = "El intento fue rechazado en tu otro dispositivo."
+                    "rechazado", "rechazada", "rejected", "denegado", "denied" -> {
+                        estadoMensaje = "Acceso denegado. El intento fue bloqueado y se avisó al dueño de la cuenta."
                         resuelto = true
                     }
-                    "expirado" -> {
+                    "expirado", "expirada", "expired" -> {
                         estadoMensaje = "El intento de acceso expiró. Vuelve a iniciar sesión."
                         resuelto = true
                     }
@@ -151,9 +165,16 @@ fun Verificacion2FaScreen(
     }
 
     // Al conseguir el token (vía código o aprobación), navega al dashboard.
+    // Con rol vacío no se navega: se muestra error en vez de caer a admin.
     LaunchedEffect(aprobado) {
         if (aprobado) {
-            onLoginSuccess(SessionManager.userRole ?: "")
+            val rol = com.example.sennaccess.data.RolSeguro.normalizar(SessionManager.userRole)
+            if (rol != null) {
+                onLoginSuccess(SessionManager.userRole ?: "")
+            } else {
+                SessionManager.clear()
+                estadoMensaje = "Tu cuenta no tiene un rol válido. Contacta al administrador."
+            }
         }
     }
 
@@ -161,6 +182,7 @@ fun Verificacion2FaScreen(
         modifier = modifier
             .fillMaxSize()
             .background(colors.background)
+            .imePadding()
             .padding(vertical = 24.dp, horizontal = 20.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -170,6 +192,8 @@ fun Verificacion2FaScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
+                // El contenido se encoge sobre el teclado para no quedar tapado.
+                .imePadding()
         ) {
             Column(
                 modifier = Modifier
@@ -187,7 +211,7 @@ fun Verificacion2FaScreen(
                     Icon(
                         imageVector = Icons.Default.Lock,
                         contentDescription = null,
-                        tint = SenaGreen,
+                        tint = verdeMarca(),
                         modifier = Modifier.size(40.dp)
                     )
                 }
@@ -226,11 +250,12 @@ fun Verificacion2FaScreen(
                     onValueChange = { new ->
                         if (new.length <= 6 && new.all { it.isDigit() }) codigo = new
                     },
-                    modifier = Modifier.fillMaxWidth(),
+                    // Al enfocarse, el scroll lleva el campo a la vista.
+                    modifier = Modifier.fillMaxWidth().campoVisible(),
                     label = { Text("Código de 6 dígitos") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    shape = RoundedCornerShape(14.dp)
+                    shape = RoundedCornerShape(16.dp)
                 )
 
                 errorCodigo?.let {
@@ -242,6 +267,11 @@ fun Verificacion2FaScreen(
 
                 Button(
                     onClick = {
+                        val ahora = System.currentTimeMillis()
+                        if (ahora < bloqueadoHasta) {
+                            errorCodigo = "Demasiados intentos. Espera unos segundos."
+                            return@Button
+                        }
                         val code = codigo.trim()
                         if (code.length != 6) {
                             errorCodigo = "Escribe el código de 6 dígitos."
@@ -253,17 +283,32 @@ fun Verificacion2FaScreen(
                             try {
                                 val resp = repo.validarCodigo(challengeId, code)
                                 guardarSesionDesde2Fa(resp)
-                                onLoginSuccess(resp.role ?: SessionManager.userRole ?: "")
+                                // Sin rol válido no se entra a ningún dashboard (evita admin).
+                                val rol = com.example.sennaccess.data.RolSeguro.normalizar(resp.role ?: SessionManager.userRole)
+                                if (rol != null) {
+                                    onLoginSuccess(resp.role ?: SessionManager.userRole ?: "")
+                                } else {
+                                    SessionManager.clear()
+                                    errorCodigo = "Tu cuenta no tiene un rol válido. Contacta al administrador."
+                                    enviandoCodigo = false
+                                }
                             } catch (e: Exception) {
-                                errorCodigo = mensajeHttp(e)
+                                intentos += 1
+                                if (intentos >= 5) {
+                                    bloqueadoHasta = System.currentTimeMillis() + 30_000L
+                                    intentos = 0
+                                    errorCodigo = "Demasiados intentos. Espera 30 segundos."
+                                } else {
+                                    errorCodigo = mensajeHttp(e)
+                                }
                                 enviandoCodigo = false
                             }
                         }
                     },
                     enabled = !enviandoCodigo,
                     colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black),
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    shape = RoundedCornerShape(28.dp),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)
                 ) {
                     if (enviandoCodigo) {
                         CircularProgressIndicator(Modifier.size(18.dp), color = Color.Black, strokeWidth = 2.dp)
@@ -288,14 +333,14 @@ fun Verificacion2FaScreen(
                 Spacer(Modifier.height(10.dp))
 
                 if (resuelto && estadoMensaje == null) {
-                    Text("Acceso aprobado. Entrando...", color = SenaGreen, fontWeight = FontWeight.Bold)
+                    Text("Acceso aprobado. Entrando...", color = verdeMarca(), fontWeight = FontWeight.Bold)
                 } else {
                     androidx.compose.foundation.layout.Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        CircularProgressIndicator(Modifier.size(20.dp), color = SenaGreen, strokeWidth = 2.dp)
+                        CircularProgressIndicator(Modifier.size(20.dp), color = verdeMarca(), strokeWidth = 2.dp)
                         Spacer(Modifier.size(10.dp))
                         Text(
                             "Esperando tu aprobación en el otro dispositivo...",
@@ -315,7 +360,13 @@ fun Verificacion2FaScreen(
                 TextButton(onClick = onCancel) {
                     Icon(Icons.Default.ArrowBack, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.size(6.dp))
-                    Text("Otra vez", color = colors.textSecondary, fontWeight = FontWeight.Bold)
+                    // Si el reto ya se resolvió (rechazado/expirado), el botón deja claro
+                    // que vuelve al login en vez de reintentar el mismo código vencido.
+                    Text(
+                        if (resuelto) "Volver al inicio de sesión" else "Otra vez",
+                        color = colors.textSecondary,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }

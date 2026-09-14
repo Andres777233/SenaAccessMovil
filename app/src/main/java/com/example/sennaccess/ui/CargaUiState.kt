@@ -10,22 +10,20 @@ import com.example.sennaccess.data.SessionManager
 import kotlinx.coroutines.launch
 
 // Tres estados: carga en curso, éxito con datos o error con mensaje para la UI.
-/**
- * Estado genérico de carga para todas las pantallas que consumen la API.
- * Sigue el mismo patrón de LoginUiState/UsuariosUiState pero reutilizable.
- */
+// Estado genérico de carga para todas las pantallas que consumen la API.
+// Sigue el mismo patrón de LoginUiState/UsuariosUiState pero reutilizable.
+
 sealed class CargaUiState<out T> {
     data object Loading : CargaUiState<Nothing>()
     data class Success<T>(val datos: T) : CargaUiState<T>()
     data class Error(val mensaje: String) : CargaUiState<Nothing>()
 }
 
-/**
- * Ejecuta una llamada de red con respaldo a mocks:
- * - Sin sesión activa (botones demo) → devuelve los datos de ejemplo.
- * - Con sesión y la API responde → devuelve los datos reales.
- * - Con sesión y la API falla → estado Error (la vista ofrece reintentar).
- */
+// Ejecuta una llamada de red con respaldo a mocks:
+// - Sin sesión activa (botones demo) → devuelve los datos de ejemplo.
+// - Con sesión y la API responde → devuelve los datos reales.
+// - Con sesión y la API falla → estado Error (la vista ofrece reintentar).
+
 fun <T> ViewModel.cargarConFallback(
     fallback: () -> T,
     setState: (CargaUiState<T>) -> Unit,

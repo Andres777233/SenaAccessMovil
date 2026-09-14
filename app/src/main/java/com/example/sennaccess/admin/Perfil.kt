@@ -33,10 +33,8 @@ import com.example.sennaccess.ui.ios.GlassCornerRadius
 import com.example.sennaccess.ui.ios.IosCollapsibleHeader
 import com.example.sennaccess.ui.ios.glassSurface
 
-/**
- * Perfil del ADMINISTRADOR (contenido de pestaña).
- * Los datos (nombre/correo) llegan desde la API (GET /user) con respaldo a ejemplo.
- */
+// Perfil del ADMINISTRADOR (contenido de pestaña).
+// Los datos (nombre/correo) llegan desde la API (GET /user) con respaldo a ejemplo.
 @Composable
 fun PerfilContent(
     perfil: CargaUiState<UsuarioApi>,
@@ -52,7 +50,9 @@ fun PerfilContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(scrollState),
+            .verticalScroll(scrollState)
+            // El contenido se encoge sobre el teclado para no tapar la huella.
+            .imePadding(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Encabezado de la pantalla de perfil.
@@ -95,7 +95,7 @@ fun PerfilContent(
                 Button(
                     onClick = onEditar,
                     modifier = Modifier.fillMaxWidth().height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(28.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black)
                 ) {
                     Icon(Icons.Default.Edit, null, modifier = Modifier.size(18.dp))
@@ -106,7 +106,7 @@ fun PerfilContent(
                 OutlinedButton(
                     onClick = onConfigurar2Fa,
                     modifier = Modifier.fillMaxWidth().height(48.dp),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(28.dp)
                 ) {
                     Icon(Icons.Default.Shield, null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
@@ -117,6 +117,8 @@ fun PerfilContent(
             // Gestión de la huella dactilar local: registrar, ver estado y eliminar.
             MiHuellaSection()
             Spacer(modifier = Modifier.height(24.dp))
+            // Espacio final para que el último campo suba sobre el teclado.
+            Spacer(modifier = Modifier.imePadding().height(96.dp))
         }
     }
 }

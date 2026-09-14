@@ -25,13 +25,14 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.fragment.app.FragmentActivity
-import com.example.sennaccess.data.AuthRepository
 import com.example.sennaccess.data.HuellaCredentialStore
 import com.example.sennaccess.data.SessionManager
+import com.example.sennaccess.data.UsuarioRepository
+import com.example.sennaccess.ui.campoVisible
 import com.example.sennaccess.ui.theme.ErrorRed
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
+import com.example.sennaccess.ui.theme.verdeMarca
 import com.example.sennaccess.ui.ios.GlassCornerRadius
 import com.example.sennaccess.ui.ios.glassSurface
 import kotlinx.coroutines.launch
@@ -47,8 +48,11 @@ fun MiHuellaSection() {
     var mensaje by remember { mutableStateOf<String?>(null) }
     var errorMensaje by remember { mutableStateOf<String?>(null) }
     var confirmarBorrar by remember { mutableStateOf(false) }
+    // Doble contraseña actual: solo si ambas coinciden se habilita el registro.
     var password by remember { mutableStateOf("") }
+    var confirmarPassword by remember { mutableStateOf("") }
     var verPassword by remember { mutableStateOf(false) }
+    var verConfirmar by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -57,18 +61,18 @@ fun MiHuellaSection() {
             .padding(16.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.Fingerprint, null, tint = SenaGreen, modifier = Modifier.size(20.dp))
+            Icon(Icons.Default.Fingerprint, null, tint = verdeMarca(), modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(8.dp))
             Text("Mi Huella", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
             Spacer(Modifier.weight(1f))
             Surface(
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(28.dp),
                 color = if (registrada) SenaGreen.copy(alpha = 0.15f) else colors.borderLight,
                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
             ) {
                 Text(
                     if (registrada) "Activa" else "Inactiva",
-                    color = if (registrada) SenaGreen else colors.textSecondary,
+                    color = if (registrada) verdeMarca() else colors.textSecondary,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -105,11 +109,12 @@ fun MiHuellaSection() {
                 }
             }
         } else {
+            // Paso 1: contraseña actual + confirmación (deben coincidir).
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Contraseña") },
-                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Contraseña actual") },
+                modifier = Modifier.fillMaxWidth().campoVisible(),
                 singleLine = true,
                 visualTransformation = if (verPassword) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
@@ -118,7 +123,21 @@ fun MiHuellaSection() {
                     }
                 }
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = confirmarPassword,
+                onValueChange = { confirmarPassword = it },
+                label = { Text("Confirmar contraseña actual") },
+                modifier = Modifier.fillMaxWidth().campoVisible(),
+                singleLine = true,
+                visualTransformation = if (verConfirmar) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    IconButton(onClick = { verConfirmar = !verConfirmar }) {
+                        Icon(if (verConfirmar) Icons.Default.VisibilityOff else Icons.Default.Visibility, null)
+                    }
+                }
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             Button(
                 onClick = {
                     if (ocupado) return@Button
@@ -127,17 +146,34 @@ fun MiHuellaSection() {
                     val correo = SessionManager.userEmail
                     when {
                         correo == null -> errorMensaje = "Inicia sesión para registrar tu huella."
-                        password.isBlank() -> errorMensaje = "Escribe tu contraseña."
-                        !BiometricAuth.isAvailable(context) ->
+                        password.isBlank() -> errorMensaje = "Escribe tu contraseña actual."
+                        // Sin confirmación coincidente no se abre el registro biométrico.
+                        password != confirmarPassword -> errorMensaje = "Las contraseñas no coinciden."
+                        // Para cifrar se exige biometría fuerte: el PIN no abre el
+                        // CryptoObject y antes eso terminaba en "Error al probar la llave".
+                        !BiometricAuth.isAvailable(context, forCrypto = true) ->
                             errorMensaje = "Tu dispositivo no tiene huella configurada."
                         else -> {
                             ocupado = true
                             scope.launch {
                                 try {
-                                    AuthRepository().login(correo, password.trim())
+                                    // La contraseña se confirma con la sesión (token), no con un
+                                    // login nuevo: así no se dispara el 2FA ni llegan correos y
+                                    // funciona aunque la verificación en dos pasos esté activa.
+                                    val token = SessionManager.token
+                                    if (token == null) {
+                                        ocupado = false
+                                        errorMensaje = "Sesión vencida. Vuelve a ingresar y registra tu huella."
+                                        return@launch
+                                    }
+                                    UsuarioRepository().verificarPassword(token, password)
                                 } catch (e: retrofit2.HttpException) {
                                     ocupado = false
-                                    errorMensaje = if (e.code() == 401) "Contraseña incorrecta" else "Error ${e.code()}"
+                                    errorMensaje = when (e.code()) {
+                                        422 -> "Contraseña incorrecta"
+                                        401 -> "Sesión vencida. Vuelve a ingresar y registra tu huella."
+                                        else -> "Error ${e.code()}"
+                                    }
                                     return@launch
                                 } catch (e: Exception) {
                                     ocupado = false
@@ -145,9 +181,13 @@ fun MiHuellaSection() {
                                     return@launch
                                 }
                                 try {
-                                    val activity = context as? FragmentActivity
+                                    // Sin cast directo: resuelve la actividad aunque el contexto
+                                    // venga envuelto por Compose/temas.
+                                    val activity = BiometricAuth.activityDe(context)
                                         ?: throw IllegalStateException("Sin actividad")
-                                    val cipher = HuellaCredentialStore.prepararCifrado()
+                                    // Llave segura: si la anterior quedó invalidada al borrar
+                                    // la huella, se regenera en vez de fallar siempre.
+                                    val cipher = HuellaCredentialStore.prepararCifradoSeguro()
                                     BiometricAuth.authenticate(
                                         activity = activity,
                                         title = "Registra tu huella",
@@ -156,14 +196,20 @@ fun MiHuellaSection() {
                                         onSuccess = { result ->
                                             ocupado = false
                                             try {
+                                                val seguro = result.cryptoObject?.cipher
+                                                if (seguro == null) {
+                                                    errorMensaje = "No se pudo activar la huella. Inténtalo de nuevo."
+                                                    return@authenticate
+                                                }
                                                 HuellaCredentialStore.guardar(
                                                     context,
-                                                    result.cryptoObject!!.cipher!!,
-                                                    correo,
-                                                    password.trim()
+                                                    seguro,
+                                                    correo.trim(),
+                                                    password
                                                 )
                                                 mensaje = "Huella registrada."
                                                 password = ""
+                                                confirmarPassword = ""
                                                 registrada = true
                                             } catch (e: Exception) {
                                                 errorMensaje = "No se pudo guardar la huella."
@@ -171,30 +217,34 @@ fun MiHuellaSection() {
                                         },
                                         onError = { motivo ->
                                             ocupado = false
-                                            if (!motivo.contains("cancel", ignoreCase = true)) {
-                                                errorMensaje = motivo
-                                            }
+                                            errorMensaje = motivo
+                                        },
+                                        onFailed = { aviso ->
+                                            errorMensaje = aviso
                                         }
                                     )
                                 } catch (e: Throwable) {
                                     ocupado = false
-                                    errorMensaje = "Error al preparar la llave de seguridad."
+                                    // Último recurso: purga la llave corrupta para que el
+                                    // siguiente intento parta de cero en vez de repetir el error.
+                                    HuellaCredentialStore.borrarLlave()
+                                    errorMensaje = "Se renovó tu llave de seguridad. Toca REGISTRAR de nuevo y pon tu huella."
                                 }
                             }
                         }
                     }
                 },
                 enabled = !ocupado,
-                modifier = Modifier.fillMaxWidth().height(44.dp),
-                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(28.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black)
             ) { Text(if (ocupado) "VERIFICANDO..." else "REGISTRAR", fontWeight = FontWeight.Bold) }
         }
 
         if (mensaje != null) {
             Spacer(Modifier.height(6.dp))
-            Surface(color = SenaGreen.copy(alpha = 0.10f), shape = RoundedCornerShape(8.dp)) {
-                Text(mensaje!!, color = SenaGreen, fontSize = 12.sp, modifier = Modifier.padding(8.dp))
+            Surface(color = verdeMarca().copy(alpha = 0.10f), shape = RoundedCornerShape(8.dp)) {
+                Text(mensaje!!, color = verdeMarca(), fontSize = 12.sp, modifier = Modifier.padding(8.dp))
             }
         }
         if (errorMensaje != null) {
@@ -209,7 +259,7 @@ fun MiHuellaSection() {
         AlertDialog(
             onDismissRequest = { confirmarBorrar = false },
             containerColor = colors.cardBackground.copy(alpha = 0.98f),
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(28.dp),
             icon = { Icon(Icons.Default.Delete, null, tint = ErrorRed, modifier = Modifier.size(36.dp)) },
             title = { Text("¿Eliminar huella?", color = colors.textPrimary, fontWeight = FontWeight.Bold) },
             text = { Text("Ya no podrás usar el acceso con huella en este teléfono.", color = colors.textSecondary) },
@@ -217,13 +267,15 @@ fun MiHuellaSection() {
                 Button(
                     onClick = {
                         confirmarBorrar = false
-                        HuellaCredentialStore.borrar(context)
+                        // Borrado total (credenciales + llave): el próximo registro genera
+                        // una llave nueva y no reutiliza la invalidada.
+                        HuellaCredentialStore.borrarTodo(context)
                         registrada = false
                         mensaje = "Huella eliminada."
                         errorMensaje = null
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = ErrorRed, contentColor = Color.Black),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(28.dp),
                     contentPadding = PaddingValues(horizontal = 24.dp, vertical = 10.dp)
                 ) { Text("ELIMINAR", fontWeight = FontWeight.ExtraBold) }
             },

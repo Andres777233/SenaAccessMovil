@@ -25,6 +25,7 @@ import coil.compose.AsyncImage
 import com.example.sennaccess.data.SessionManager
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
+import com.example.sennaccess.ui.theme.verdeMarca
 
 @Composable
 fun AvatarPerfil(fotoPath: String?, nombre: String, tamano: Dp = 80.dp) {
@@ -47,9 +48,9 @@ fun AvatarPerfil(fotoPath: String?, nombre: String, tamano: Dp = 80.dp) {
         } else {
             val inicial = nombre.trim().firstOrNull()?.uppercase() ?: ""
             if (inicial.isNotBlank()) {
-                Text(inicial, color = SenaGreen, fontSize = (tamano.value * 0.45f).sp, fontWeight = FontWeight.Bold)
+                Text(inicial, color = verdeMarca(), fontSize = (tamano.value * 0.45f).sp, fontWeight = FontWeight.Bold)
             } else {
-                Icon(Icons.Default.Person, null, tint = SenaGreen, modifier = Modifier.size(tamano / 2))
+                Icon(Icons.Default.Person, null, tint = verdeMarca(), modifier = Modifier.size(tamano / 2))
             }
         }
     }

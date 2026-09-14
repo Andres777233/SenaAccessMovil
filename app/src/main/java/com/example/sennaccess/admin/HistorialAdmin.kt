@@ -35,18 +35,16 @@ import com.example.sennaccess.ui.horaCorta
 import com.example.sennaccess.ui.theme.ErrorRed
 import com.example.sennaccess.ui.theme.LocalAppColors
 import com.example.sennaccess.ui.theme.SenaGreen
+import com.example.sennaccess.ui.theme.verdeMarca
 import com.example.sennaccess.ui.ios.GlassCornerRadius
 import com.example.sennaccess.ui.ios.IosCollapsibleHeader
 import com.example.sennaccess.ui.ios.glassSurface
 import com.example.sennaccess.ui.ios.pressScale
 import kotlinx.coroutines.launch
 
-/**
- * Historial de acceso del ADMINISTRADOR (contenido de la pestaña HISTORIAL).
- *
- * Dos secciones separadas en contenedores propios: INSTRUCTORES y APRENDICES,
- * agrupadas por el rol del usuario que registró cada ingreso.
- */
+// Historial de acceso del ADMINISTRADOR (contenido de la pestaña HISTORIAL).
+// Dos secciones separadas en contenedores propios: INSTRUCTORES y APRENDICES,
+// agrupadas por el rol del usuario que registró cada ingreso.
 @Composable
 fun HistorialAdminContent(
     historial: CargaUiState<HistorialAdminData>,
@@ -107,7 +105,7 @@ fun HistorialAdminContent(
         Button(
             onClick = { exportarCsv() },
             modifier = Modifier.fillMaxWidth().height(50.dp).pressScale(pressedScale = 0.97f),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(28.dp),
             colors = ButtonDefaults.buttonColors(containerColor = SenaGreen, contentColor = Color.Black)
         ) {
             Icon(Icons.Default.FileDownload, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -142,16 +140,16 @@ fun HistorialAdminContent(
                 OutlinedButton(
                     onClick = onVerAprendices,
                     modifier = Modifier.weight(1f).height(48.dp),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(28.dp)
                 ) {
-                    Text("Ver Aprendices", color = SenaGreen, fontWeight = FontWeight.Bold)
+                    Text("Ver Aprendices", color = verdeMarca(), fontWeight = FontWeight.Bold)
                 }
                 OutlinedButton(
                     onClick = onVerInstructores,
                     modifier = Modifier.weight(1f).height(48.dp),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(28.dp)
                 ) {
-                    Text("Ver Instructores", color = SenaGreen, fontWeight = FontWeight.Bold)
+                    Text("Ver Instructores", color = verdeMarca(), fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -171,9 +169,9 @@ private fun SeccionHistorial(
     AdminGlassContainer {
         // Encabezado de la sección (ícono + título del rol).
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(icono, contentDescription = null, tint = SenaGreen, modifier = Modifier.size(20.dp))
+            Icon(icono, contentDescription = null, tint = verdeMarca(), modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text(titulo, color = SenaGreen, fontWeight = FontWeight.Bold, fontSize = 15.sp, letterSpacing = 1.sp)
+            Text(titulo, color = verdeMarca(), fontWeight = FontWeight.Bold, fontSize = 15.sp, letterSpacing = 1.sp)
         }
         Spacer(modifier = Modifier.height(12.dp))
         if (registros.isEmpty()) {
@@ -204,7 +202,7 @@ private fun SeccionHistorial(
 internal fun TarjetaAccesoAdmin(nombre: String, rol: String, hora: String, tipo: String) {
     val colors = LocalAppColors.current
     val esSalida = tipo.equals("Salida", ignoreCase = true)
-    val colorTipo = if (esSalida) Color(0xFFE67E22) else SenaGreen
+    val colorTipo = if (esSalida) Color(0xFFE67E22) else verdeMarca()
     Row(
         modifier = Modifier
             .fillMaxWidth()
