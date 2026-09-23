@@ -15,3 +15,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+app/build/
+.qa_bt.txt
+.qa_kt.txt

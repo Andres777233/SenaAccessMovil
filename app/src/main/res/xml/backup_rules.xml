@@ -3,4 +3,6 @@
     <exclude domain="sharedpref" path="huella_store"/>
     <exclude domain="sharedpref" path="login_prefs"/>
     <exclude domain="sharedpref" path="dispositivo_store"/>
+    <exclude domain="sharedpref" path="sena_session"/>
+    <exclude domain="sharedpref" path="version_guard"/>
 </full-backup-content>
