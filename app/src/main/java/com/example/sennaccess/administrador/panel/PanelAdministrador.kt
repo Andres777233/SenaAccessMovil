@@ -27,6 +27,7 @@ import com.example.sennaccess.excusas.VistaValidarExcusa
 import com.example.sennaccess.comun.EstadoCarga
 import com.example.sennaccess.administrador.novedades.VistaNotificaciones
 import com.example.sennaccess.administrador.novedades.VistaNovedades
+import com.example.sennaccess.administrador.novedades.VistaSugerencias
 import com.example.sennaccess.comun.diseno.BarraNavegacion
 import com.example.sennaccess.comun.diseno.ElementoNavegacion
 import com.example.sennaccess.comun.diseno.EsferasBrillo
@@ -243,6 +244,7 @@ fun PanelAdministrador(
                             estado = novedades,
                             onReintentar = viewModel::cargarNovedades
                         )
+                        "SUGERENCIAS" -> VistaSugerencias()
                         "USUARIOS" -> ContenidoUsuarios(
                             onNavigate = onNavigate,
                             onEditarUsuario = { usuario ->
@@ -277,6 +279,7 @@ fun PanelAdministrador(
             items = listOf(
                 ElementoNavegacion("INICIO", Icons.Default.Home, "Inicio"),
                 ElementoNavegacion("NOVEDADES", Icons.Default.WarningAmber, "Novedades"),
+                ElementoNavegacion("SUGERENCIAS", Icons.Default.Lightbulb, "Sugerencias"),
                 ElementoNavegacion("PRESENTES", Icons.Default.Groups, "Presentes"),
                 ElementoNavegacion("USUARIOS", Icons.Default.People, "Usuarios"),
                 ElementoNavegacion("EQUIPOS", Icons.Default.Devices, "Equipos"),

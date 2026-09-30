@@ -42,7 +42,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="senaaccessweb-production.up.railway.app" android:pathPrefix="/2fa" />
+                <data android:scheme="https" android:host="senaaccessweb-production-4c6e.up.railway.app" android:pathPrefix="/2fa" />
             </intent-filter>
         </activity>
 

@@ -55,6 +55,7 @@ import com.example.sennaccess.perfil.FilaDato
 import com.example.sennaccess.biometria.MiSeccionHuella
 import com.example.sennaccess.administrador.novedades.VistaNotificaciones
 import com.example.sennaccess.administrador.novedades.VistaNovedades
+import com.example.sennaccess.administrador.novedades.VistaSugerencias
 import com.example.sennaccess.perfil.FotoPerfil
 import com.example.sennaccess.comun.CajaCargando
 import com.example.sennaccess.comun.CajaError
@@ -196,6 +197,7 @@ fun PanelInstructor(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggle
                         }
                     }
                     "NOVEDADES" -> VistaNovedades(estado = novedades, onReintentar = viewModel::cargarNovedades)
+                    "SUGERENCIAS" -> VistaSugerencias()
                     "HISTORIAL" -> VistaHistorialIngresos(historial, onReintentar = viewModel::cargarHistorial)
                     "MIS_EQUIPOS" -> VistaMisEquipos(equipos, onReintentar = viewModel::cargarEquipos)
                     "PERFIL" -> VistaPerfilInstructor(
@@ -234,6 +236,7 @@ fun PanelInstructor(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggle
                 ElementoNavegacion("DASHBOARD", Icons.Default.Home, "Inicio"),
                 ElementoNavegacion("AMBIENTES", Icons.Default.MeetingRoom, "Ambientes"),
                 ElementoNavegacion("NOVEDADES", Icons.Default.ReportProblem, "Novedades"),
+                ElementoNavegacion("SUGERENCIAS", Icons.Default.Lightbulb, "Sugerencias"),
                 ElementoNavegacion("HISTORIAL", Icons.Default.History, "Historial"),
                 ElementoNavegacion("MIS_EQUIPOS", Icons.Default.Devices, "Equipos")
             ),

@@ -48,6 +48,7 @@ import com.example.sennaccess.perfil.FilaDato
 import com.example.sennaccess.comun.HistorialPorDias
 import com.example.sennaccess.biometria.MiSeccionHuella
 import com.example.sennaccess.administrador.novedades.VistaNotificaciones
+import com.example.sennaccess.administrador.novedades.VistaSugerencias
 import com.example.sennaccess.perfil.CabeceraPerfil
 import com.example.sennaccess.comun.fechaLegible
 import com.example.sennaccess.comun.fechaRelativa
@@ -172,6 +173,7 @@ fun PanelAprendiz(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggleTh
                     "HISTORIAL" -> VistaHistorial(historial, onReintentar = viewModel::cargarHistorial)
                     "COMPROBANTES" -> VistaComprobantes(comprobantes, onReintentar = viewModel::cargarComprobantes)
                     "MIS_EXCUSAS" -> VistaMisExcusas(onBack = { currentView = "DASHBOARD" })
+                    "SUGERENCIAS" -> VistaSugerencias()
                     "PERFIL" -> PerfilAprendizView(
                         perfil,
                         onBack = { currentView = "DASHBOARD" },
@@ -206,6 +208,7 @@ fun PanelAprendiz(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggleTh
                 ElementoNavegacion("DASHBOARD", Icons.Default.Home, "Inicio"),
                 ElementoNavegacion("MIS_EXCUSAS", Icons.Default.Assignment, "Excusas"),
                 ElementoNavegacion("HISTORIAL", Icons.Default.History, "Historial"),
+                ElementoNavegacion("SUGERENCIAS", Icons.Default.Lightbulb, "Sugerencias"),
                 ElementoNavegacion("COMPROBANTES", Icons.Default.Devices, "Equipos")
             ),
             selectedKey = claveNavegacion(currentView, "DASHBOARD"),

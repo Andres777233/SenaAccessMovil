@@ -42,7 +42,9 @@ import com.example.sennaccess.datos.modelos.PeticionInvitado
 import com.example.sennaccess.datos.modelos.PeticionNovedad
 import com.example.sennaccess.datos.modelos.PeticionRecuperacion
 import com.example.sennaccess.datos.modelos.PeticionRegistro
+import com.example.sennaccess.datos.modelos.PeticionResponderSugerencia
 import com.example.sennaccess.datos.modelos.PeticionRestablecer
+import com.example.sennaccess.datos.modelos.PeticionSugerencia
 import com.example.sennaccess.datos.modelos.PeticionUsuario
 import com.example.sennaccess.datos.modelos.PeticionValidarCodigo
 import com.example.sennaccess.datos.modelos.PeticionValidarExcusa
@@ -53,11 +55,13 @@ import com.example.sennaccess.datos.modelos.RespuestaAcceso
 import com.example.sennaccess.datos.modelos.RespuestaEquipo
 import com.example.sennaccess.datos.modelos.RespuestaIngresos
 import com.example.sennaccess.datos.modelos.RespuestaMensaje
+import com.example.sennaccess.datos.modelos.RespuestaPaginaSugerencias
 import com.example.sennaccess.datos.modelos.RespuestaQrInvitado
 import com.example.sennaccess.datos.modelos.RespuestaRegistro
 import com.example.sennaccess.datos.modelos.RespuestaSalida
 import com.example.sennaccess.datos.modelos.RespuestaValidarExcusa
 import com.example.sennaccess.datos.modelos.Rol
+import com.example.sennaccess.datos.modelos.Sugerencia
 import com.example.sennaccess.datos.modelos.UsuarioApi
 
 interface ServicioApi {
@@ -289,6 +293,33 @@ interface ServicioApi {
 
     @DELETE("novedades/{id}")
     suspend fun deleteNovedad(@Header("Authorization") auth: String, @Path("id") id: Int): RespuestaMensaje
+
+    // ---- Sugerencias: crear y ver las propias (cualquier rol), bandeja y
+    // respuesta (solo admin). Rutas del SugerenciaController del backend.
+    @GET("my-sugerencias")
+    suspend fun getMisSugerencias(@Header("Authorization") auth: String): List<Sugerencia>
+
+    @POST("sugerencias")
+    suspend fun crearSugerencia(@Header("Authorization") auth: String, @Body body: PeticionSugerencia): Sugerencia
+
+    @GET("sugerencias")
+    suspend fun getSugerencias(
+        @Header("Authorization") auth: String,
+        @Query("q") q: String? = null,
+        @Query("status") status: String? = null,
+        @Query("categoria") categoria: String? = null,
+        @Query("per_page") perPage: Int = 50
+    ): RespuestaPaginaSugerencias
+
+    @PUT("admin/sugerencias/{id}/responder")
+    suspend fun responderSugerencia(
+        @Header("Authorization") auth: String,
+        @Path("id") id: Int,
+        @Body body: PeticionResponderSugerencia
+    ): Sugerencia
+
+    @DELETE("admin/sugerencias/{id}")
+    suspend fun eliminarSugerencia(@Header("Authorization") auth: String, @Path("id") id: Int): RespuestaMensaje
 
     // ---- Notificaciones in-app ----
     @GET("notifications")
