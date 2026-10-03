@@ -36,7 +36,10 @@ object ClienteApi {
 
     private val okHttpClient = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)
+        // Lectura a 25 s: con Railway frío el login tarda ~6 s; 60 s dejaba la
+        // UI en "cargando" un minuto ante un contenedor caído en vez de fallar
+        // rápido con reintento honesto.
+        .readTimeout(25, TimeUnit.SECONDS)
         .addInterceptor(loggingInterceptor)
         .addInterceptor(sesionInterceptor)
         .build()

@@ -457,7 +457,13 @@ private fun VistaListaUsuarios(
                 ) { Text("REINTENTAR", fontWeight = FontWeight.Bold, fontSize = 13.sp) }
             }
             is EstadoCarga.Success -> {
-                val q = busqueda.trim()
+                // Debounce de 300 ms: no refiltra ni recompone por cada tecla.
+                var qDebounced by remember { mutableStateOf(busqueda.trim()) }
+                LaunchedEffect(busqueda) {
+                    kotlinx.coroutines.delay(300)
+                    qDebounced = busqueda.trim()
+                }
+                val q = qDebounced
                 val progQ = filtroPrograma.trim()
                 // Cada rol en su bandeja. La bandeja Invitados muestra los
                 // temporales (QR); el resto los excluye como antes.
@@ -515,21 +521,25 @@ private fun VistaListaUsuarios(
                         letterSpacing = 1.4.sp
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Column(
+                    // LazyColumn con key estable: solo compone las filas visibles
+                    // en vez de toda la planilla de una vez.
+                    LazyColumn(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f)
-                            .verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                            .weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        contentPadding = PaddingValues(bottom = 16.dp)
                     ) {
-                        filtrados.forEach { usuario ->
+                        items(
+                            filtrados,
+                            key = { it.id_usuario ?: it.user_email ?: it.nombreCompleto }
+                        ) { usuario ->
                             FilaUsuarioCard(
                                 usuario,
                                 onEditar = { onEditar(usuario) },
                                 onBorrar = { onBorrar(usuario) }
                             )
                         }
-                        Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
             }

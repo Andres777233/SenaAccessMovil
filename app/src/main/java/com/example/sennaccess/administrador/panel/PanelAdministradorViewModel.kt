@@ -83,17 +83,16 @@ class PanelAdministradorViewModel : ViewModel() {
     private val _ambientes = MutableStateFlow<EstadoCarga<List<Ambiente>>>(EstadoCarga.Loading)
     val ambientes: StateFlow<EstadoCarga<List<Ambiente>>> = _ambientes.asStateFlow()
 
+    // Arranque mínimo: solo lo que pinta el INICIO (perfil, resumen del día,
+    // historial del día, roles para los badges y notificaciones para el contador).
+    // El resto (usuarios, equipos, novedades, presentes, ambientes) carga perezoso
+    // al entrar a su pestaña para no disparar ~10 llamadas a la vez al abrir.
     init {
         cargarResumen()
         cargarHistorial()
         cargarPerfil()
         cargarRoles()
-        cargarUsuarios()
-        cargarEquipos()
         cargarNotificaciones()
-        cargarNovedades()
-        cargarPresentes()
-        cargarAmbientes()
     }
 
     // Recarga los contadores del día.
@@ -110,14 +109,30 @@ class PanelAdministradorViewModel : ViewModel() {
         cargarHistorialRango(hoy, hoy)
     }
 
+    // Mapa rol-por-usuario con TTL de 5 min: el historial lo necesita para
+    // clasificar, pero pedir la lista completa en cada recarga duplicaba el
+    // GET /admin/users más pesado de la app.
+    private var mapaRoles: Map<Int?, String?>? = null
+    private var mapaRolesTs = 0L
+
     // Recarga movimientos entre dos fechas.
     fun cargarHistorialRango(desde: String, hasta: String) {
         cargarConRespaldo(fallback = { buildHistorial(DatosSimulados.ingresos, emptyMap()) }, setState = { _historial.value = it }) {
-            val ingresos = ingresoRepo.getIngresos(GestorSesion.token!!, desde = desde, hasta = hasta)
-            val usuarios = usuarioRepo.getUsers(GestorSesion.token!!)
-            val rolesPorUsuario = usuarios.associate { it.id_usuario to it.role?.rol_name }
-            buildHistorial(ingresos, rolesPorUsuario)
+            val token = GestorSesion.token!!
+            val ingresos = ingresoRepo.getIngresos(token, desde = desde, hasta = hasta)
+            val ahora = System.currentTimeMillis()
+            val roles = mapaRoles?.takeIf { ahora - mapaRolesTs < 5 * 60 * 1000 }
+                ?: usuarioRepo.getUsers(token)
+                    .associate { it.id_usuario to it.role?.rol_name }
+                    .also { mapaRoles = it; mapaRolesTs = ahora }
+            buildHistorial(ingresos, roles)
         }
+    }
+
+    // Invalida el mapa de roles (tras crear/editar/eliminar usuarios).
+    // El TTL de 5 min ya acota la desactualización en uso normal.
+    fun invalidarMapaRoles() {
+        mapaRoles = null
     }
 
     private fun hoyBogota(): String {

@@ -49,6 +49,11 @@ fun FotoPerfil(fotoPath: String?, nombre: String, tamano: Dp = 80.dp) {
             AsyncImage(
                 model = ImageRequest.Builder(context)
                     .data(url)
+                    // Decodifica a 512px (los avatares se pintan a ≤116dp): evita
+                    // decodificar la foto completa de Cloudinary en cada fila.
+                    .size(512)
+                    .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                    .diskCachePolicy(coil.request.CachePolicy.ENABLED)
                     .crossfade(true)
                     .build(),
                 contentDescription = "Foto de perfil",
