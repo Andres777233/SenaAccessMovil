@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.sp
 import com.example.sennaccess.datos.modelos.Notificacion
 import com.example.sennaccess.comun.fechaRelativa
 import com.example.sennaccess.comun.diseno.RadioVidrio
+import com.example.sennaccess.comun.diseno.RadioSena
+import com.example.sennaccess.comun.diseno.GrupoSeccion
 import com.example.sennaccess.comun.diseno.CabeceraPlegable
 import com.example.sennaccess.comun.diseno.superficieVidrio
 import com.example.sennaccess.comun.diseno.escalaPresion
@@ -76,8 +78,8 @@ fun VistaNotificaciones(
             if (hayNoLeidas) {
                 Button(
                     onClick = onMarcarTodasLeidas,
-                    modifier = Modifier.fillMaxWidth().height(48.dp).escalaPresion(pressedScale = 0.97f),
-                    shape = RoundedCornerShape(28.dp),
+                    modifier = Modifier.fillMaxWidth().height(52.dp).escalaPresion(pressedScale = 0.97f),
+                    shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = VerdeSena, contentColor = Color.Black)
                 ) {
                     Icon(Icons.Default.CheckCircle, null, modifier = Modifier.size(18.dp))
@@ -87,19 +89,26 @@ fun VistaNotificaciones(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            if (notificaciones.isEmpty()) {
+        if (notificaciones.isEmpty()) {
                 VistaVacia(
                     icono = Icons.Default.Notifications,
                     titulo = "No tienes notificaciones",
                     mensaje = "Cuando recibas avisos del centro de formación, aparecerán aquí."
                 )
             } else {
-                notificaciones.forEach { notificacion ->
-                    TarjetaNotificacion(
-                        notificacion = notificacion,
-                        onClick = { if (notificacion.is_read != true) notificacion.id_notificacion?.let(onMarcarLeida) }
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
+                // Lista única en plana con divisor: leídas atenuadas, nuevas con punto.
+                val noLeidas = notificaciones.count { it.is_read != true }
+                com.example.sennaccess.comun.diseno.GrupoSeccion(
+                    titulo = "Recientes",
+                    conteo = noLeidas.takeIf { it > 0 }
+                ) {
+                    notificaciones.forEachIndexed { i, notificacion ->
+                        if (i > 0) HorizontalDivider(color = colors.divider, modifier = Modifier.padding(horizontal = 12.dp))
+                        TarjetaNotificacion(
+                            notificacion = notificacion,
+                            onClick = { if (notificacion.is_read != true) notificacion.id_notificacion?.let(onMarcarLeida) }
+                        )
+                    }
                 }
             }
         }
@@ -117,27 +126,32 @@ private fun TarjetaNotificacion(notificacion: Notificacion, onClick: () -> Unit)
         "equipo" -> Icons.Default.Devices
         else -> Icons.Default.Info
     }
+    // Fila plana con riel de estado: punto verde si es nueva. La superficie
+    // la pone el GrupoSeccion padre; las nuevas llevan borde lateral verde.
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(RadioSena.md))
             .escalaPresion(pressedScale = 0.98f)
-            .then(
-                if (leida) Modifier.superficieVidrio(cornerRadius = RadioVidrio)
-                else Modifier
-                    .superficieVidrio(cornerRadius = RadioVidrio)
-                    .border(1.dp, VerdeSena.copy(alpha = 0.5f), RoundedCornerShape(RadioVidrio))
-            )
             .clickable(onClick = onClick)
-            .padding(16.dp),
+            .padding(horizontal = 12.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
-            modifier = Modifier.size(44.dp).clip(CircleShape).background(VerdeSena.copy(alpha = 0.15f)),
+            modifier = Modifier
+                .width(3.dp)
+                .height(48.dp)
+                .clip(RoundedCornerShape(100.dp))
+                .background(if (leida) colors.divider else verdeMarca())
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        Box(
+            modifier = Modifier.size(40.dp).clip(CircleShape).background(VerdeSena.copy(alpha = 0.13f)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(icono, contentDescription = null, tint = verdeMarca(), modifier = Modifier.size(22.dp))
+            Icon(icono, contentDescription = null, tint = verdeMarca(), modifier = Modifier.size(20.dp))
         }
-        Spacer(modifier = Modifier.width(14.dp))
+        Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(

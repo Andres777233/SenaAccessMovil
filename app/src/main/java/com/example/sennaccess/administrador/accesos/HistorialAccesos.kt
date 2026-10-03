@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -191,13 +192,19 @@ fun ContenidoHistorial(
                 )
             }
             Spacer(modifier = Modifier.width(10.dp))
-            IconButton(
+            OutlinedButton(
                 onClick = { mostrarHojaExport = true },
                 enabled = !exportando,
-                modifier = Modifier.size(48.dp).clip(CircleShape).background(VerdeSena)
+                modifier = Modifier.height(50.dp),
+                shape = RoundedCornerShape(28.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = verdeMarca()),
+                border = ButtonDefaults.outlinedButtonBorder.copy(brush = SolidColor(verdeMarca())),
+                contentPadding = PaddingValues(horizontal = 14.dp)
             ) {
-                if (exportando) CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                else Icon(Icons.Default.FileDownload, contentDescription = "Exportar historial", tint = Color.Black, modifier = Modifier.size(22.dp))
+                if (exportando) CircularProgressIndicator(color = verdeMarca(), modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                else Icon(Icons.Default.FileDownload, contentDescription = "Exportar historial", modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("EXPORTAR", fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 1)
             }
         }
 

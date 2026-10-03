@@ -9,7 +9,8 @@ object AlmacenEnlaceDobleFactor {
     // Id del reto a preseleccionar en el dashboard con sesión.
     var challengeId = mutableStateOf<String?>(null)
         private set
-    // Pista del correo ("aprobar"/"denegar"): solo informativa, nunca auto-responde.
+    // Decisión del correo ("aprobar"/"denegar"): el dashboard la ejecuta
+    // automáticamente para que los botones del correo sean funcionales.
     var decision = mutableStateOf<String?>(null)
         private set
 
@@ -17,7 +18,9 @@ object AlmacenEnlaceDobleFactor {
         if (id.isNullOrBlank()) return
         challengeId.value = id
         val d = dec?.trim()?.lowercase()
-        decision.value = if (d == "aprobar" || d == "denegar") d else null
+        decision.value = if (d == "aprobar" || d == "denegar" || d == "si" || d == "no") {
+            if (d == "si") "aprobar" else if (d == "no") "denegar" else d
+        } else null
     }
 
     fun limpiar() {

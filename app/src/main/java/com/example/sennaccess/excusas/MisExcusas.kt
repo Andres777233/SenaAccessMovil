@@ -30,8 +30,13 @@ import com.example.sennaccess.comun.CajaCargando
 import com.example.sennaccess.comun.CajaError
 import com.example.sennaccess.comun.detalleHttp
 import com.example.sennaccess.comun.diseno.TarjetaSena
+import com.example.sennaccess.comun.diseno.superficiePlana
+import com.example.sennaccess.comun.diseno.RadioSena
+import com.example.sennaccess.comun.diseno.EntradaSuave
 import com.example.sennaccess.comun.fechaLegible
 import com.example.sennaccess.comun.tema.ColoresAppLocal
+import com.example.sennaccess.comun.tema.VerdeSena
+import com.example.sennaccess.comun.tema.verdeMarca
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -77,14 +82,17 @@ fun VistaMisExcusas(onBack: (() -> Unit)? = null) {
     }
 
     Column(modifier = Modifier.fillMaxSize().imePadding()) {
+        // Cabecera editorial de excusas.
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             if (onBack != null) IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null, tint = colors.textPrimary) }
-            Text("Mis excusas", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Column(modifier = Modifier.weight(1f)) {
+                Text("PERMISOS DE SALIDA", color = verdeMarca(), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp)
+                Text("Mis excusas", color = colors.textPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp)
+            }
             IconButton(onClick = { scope.launch { cargar() } }) { Icon(Icons.Default.Refresh, null, tint = colors.textSecondary) }
-            Spacer(modifier = Modifier.weight(1f))
             if (recargando) CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
         }
-        Text("Aquí ves las excusas que tu instructor generó para ti. Entrega el PIN en portería para salir.", color = colors.textSecondary, fontSize = 12.sp)
+        Text("Tu instructor genera el permiso; muestra el PIN en portería para salir.", color = colors.textSecondary, fontSize = 12.sp)
         if (hayNueva) {
             Spacer(modifier = Modifier.height(8.dp))
             Text("● Nueva excusa pendiente", color = colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
@@ -110,45 +118,59 @@ fun VistaMisExcusas(onBack: (() -> Unit)? = null) {
                     ) {
                         if (pendientes.isNotEmpty()) {
                             item(key = "titulo-pend") {
-                                Text("PENDIENTES (${pendientes.size}) — muestra el PIN en portería", color = colors.textSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                Text("PENDIENTES • ${pendientes.size} — muestra el PIN en portería", color = verdeMarca(), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
                             }
                             items(pendientes, key = { "p-${it.id_excusa}" }) { ex ->
-                                TarjetaSena(modifier = Modifier.fillMaxWidth()) {
+                                EntradaSuave(indice = 0) {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth().superficiePlana(cornerRadius = RadioSena.lg).padding(16.dp)
+                                ) {
                                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                                         Column(modifier = Modifier.weight(1f)) {
-                                            Text(ex.ambiente?.ambiente_nombre ?: "Ambiente #${ex.fk_id_ambiente}", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                            Text(ex.motivo ?: "", color = colors.textSecondary, fontSize = 12.sp)
+                                            Text("PERMISO VIGENTE", color = verdeMarca(), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(ex.ambiente?.ambiente_nombre ?: "Ambiente #${ex.fk_id_ambiente}", color = colors.textPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                                            Text(ex.motivo ?: "", color = colors.textSecondary, fontSize = 12.sp, maxLines = 2)
                                         }
                                         InsigniaExcusa(ex.estado)
                                     }
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable { clipboard.setText(AnnotatedString(ex.pin ?: "")) }
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    // Hero del PIN: número protagonista centrado en plana.
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().clickable { clipboard.setText(AnnotatedString(ex.pin ?: "")) }.padding(vertical = 4.dp),
+                                        contentAlignment = Alignment.Center
                                     ) {
-                                        Text("PIN: ${ex.pin ?: "—"}", color = colors.textPrimary, fontSize = 22.sp, fontWeight = FontWeight.Bold, letterSpacing = 3.sp)
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Icon(Icons.Default.ContentCopy, null, tint = colors.textSecondary, modifier = Modifier.size(16.dp))
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(ex.pin ?: "—", color = colors.textPrimary, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 6.sp)
+                                            Spacer(modifier = Modifier.width(10.dp))
+                                            Icon(Icons.Default.ContentCopy, null, tint = verdeMarca(), modifier = Modifier.size(20.dp))
+                                        }
                                     }
-                                    Text(textoVigencia(ex.expira_en, ahora), color = colors.textSecondary, fontSize = 11.sp)
-                                    Text("Instructor: ${ex.instructor?.nombreCompleto ?: "#${ex.fk_id_instructor}"}", color = colors.textSecondary, fontSize = 11.sp, modifier = Modifier.padding(top = 4.dp))
+                                    Text(textoVigencia(ex.expira_en, ahora), color = colors.textSecondary, fontSize = 11.sp, modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    HorizontalDivider(color = colors.divider)
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text("Instructor: ${ex.instructor?.nombreCompleto ?: "#${ex.fk_id_instructor}"}", color = colors.textSecondary, fontSize = 11.sp, modifier = Modifier.padding(top = 2.dp))
+                                }
                                 }
                             }
                         }
                         if (otras.isNotEmpty()) {
                             item(key = "titulo-hist") {
-                                Text("HISTORIAL (${otras.size})", color = colors.textSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                Text("HISTORIAL • ${otras.size}", color = colors.textSecondary, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
                             }
                             items(otras, key = { "h-${it.id_excusa}" }) { ex ->
-                                TarjetaSena(modifier = Modifier.fillMaxWidth()) {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth().superficiePlana(cornerRadius = RadioSena.lg).padding(14.dp)
+                                ) {
                                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                                         Column(modifier = Modifier.weight(1f)) {
-                                            Text(ex.ambiente?.ambiente_nombre ?: "Ambiente #${ex.fk_id_ambiente}", color = colors.textPrimary, fontWeight = FontWeight.Medium, fontSize = 13.sp)
+                                            Text(ex.ambiente?.ambiente_nombre ?: "Ambiente #${ex.fk_id_ambiente}", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                                             Text(textoCreacionExcusa(ex), color = colors.textSecondary, fontSize = 11.sp)
                                         }
                                         InsigniaExcusa(ex.estado)
                                     }
-                                    if (ex.usado_en != null) Text("Usada: ${fechaLegible(ex.usado_en)}", color = colors.textSecondary, fontSize = 11.sp, modifier = Modifier.padding(top = 4.dp))
+                                    if (ex.usado_en != null) Text("Usada: ${fechaLegible(ex.usado_en)}", color = colors.textSecondary, fontSize = 11.sp, modifier = Modifier.padding(top = 6.dp))
                                 }
                             }
                         }

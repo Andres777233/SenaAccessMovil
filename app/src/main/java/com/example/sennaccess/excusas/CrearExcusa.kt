@@ -47,6 +47,9 @@ import com.example.sennaccess.comun.tema.VerdeSena
 import com.example.sennaccess.comun.tema.verdeMarca
 import com.example.sennaccess.comun.tema.RojoError
 import com.example.sennaccess.comun.diseno.superficieVidrio
+import com.example.sennaccess.comun.diseno.superficiePlana
+import com.example.sennaccess.comun.diseno.RadioSena
+import com.example.sennaccess.comun.diseno.escalaPresion
 import kotlinx.coroutines.launch
 
 private data class CandidatoExcusa(val aprendiz: UsuarioApi, val ambienteId: Int, val ambienteNombre: String)
@@ -115,13 +118,21 @@ fun VistaCrearExcusa(
     }
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).imePadding()) {
+        // Cabecera editorial: atrás + eyebrow + título + contexto del ambiente.
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) { Icon(Icons.Default.ArrowBack, null, tint = verdeMarca()) }
+            IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) { Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = colors.textPrimary) }
             Column(modifier = Modifier.weight(1f)) {
-                Text("Permiso de salida", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 Text(
-                    ambienteContexto ?: "Se genera un PIN de 4 dígitos (15 min, un solo uso) que el aprendiz entrega en portería.",
-                    color = colors.textSecondary, fontSize = 12.sp
+                    text = "PERMISO DE SALIDA",
+                    color = verdeMarca(),
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.8.sp
+                )
+                Text("Salida de aprendiz", color = colors.textPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
+                Text(
+                    ambienteContexto ?: "PIN de 4 dígitos (15 min, un solo uso) para portería.",
+                    color = colors.textSecondary, fontSize = 12.sp, maxLines = 2
                 )
             }
         }
@@ -137,7 +148,8 @@ fun VistaCrearExcusa(
             val docPin = creada.aprendiz?.user_identification ?: aprendizSel?.aprendiz?.user_identification ?: "—"
             val fichaPin = creada.aprendiz?.user_coursenumber ?: aprendizSel?.aprendiz?.user_coursenumber
             val ambPin = creada.ambiente?.ambiente_nombre ?: aprendizSel?.ambienteNombre ?: ""
-            Box(modifier = Modifier.fillMaxWidth().superficieVidrio(cornerRadius = 28.dp).padding(20.dp)) {
+            // PIN protagonista en vidrio elevado: la pieza hero de la pantalla.
+            Box(modifier = Modifier.fillMaxWidth().superficieVidrio(cornerRadius = 24.dp, elevated = true).padding(20.dp)) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Default.CheckCircle, null, tint = verdeMarca(), modifier = Modifier.size(44.dp))
                     Spacer(modifier = Modifier.height(8.dp))
@@ -177,8 +189,8 @@ fun VistaCrearExcusa(
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                         OutlinedButton(
                             onClick = { clipboard.setText(AnnotatedString(creada.pin ?: "")) },
-                            modifier = Modifier.weight(1f).height(48.dp),
-                            shape = RoundedCornerShape(28.dp),
+                            modifier = Modifier.weight(1f).height(52.dp),
+                            shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = verdeMarca()),
                             border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(verdeMarca()))
                         ) {
@@ -188,15 +200,15 @@ fun VistaCrearExcusa(
                         }
                         Button(
                             onClick = { excusaCreada = null; motivo = ""; aprendizSel = null; busqueda = ""; fichaSel = null; error = null },
-                            modifier = Modifier.weight(1f).height(48.dp),
-                            shape = RoundedCornerShape(28.dp),
+                            modifier = Modifier.weight(1f).height(52.dp).escalaPresion(pressedScale = 0.97f),
+                            shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = VerdeSena, contentColor = Color.Black)
                         ) { Text("NUEVO PERMISO", fontWeight = FontWeight.Bold, fontSize = 12.sp) }
                     }
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Box(modifier = Modifier.fillMaxWidth().superficieVidrio(cornerRadius = 16.dp).padding(16.dp)) {
+            Box(modifier = Modifier.fillMaxWidth().superficiePlana(cornerRadius = RadioSena.lg).padding(16.dp)) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("¿QUÉ SIGUE?", color = colors.textSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
                     PasoPermiso(numero = "1", texto = "Dicta o comparte el PIN al aprendiz antes de que venza.")
@@ -212,7 +224,7 @@ fun VistaCrearExcusa(
             val c = aprendizSel!!
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().superficieVidrio(cornerRadius = 16.dp).padding(horizontal = 12.dp, vertical = 10.dp)
+                modifier = Modifier.fillMaxWidth().superficieVidrio(cornerRadius = RadioSena.lg, elevated = true).padding(horizontal = 12.dp, vertical = 10.dp)
             ) {
                 FotoPerfil(fotoPath = c.aprendiz.profile_photo_path, nombre = c.aprendiz.nombreCompleto, tamano = 44.dp)
                 Spacer(modifier = Modifier.width(12.dp))
@@ -247,25 +259,37 @@ fun VistaCrearExcusa(
                     Text("Cargando aprendices...", color = colors.textSecondary, fontSize = 12.sp)
                 }
             } else if (filtrados.isEmpty()) {
-                Box(modifier = Modifier.fillMaxWidth().superficieVidrio(cornerRadius = 12.dp).padding(14.dp)) {
+                Box(modifier = Modifier.fillMaxWidth().superficiePlana(cornerRadius = RadioSena.md).padding(14.dp)) {
                     Text(if (candidatos.isEmpty()) "No tienes aprendices asignados en tus ambientes." else "Sin coincidencias para \"$q\".", color = colors.textSecondary, fontSize = 12.sp)
                 }
             } else {
-                Text("${filtrados.size} aprendices • orden alfabético", color = colors.textSecondary, fontSize = 11.sp)
-                Spacer(modifier = Modifier.height(6.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("APRENDICES • ${filtrados.size} • ORDEN ALFABÉTICO", color = colors.textSecondary, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+                Spacer(modifier = Modifier.height(8.dp))
+                // Tarjetas separadas por aprendiz: foto + nombre + chip de ficha.
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                     filtrados.take(30).forEach { c ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).superficieVidrio(cornerRadius = 14.dp)
+                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
+                                .background(colors.surface, RoundedCornerShape(16.dp))
                                 .clickable { aprendizSel = c; error = null }.padding(horizontal = 12.dp, vertical = 10.dp)
                         ) {
-                            FotoPerfil(fotoPath = c.aprendiz.profile_photo_path, nombre = c.aprendiz.nombreCompleto, tamano = 40.dp)
+                            FotoPerfil(fotoPath = c.aprendiz.profile_photo_path, nombre = c.aprendiz.nombreCompleto, tamano = 44.dp)
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(c.aprendiz.nombreCompleto, color = colors.textPrimary, fontWeight = FontWeight.Medium, fontSize = 13.sp)
-                                Text("Ficha ${c.aprendiz.user_coursenumber ?: "—"} • ${c.aprendiz.user_identification ?: ""}", color = colors.textSecondary, fontSize = 11.sp)
+                                Text(c.aprendiz.nombreCompleto, color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    if (c.aprendiz.user_coursenumber != null) {
+                                        Box(modifier = Modifier.clip(CircleShape).background(VerdeSena.copy(alpha = 0.15f)).padding(horizontal = 8.dp, vertical = 2.dp)) {
+                                            Text("FICHA ${c.aprendiz.user_coursenumber}", color = verdeMarca(), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                    }
+                                    Text(c.aprendiz.user_identification ?: "", color = colors.textSecondary, fontSize = 11.sp, maxLines = 1)
+                                }
                             }
+                            Icon(Icons.Default.CheckCircle, contentDescription = "Elegir aprendiz", tint = colors.divider, modifier = Modifier.size(22.dp))
                         }
                     }
                 }
@@ -274,15 +298,19 @@ fun VistaCrearExcusa(
                     Text("Mostrando 30 de ${filtrados.size}: escribe en el buscador o filtra por ficha.", color = colors.textSecondary, fontSize = 11.sp)
                 }
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
         }
 
-        OutlinedTextField(value = motivo, onValueChange = { motivo = it }, label = { Text("Motivo *") }, placeholder = { Text("ej. calamidad familiar, cita médica urgente 4:15") }, modifier = Modifier.fillMaxWidth().campoVisible(), minLines = 2)
-        Spacer(modifier = Modifier.height(12.dp))
+        // Sección motivo + generación en plana con eyebrow.
+        Column(modifier = Modifier.fillMaxWidth().superficiePlana(cornerRadius = RadioSena.lg).padding(16.dp)) {
+            Text("MOTIVO Y GENERACIÓN", color = verdeMarca(), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp)
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(value = motivo, onValueChange = { motivo = it }, label = { Text("Motivo *") }, placeholder = { Text("ej. calamidad familiar, cita médica urgente 4:15") }, modifier = Modifier.fillMaxWidth().campoVisible(), minLines = 2, shape = RoundedCornerShape(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-        if (error != null) { Text(error!!, color = RojoError, fontSize = 12.sp); Spacer(modifier = Modifier.height(8.dp)) }
+            if (error != null) { Text(error!!, color = RojoError, fontSize = 12.sp); Spacer(modifier = Modifier.height(8.dp)) }
 
-        Button(
+            Button(
             onClick = {
                 val c = aprendizSel ?: run { error = "Elige un aprendiz de la lista"; return@Button }
                 if (motivo.isBlank()) { error = "El motivo es obligatorio"; return@Button }
@@ -298,10 +326,11 @@ fun VistaCrearExcusa(
                 }
             },
             enabled = !creando && aprendizSel != null && motivo.isNotBlank(),
-            modifier = Modifier.fillMaxWidth().height(50.dp),
-            shape = RoundedCornerShape(28.dp),
+            modifier = Modifier.fillMaxWidth().height(52.dp).escalaPresion(pressedScale = 0.97f),
+            shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = VerdeSena, contentColor = Color.Black, disabledContainerColor = VerdeSena.copy(0.3f))
         ) { if (creando) CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(16.dp), strokeWidth = 2.dp) else Text("GENERAR PIN", fontWeight = FontWeight.Bold, fontSize = 15.sp) }
+        }
         Spacer(modifier = Modifier.height(12.dp))
         }
     }

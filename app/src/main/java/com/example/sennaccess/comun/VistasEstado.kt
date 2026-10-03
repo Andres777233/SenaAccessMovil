@@ -5,6 +5,7 @@ package com.example.sennaccess.comun
 // contenido real (Success), centralizando el renderizado de estados en la app.
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,13 +45,22 @@ fun CajaCargando() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 40.dp),
+            .padding(vertical = 48.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            CircularProgressIndicator(color = verdeMarca(), modifier = Modifier.size(32.dp))
+            CircularProgressIndicator(
+                color = verdeMarca(),
+                modifier = Modifier.size(30.dp),
+                strokeWidth = 3.dp
+            )
             Spacer(modifier = Modifier.height(12.dp))
-            Text("Cargando...", color = colors.textSecondary, fontSize = 13.sp)
+            Text(
+                "Cargando…",
+                color = colors.textSecondary,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 }
@@ -66,20 +76,24 @@ fun VistaVacia(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 32.dp),
+            .padding(vertical = 36.dp),
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(horizontal = 24.dp)) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(horizontal = 32.dp)) {
             Box(
-                modifier = Modifier.size(64.dp).clip(CircleShape).background(VerdeSena.copy(alpha = 0.12f)),
+                modifier = Modifier
+                    .size(60.dp)
+                    .clip(CircleShape)
+                    .background(VerdeSena.copy(alpha = 0.12f))
+                    .border(1.dp, VerdeSena.copy(alpha = 0.25f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icono, contentDescription = null, tint = verdeMarca(), modifier = Modifier.size(30.dp))
+                Icon(icono, contentDescription = null, tint = verdeMarca(), modifier = Modifier.size(28.dp))
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
             Text(titulo, color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp, textAlign = TextAlign.Center)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(mensaje, color = colors.textSecondary, fontSize = 13.sp, textAlign = TextAlign.Center)
+            Text(mensaje, color = colors.textSecondary, fontSize = 13.sp, lineHeight = 18.sp, textAlign = TextAlign.Center)
         }
     }
 }

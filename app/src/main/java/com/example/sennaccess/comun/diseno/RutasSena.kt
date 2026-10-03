@@ -43,8 +43,12 @@ object DestinoInstructor {
 object PestanaAdmin {
     const val INICIO = "INICIO"
     const val NOVEDADES = "NOVEDADES"
-    const val PRESENTES = "PRESENTES"
     const val USUARIOS = "USUARIOS"
+    const val AMBIENTES = "AMBIENTES"
+}
+
+object PestanaPortero {
+    const val VALIDAR = "VALIDAR"
     const val EQUIPOS = "EQUIPOS"
     const val HISTORIAL = "HISTORIAL"
 }

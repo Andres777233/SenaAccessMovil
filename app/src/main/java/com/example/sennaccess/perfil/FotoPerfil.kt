@@ -22,6 +22,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import androidx.compose.ui.platform.LocalContext
 import com.example.sennaccess.datos.sesion.GestorSesion
 import com.example.sennaccess.comun.tema.ColoresAppLocal
 import com.example.sennaccess.comun.tema.VerdeSena
@@ -29,7 +31,13 @@ import com.example.sennaccess.comun.tema.verdeMarca
 @Composable
 fun FotoPerfil(fotoPath: String?, nombre: String, tamano: Dp = 80.dp) {
     val colors = ColoresAppLocal.current
-    val url = GestorSesion.fotoUrl(fotoPath)
+    val context = LocalContext.current
+    // Prioridad a la foto recién guardada en sesión: cambio instantáneo sin
+    // esperar el GET /user. El ?v= rompe la caché vieja de Coil.
+    val efectiva = GestorSesion.userPhoto?.takeIf { it.isNotBlank() } ?: fotoPath
+    val base = GestorSesion.fotoUrl(efectiva)
+    val version = GestorSesion.photoVersion
+    val url = base?.let { if (it.contains("?")) "$it&v=$version" else "$it?v=$version" }
     Box(
         modifier = Modifier
             .size(tamano)
@@ -39,7 +47,10 @@ fun FotoPerfil(fotoPath: String?, nombre: String, tamano: Dp = 80.dp) {
     ) {
         if (url != null) {
             AsyncImage(
-                model = url,
+                model = ImageRequest.Builder(context)
+                    .data(url)
+                    .crossfade(true)
+                    .build(),
                 contentDescription = "Foto de perfil",
                 modifier = Modifier.size(tamano),
                 contentScale = ContentScale.Crop

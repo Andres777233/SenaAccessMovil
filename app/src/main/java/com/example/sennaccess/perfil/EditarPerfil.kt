@@ -71,6 +71,7 @@ import com.example.sennaccess.comun.EstadoContenido
 import com.example.sennaccess.comun.diseno.RadioVidrio
 import com.example.sennaccess.comun.diseno.CabeceraPlegable
 import com.example.sennaccess.comun.diseno.superficieVidrio
+import com.example.sennaccess.comun.diseno.superficiePlana
 import com.example.sennaccess.comun.diseno.escalaPresion
 import com.example.sennaccess.comun.tema.RojoError
 import com.example.sennaccess.comun.tema.ColoresAppLocal
@@ -147,6 +148,10 @@ fun VistaEditarPerfil(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null, tint = colors.textPrimary) }
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Editar perfil", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text("Actualiza tus datos", color = colors.textSecondary, fontSize = 12.sp)
+            }
         }
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -163,7 +168,7 @@ fun VistaEditarPerfil(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .superficieVidrio(cornerRadius = RadioVidrio)
+                    .superficieVidrio(cornerRadius = RadioVidrio, elevated = true)
                     .padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -196,16 +201,101 @@ fun VistaEditarPerfil(
                 }
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(usuario.nombreCompleto, color = colors.textPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(20.dp))
-
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            // Ficha de datos en plana: el vidrio queda solo para el hero de foto.
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .superficiePlana(cornerRadius = RadioVidrio)
+                    .padding(20.dp)
+            ) {
+                EtiquetaPerfil("Datos personales")
+                Spacer(modifier = Modifier.height(8.dp))
                 campoPerfil(identificacion, { identificacion = it }, "Número de Identificación")
                 Spacer(modifier = Modifier.height(12.dp))
                 campoPerfil(nombres, { nombres = it }, "Nombres")
                 Spacer(modifier = Modifier.height(12.dp))
                 campoPerfil(apellidos, { apellidos = it }, "Apellidos")
                 Spacer(modifier = Modifier.height(12.dp))
-                campoPerfil(correo, { correo = it }, "Correo Electrónico")
+                // Correo BLOQUEADO (fix seguridad): solo lectura + botón CAMBIAR CORREO
+                // con verificación por código. Nadie cambia su correo sin el código.
+                OutlinedTextField(
+                    value = correo,
+                    onValueChange = { },
+                    label = { Text("Correo Electrónico", color = colors.textSecondary) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    readOnly = true,
+                    enabled = false,
+                    colors = campoPerfilColors(),
+                    shape = RoundedCornerShape(16.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                var mostrarDialogoCorreo by remember { mutableStateOf(false) }
+                var correoNuevo by remember { mutableStateOf("") }
+                OutlinedButton(
+                    onClick = { correoNuevo = correo; mostrarDialogoCorreo = true },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    border = BorderStroke(1.dp, verdeMarca())
+                ) { Text("CAMBIAR CORREO", color = verdeMarca(), fontWeight = FontWeight.Bold, fontSize = 13.sp) }
+                if (mostrarDialogoCorreo) {
+                    AlertDialog(
+                        onDismissRequest = { mostrarDialogoCorreo = false },
+                        containerColor = colors.cardBackground.copy(alpha = 0.98f),
+                        shape = RoundedCornerShape(20.dp),
+                        title = { Text("Cambiar correo", color = colors.textPrimary, fontWeight = FontWeight.Bold) },
+                        text = {
+                            Column {
+                                Text(
+                                    "Escribe tu nuevo correo. Al guardar se enviará un código de verificación a ese correo.",
+                                    color = colors.textSecondary, fontSize = 13.sp
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                OutlinedTextField(
+                                    value = correoNuevo,
+                                    onValueChange = { correoNuevo = it },
+                                    label = { Text("Nuevo correo") },
+                                    modifier = Modifier.fillMaxWidth().campoVisible(),
+                                    singleLine = true,
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                                    shape = RoundedCornerShape(16.dp)
+                                )
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                val limpio = correoNuevo.trim().lowercase()
+                                val dominiosOk = listOf("@gmail.com", "@hotmail.com", "@outlook.com", "@soy.sena.edu.co")
+                                if (limpio.isBlank() || dominiosOk.none { limpio.endsWith(it) }) {
+                                    errorMensaje = "El nuevo correo debe ser @gmail.com, @hotmail.com, @outlook.com o @soy.sena.edu.co."
+                                    return@TextButton
+                                }
+                                correo = limpio
+                                mostrarDialogoCorreo = false
+                            }) { Text("USAR ESTE CORREO", fontWeight = FontWeight.Bold, color = verdeMarca()) }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { mostrarDialogoCorreo = false }) {
+                                Text("CANCELAR", color = colors.textSecondary)
+                            }
+                        }
+                    )
+                }
                 Spacer(modifier = Modifier.height(12.dp))
+                // Ficha/programa: SOLO el admin los cambia (Crear/ActualizarUsuario).
+                // Aquí siempre son solo lectura, nunca editables desde el perfil propio.
+                if (!usuario.user_program.isNullOrBlank() || (usuario.user_coursenumber ?: 0) > 0) {
+                    if ((usuario.user_coursenumber ?: 0) > 0) {
+                        campoLectura("Ficha", usuario.user_coursenumber.toString())
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                    if (!usuario.user_program.isNullOrBlank()) {
+                        campoLectura("Programa de Formación", usuario.user_program!!)
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                }
                 if (mostrarFichaPrograma) {
                     campoPerfil(ficha, { ficha = it }, "Número de Ficha")
                     Spacer(modifier = Modifier.height(12.dp))
@@ -213,11 +303,12 @@ fun VistaEditarPerfil(
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
+                EtiquetaPerfil("Seguridad")
+                Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
-                    label = { Text("Nueva contraseña (opcional)", color = colors.textSecondary) },
-                    modifier = Modifier.fillMaxWidth().campoVisible(),
+                    label = { Text("Nueva contraseña (opcional)", color = colors.textSecondary) },                    modifier = Modifier.fillMaxWidth().campoVisible(),
                     singleLine = true,
                     visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
@@ -243,6 +334,8 @@ fun VistaEditarPerfil(
                     colors = campoPerfilColors(),
                     shape = RoundedCornerShape(16.dp)
                 )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
 
                 if (errorMensaje != null) {
                     Spacer(modifier = Modifier.height(12.dp))
@@ -357,16 +450,16 @@ fun VistaEditarPerfil(
                 }
                 Button(
                     onClick = { guardarPerfil(codigoClave.ifBlank { null }) },
-                    modifier = Modifier.fillMaxWidth().height(50.dp).escalaPresion(pressedScale = 0.97f),
-                    shape = RoundedCornerShape(28.dp),
+                    modifier = Modifier.fillMaxWidth().height(52.dp).escalaPresion(pressedScale = 0.97f),
+                    shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = VerdeSena, contentColor = Color.Black)
                 ) { Text(if (guardando) "GUARDANDO..." else "GUARDAR CAMBIOS", fontWeight = FontWeight.Bold, fontSize = 15.sp) }
 
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedButton(
                     onClick = onBack,
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
-                    shape = RoundedCornerShape(28.dp),
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(16.dp),
                     border = BorderStroke(1.dp, colors.textSecondary)
                 ) { Text("CANCELAR", color = colors.textSecondary, fontWeight = FontWeight.Bold) }
 
@@ -421,7 +514,6 @@ fun VistaEditarPerfil(
                         }
                     )
                 }
-            }
             Spacer(modifier = Modifier.height(20.dp))
         }
     }
@@ -454,6 +546,36 @@ private fun campoPerfil(value: String, onValueChange: (String) -> Unit, label: S
         label = { Text(label, color = ColoresAppLocal.current.textSecondary) },
         modifier = Modifier.fillMaxWidth().campoVisible(),
         singleLine = true,
+        shape = RoundedCornerShape(16.dp),
+        colors = campoPerfilColors()
+    )
+}
+
+// Etiqueta de sección en editar perfil: eyebrow verde + jerarquía.
+@Composable
+private fun EtiquetaPerfil(texto: String) {
+    Text(
+        text = texto.uppercase(),
+        color = verdeMarca(),
+        fontSize = 11.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 1.6.sp,
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+// Campo bloqueado de solo lectura (ficha/programa en el perfil propio).
+// Muestra el valor del servidor sin permitir edición: fix grave de seguridad.
+@Composable
+private fun campoLectura(label: String, valor: String) {
+    OutlinedTextField(
+        value = valor,
+        onValueChange = { },
+        label = { Text(label, color = ColoresAppLocal.current.textSecondary) },
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true,
+        readOnly = true,
+        enabled = false,
         shape = RoundedCornerShape(16.dp),
         colors = campoPerfilColors()
     )

@@ -48,6 +48,24 @@ fun fechaRelativa(iso: String?): String {
     }
 }
 
+// True si el ISO cae hoy en Bogotá: los dashboards muestran solo el día
+// actual para no saturarse; el historial completo vive en su pestaña.
+fun esHoyBogota(iso: String?): Boolean {
+    val d = parsearIso(iso) ?: return false
+    val bogota = Calendar.getInstance(TimeZone.getTimeZone("America/Bogota")).apply {
+        timeInMillis = d.timeInMillis
+    }
+    val hoy = Calendar.getInstance(TimeZone.getTimeZone("America/Bogota"))
+    return bogota.get(Calendar.YEAR) == hoy.get(Calendar.YEAR) &&
+        bogota.get(Calendar.DAY_OF_YEAR) == hoy.get(Calendar.DAY_OF_YEAR)
+}
+
+// Día + mes cortos para rieles de fecha (timeline de novedades).
+fun diaMesCorto(iso: String?): Pair<String, String>? {
+    val d = parsearIso(iso) ?: return null
+    return dosDigitos(d.get(Calendar.DAY_OF_MONTH)) to meses[d.get(Calendar.MONTH)].uppercase()
+}
+
 private fun parsearIso(iso: String?): Calendar? {
     if (iso.isNullOrBlank()) return null
     val m = patronIso.find(iso) ?: return null

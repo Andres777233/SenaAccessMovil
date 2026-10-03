@@ -58,6 +58,29 @@ fun VistaPendientesDobleFactor() {
     var avisoRespuesta by remember { mutableStateOf<String?>(null) }
 
     val retoLinkId = AlmacenEnlaceDobleFactor.challengeId.value
+    val decisionLink = AlmacenEnlaceDobleFactor.decision.value
+    // Botones del correo funcionales: si el deep link trae decisión (SÍ/NO),
+    // se ejecuta automáticamente al mostrar el reto, sin otro tap manual.
+    LaunchedEffect(retoVisible) {
+        val reto = retoVisible ?: return@LaunchedEffect
+        val dec = AlmacenEnlaceDobleFactor.decision.value ?: return@LaunchedEffect
+        val linkId = AlmacenEnlaceDobleFactor.challengeId.value
+        if (linkId != null && reto.challenge_id != linkId) return@LaunchedEffect
+        val token = GestorSesion.token ?: return@LaunchedEffect
+        val id = reto.challenge_id ?: return@LaunchedEffect
+        if (respondiendo) return@LaunchedEffect
+        respondiendo = true
+        try {
+            repo.aprobar(token, id, dec)
+            avisoRespuesta = if (dec == "aprobar") "Acceso aprobado desde el correo."
+            else "Intento bloqueado desde el correo. Si no fuiste tú, cambia tu contraseña."
+        } catch (_: Exception) {
+            avisoRespuesta = "Intento ya resuelto."
+        }
+        AlmacenEnlaceDobleFactor.limpiar()
+        retoVisible = null
+        respondiendo = false
+    }
     LaunchedEffect(Unit) {
         suspend fun traerPendiente(): Boolean {
             val token = GestorSesion.token ?: return false

@@ -35,5 +35,12 @@ object ResorteIos {
 
     val PressRelease: TweenSpec<Float> = tween(durationMillis = 150, easing = CubicBezierEasing(0.0f, 0.0f, 0.2f, 1.0f))
 
+    // Press instantáneo (120ms ease-out): el dedo manda, sin física en bajada.
+    val Presion: TweenSpec<Float> = tween(durationMillis = 120, easing = CubicBezierEasing(0.25f, 0.1f, 0.25f, 1.0f))
+
+    // Entradas UI: rápidas y con salida inmediata (nada supera 300ms).
+    val EntradaRapida: TweenSpec<Float> = tween(durationMillis = 180, easing = CubicBezierEasing(0.23f, 1.0f, 0.32f, 1.0f))
+    val EntradaNormal: TweenSpec<Float> = tween(durationMillis = 240, easing = CubicBezierEasing(0.23f, 1.0f, 0.32f, 1.0f))
+
     val ScreenFade: TweenSpec<Float> = tween(durationMillis = 280, easing = CubicBezierEasing(0.2f, 0.0f, 0.0f, 1.0f))
 }

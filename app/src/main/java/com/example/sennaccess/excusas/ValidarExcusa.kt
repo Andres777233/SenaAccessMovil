@@ -3,6 +3,7 @@ package com.example.sennaccess.excusas
 // Pantalla del admin (portería) para validar el PIN de una excusa y autorizar la salida.
 // Polling silencioso cada 10s para ver en tiempo real las excusas que crean los instructores.
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -27,6 +28,7 @@ import com.example.sennaccess.datos.repositorios.RepositorioExcusas
 import com.example.sennaccess.datos.sesion.GestorSesion
 import com.example.sennaccess.datos.modelos.estaPendiente
 import com.example.sennaccess.datos.modelos.estadoNormalizado
+import androidx.compose.ui.draw.clip
 import com.example.sennaccess.comun.detalleHttp
 import com.example.sennaccess.comun.campoVisible
 import com.example.sennaccess.comun.diseno.TarjetaSena
@@ -36,12 +38,15 @@ import com.example.sennaccess.comun.tema.VerdeSena
 import com.example.sennaccess.comun.tema.verdeMarca
 import com.example.sennaccess.comun.tema.RojoError
 import com.example.sennaccess.comun.diseno.RadioVidrio
+import com.example.sennaccess.comun.diseno.RadioSena
 import com.example.sennaccess.comun.diseno.superficieVidrio
+import com.example.sennaccess.comun.diseno.superficiePlana
+import com.example.sennaccess.comun.diseno.escalaPresion
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun VistaValidarExcusa(onBack: () -> Unit) {
+fun VistaValidarExcusa(onBack: () -> Unit, mostrarCabecera: Boolean = true) {
     val colors = ColoresAppLocal.current
     val scope = rememberCoroutineScope()
     val repo = remember { RepositorioExcusas() }
@@ -96,34 +101,69 @@ fun VistaValidarExcusa(onBack: () -> Unit) {
     }
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).imePadding()) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null, tint = verdeMarca()) }
-            Text("Validar salida (PIN)", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-            Spacer(modifier = Modifier.weight(1f))
-            IconButton(onClick = { scope.launch { cargarPendientes() } }) { Icon(Icons.Default.Refresh, null, tint = colors.textSecondary) }
+        // Cabecera propia solo cuando se usa fuera de la vista unificada
+        // (la unificada ya trae su volver + título + segmentado).
+        if (mostrarCabecera) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) { Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = colors.textPrimary) }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "VALIDAR SALIDA",
+                        color = verdeMarca(),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.8.sp
+                    )
+                    Text("PIN de 4 dígitos", color = colors.textPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
+                }
+                IconButton(onClick = { scope.launch { cargarPendientes() } }, modifier = Modifier.size(48.dp)) { Icon(Icons.Default.Refresh, contentDescription = "Recargar pendientes", tint = colors.textSecondary) }
+            }
+            Text("El aprendiz entrega el PIN que le dio el instructor. Al validar se registra la Salida en su historial.", color = colors.textSecondary, fontSize = 12.sp)
+            if (errorCarga != null) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(errorCarga!!, color = RojoError, fontSize = 12.sp)
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        } else {
+            // Dentro de la unificada: subtítulo compacto + recarga sin flecha.
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Text("PIN de 4 dígitos para autorizar la salida.", color = colors.textSecondary, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                IconButton(onClick = { scope.launch { cargarPendientes() } }, modifier = Modifier.size(44.dp)) { Icon(Icons.Default.Refresh, contentDescription = "Recargar pendientes", tint = colors.textSecondary) }
+            }
+            if (errorCarga != null) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(errorCarga!!, color = RojoError, fontSize = 12.sp)
+            }
+            Spacer(modifier = Modifier.height(12.dp))
         }
-        Text("El aprendiz entrega el PIN de 4 dígitos que le dio el instructor. Al validar se registra la Salida en su historial.", color = colors.textSecondary, fontSize = 12.sp)
-        if (errorCarga != null) {
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(errorCarga!!, color = RojoError, fontSize = 12.sp)
-        }
-        Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
             value = pin,
             onValueChange = { v -> pin = v.filter { it.isDigit() }.take(4) },
-            label = { Text("PIN de excusa") },
-            placeholder = { Text("ej. 1232") },
+            label = { Text("PIN de excusa (4 dígitos)") },
+            placeholder = { Text("• • • •") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth().campoVisible(),
-            singleLine = true
+            singleLine = true,
+            shape = RoundedCornerShape(16.dp),
+            textStyle = androidx.compose.ui.text.TextStyle(
+                fontSize = 28.sp, fontWeight = FontWeight.Bold,
+                letterSpacing = 8.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            "Toca una excusa pendiente para autollenar su PIN.",
+            color = colors.textSecondary, fontSize = 11.sp, modifier = Modifier.fillMaxWidth(),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
         Spacer(modifier = Modifier.height(12.dp))
 
         if (error != null) { Text(error!!, color = RojoError, fontSize = 13.sp); Spacer(modifier = Modifier.height(8.dp)) }
 
         exito?.let { ex ->
-            Box(modifier = Modifier.fillMaxWidth().superficieVidrio(cornerRadius = RadioVidrio).padding(16.dp)) {
+            // Éxito protagonista en vidrio: la confirmación que mira portería.
+            Box(modifier = Modifier.fillMaxWidth().superficieVidrio(cornerRadius = 24.dp, elevated = true).padding(16.dp)) {
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.CheckCircle, null, tint = verdeMarca(), modifier = Modifier.size(22.dp))
@@ -141,15 +181,15 @@ fun VistaValidarExcusa(onBack: () -> Unit) {
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Button(onClick = { exito = null; pin = ""; error = null; mensaje = null; exitoNombre = null; scope.launch { cargarPendientes() } }, modifier = Modifier.fillMaxWidth().height(48.dp), shape = RoundedCornerShape(28.dp), colors = ButtonDefaults.buttonColors(containerColor = VerdeSena.copy(0.18f), contentColor = verdeMarca())) { Text("Validar otro PIN") }
+            Button(onClick = { exito = null; pin = ""; error = null; mensaje = null; exitoNombre = null; scope.launch { cargarPendientes() } }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = VerdeSena.copy(0.18f), contentColor = verdeMarca())) { Text("Validar otro PIN") }
             Spacer(modifier = Modifier.height(12.dp))
         }
 
         Button(
             onClick = { pideConfirmar = true },
             enabled = !validando && pin.length == 4,
-            modifier = Modifier.fillMaxWidth().height(48.dp),
-            shape = RoundedCornerShape(28.dp),
+            modifier = Modifier.fillMaxWidth().height(52.dp).escalaPresion(pressedScale = 0.97f),
+            shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = VerdeSena, contentColor = Color.Black)
         ) { if (validando) CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(16.dp), strokeWidth = 2.dp) else Text("VALIDAR Y REGISTRAR SALIDA", fontWeight = FontWeight.Bold) }
 
@@ -165,28 +205,34 @@ fun VistaValidarExcusa(onBack: () -> Unit) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        Text("EXCUSAS PENDIENTES (${pendientes.size}) — toca una para usar su PIN", color = verdeMarca(), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+        Text("EXCUSAS PENDIENTES", color = verdeMarca(), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp, modifier = Modifier.fillMaxWidth())
+        Text("Toca una para usar su PIN", color = colors.textSecondary, fontSize = 12.sp, modifier = Modifier.fillMaxWidth())
         Spacer(modifier = Modifier.height(8.dp))
         if (pendientes.isEmpty()) {
-            Box(modifier = Modifier.fillMaxWidth().superficieVidrio(cornerRadius = 12.dp).padding(16.dp), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.fillMaxWidth().superficiePlana(cornerRadius = RadioSena.md).padding(16.dp), contentAlignment = Alignment.Center) {
                 Text("No hay excusas pendientes.", color = colors.textSecondary, fontSize = 13.sp)
             }
         } else {
-            pendientes.forEach { ex ->
-                TarjetaSena(
-                    modifier = Modifier.fillMaxWidth().clickable(enabled = ex.pin?.length == 4) { ex.pin?.let { pin = it } }
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            // Tarjetas separadas por pendiente: cada excusa respira sola.
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                pendientes.forEach { ex ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
+                            .background(colors.surface, RoundedCornerShape(16.dp))
+                            .clickable(enabled = ex.pin?.length == 4) { ex.pin?.let { pin = it } }
+                            .padding(horizontal = 14.dp, vertical = 12.dp)
+                    ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(ex.aprendiz?.nombreCompleto ?: "Aprendiz #${ex.fk_id_aprendiz}", color = colors.textPrimary, fontWeight = FontWeight.Medium, fontSize = 13.sp)
+                            Text(ex.aprendiz?.nombreCompleto ?: "Aprendiz #${ex.fk_id_aprendiz}", color = colors.textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, maxLines = 1)
                             Text(textoCreacionExcusa(ex), color = colors.textSecondary, fontSize = 11.sp)
                             Text("PIN ${ex.pin ?: "—"} • ${textoVigencia(ex.expira_en, ahora)}", color = colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 2.dp))
-                            Text("Instructor: ${ex.instructor?.nombreCompleto ?: "#${ex.fk_id_instructor}"}", color = colors.textSecondary, fontSize = 10.sp)
+                            Text("Instructor: ${ex.instructor?.nombreCompleto ?: "#${ex.fk_id_instructor}"}", color = colors.textSecondary, fontSize = 10.sp, maxLines = 1)
                         }
+                        Spacer(modifier = Modifier.width(8.dp))
                         InsigniaExcusa(ex.estado)
                     }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
             }
         }
         Spacer(modifier = Modifier.height(12.dp))

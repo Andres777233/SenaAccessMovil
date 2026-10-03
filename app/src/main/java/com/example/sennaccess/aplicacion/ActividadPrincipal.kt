@@ -5,7 +5,6 @@ package com.example.sennaccess.aplicacion
 // de pantalla en estado. Los dashboards por rol cierran el flujo de navegación.
 
 import android.os.Bundle
-import android.view.WindowManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
@@ -22,10 +21,10 @@ import com.example.sennaccess.comun.tema.*
 import com.example.sennaccess.administrador.panel.*
 import com.example.sennaccess.aprendiz.panel.PanelAprendiz
 import com.example.sennaccess.instructor.panel.PanelInstructor
+import com.example.sennaccess.portero.PanelPortero
 import com.example.sennaccess.datos.repositorios.RepositorioAutenticacion
 import com.example.sennaccess.datos.sesion.RolSeguro
 import com.example.sennaccess.datos.sesion.GestorSesion
-import com.example.sennaccess.biometria.AlmacenHuella
 import com.example.sennaccess.autenticacion.verificacion.AlmacenEnlaceDobleFactor
 import kotlinx.coroutines.launch
 import com.example.sennaccess.autenticacion.acceso.PantallaAcceso
@@ -66,7 +65,7 @@ class ActividadPrincipal : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
+        // Sin FLAG_SECURE: se permiten capturas y grabación (decisión del dueño).
         com.example.sennaccess.datos.sesion.GuardianVersion.aplicarSiActualizo(this)
         GestorSesion.enlazar(applicationContext)
         guardarDeepLink(intent)
@@ -81,7 +80,7 @@ class ActividadPrincipal : AppCompatActivity() {
                     val pilaRetroceso = remember { ArrayDeque<String>() }
                     fun irA(destino: String) {
                         if (currentScreen == destino) return
-                        if (destino == "aprendiz_dashboard" || destino == "instructor_dashboard" || destino == "admin") {
+                        if (destino == "aprendiz_dashboard" || destino == "instructor_dashboard" || destino == "admin" || destino == "portero_dashboard") {
                             pilaRetroceso.clear()
                         } else {
                             pilaRetroceso.addLast(currentScreen)
@@ -115,7 +114,7 @@ class ActividadPrincipal : AppCompatActivity() {
                     // Guardia de autenticación: un dashboard sin token nunca se pinta.
                     // Cubre proceso restaurado y sesión expirada por 401.
                     LaunchedEffect(currentScreen) {
-                        if (GestorSesion.token == null && (currentScreen == "aprendiz_dashboard" || currentScreen == "instructor_dashboard" || currentScreen == "admin")) {
+                        if (GestorSesion.token == null && (currentScreen == "aprendiz_dashboard" || currentScreen == "instructor_dashboard" || currentScreen == "admin" || currentScreen == "portero_dashboard")) {
                             pilaRetroceso.clear()
                             currentScreen = "landing"
                         }
@@ -129,6 +128,7 @@ class ActividadPrincipal : AppCompatActivity() {
                                 "aprendiz" -> irA("aprendiz_dashboard")
                                 "instructor" -> irA("instructor_dashboard")
                                 "admin" -> irA("admin")
+                                "portero" -> irA("portero_dashboard")
                                 else -> irA("login")
                             }
                         } else {
@@ -138,10 +138,11 @@ class ActividadPrincipal : AppCompatActivity() {
 
                     val scope = rememberCoroutineScope()
                     val cerrarSesion: () -> Unit = {
-                        // Limpieza local inmediata: sesión, huella del usuario anterior y pila.
+                        // Limpieza local inmediata: solo sesión y retos.
+                        // La huella y el dispositivo se conservan para reingresar
+                        // sin registrar de nuevo (fix bug "huella no guardada").
                         val tokenPrevio = GestorSesion.token
                         GestorSesion.clear()
-                        AlmacenHuella.borrarTodo(applicationContext)
                         AlmacenEnlaceDobleFactor.limpiar()
                         pilaRetroceso.clear()
                         currentScreen = "landing"
@@ -181,6 +182,7 @@ class ActividadPrincipal : AppCompatActivity() {
                                         "aprendiz" -> irA("aprendiz_dashboard")
                                         "instructor" -> irA("instructor_dashboard")
                                         "admin" -> irA("admin")
+                                        "portero" -> irA("portero_dashboard")
                                         else -> Unit
                                     }
                                 },
@@ -219,6 +221,11 @@ class ActividadPrincipal : AppCompatActivity() {
                                 onToggleTheme = { isDark = !isDark }
                             )
                             "admin" -> PanelAdministrador(
+                                onCerrarSesion = cerrarSesion,
+                                isDark = isDark,
+                                onToggleTheme = { isDark = !isDark }
+                            )
+                            "portero_dashboard" -> PanelPortero(
                                 onCerrarSesion = cerrarSesion,
                                 isDark = isDark,
                                 onToggleTheme = { isDark = !isDark }

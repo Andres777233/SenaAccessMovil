@@ -27,9 +27,8 @@ import androidx.compose.ui.unit.sp
 import com.example.sennaccess.datos.repositorios.RepositorioAutenticacion
 import com.example.sennaccess.comun.diseno.FondoAcceso
 import com.example.sennaccess.comun.diseno.CampoAcceso
-import com.example.sennaccess.comun.diseno.LogoAcceso
 import com.example.sennaccess.comun.diseno.CajaError
-import com.example.sennaccess.comun.diseno.TarjetaVidrio
+import com.example.sennaccess.comun.diseno.superficiePlana
 import com.example.sennaccess.comun.diseno.BotonPrimarioNeon
 import com.example.sennaccess.comun.diseno.BotonCambiarTema
 import com.example.sennaccess.comun.tema.ColoresAppLocal
@@ -59,26 +58,40 @@ fun PantallaRecuperacionClave(
             modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)
         )
 
-        Box(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            contentAlignment = Alignment.Center
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(top = 64.dp, bottom = 20.dp),
+            horizontalAlignment = Alignment.Start
         ) {
-            TarjetaVidrio {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 24.dp, vertical = 40.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    LogoAcceso(modifier = Modifier.size(90.dp).padding(bottom = 16.dp))
-                    Text(
-                        text = "Recuperar Contraseña",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = colors.textPrimary,
-                        modifier = Modifier.padding(bottom = 32.dp)
-                    )
+            Text(
+                text = "RECUPERAR CLAVE",
+                style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.8.sp),
+                color = verdeMarca(),
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "Recupera tu acceso",
+                style = MaterialTheme.typography.headlineSmall,
+                color = colors.textPrimary,
+                fontWeight = FontWeight.ExtraBold
+            )
+            Text(
+                text = "Te enviamos un código de 6 dígitos a tu correo.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = colors.textSecondary
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .superficiePlana(cornerRadius = 24.dp)
+                    .padding(horizontal = 20.dp, vertical = 22.dp)
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
 
                     CampoAcceso(
                         value = email,

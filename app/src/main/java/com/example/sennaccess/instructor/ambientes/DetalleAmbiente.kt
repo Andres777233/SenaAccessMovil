@@ -39,8 +39,11 @@ import com.example.sennaccess.comun.CajaCargando
 import com.example.sennaccess.comun.CajaError
 import com.example.sennaccess.comun.detalleHttp
 import com.example.sennaccess.comun.diseno.FiltroSena
+import com.example.sennaccess.comun.diseno.escalaPresion
+import com.example.sennaccess.comun.diseno.EntradaSuave
 import com.example.sennaccess.comun.diseno.RadioVidrio
 import com.example.sennaccess.comun.diseno.superficieVidrio
+import com.example.sennaccess.comun.diseno.superficiePlana
 import com.example.sennaccess.comun.tema.RojoError
 import com.example.sennaccess.comun.tema.ColoresAppLocal
 import com.example.sennaccess.comun.tema.VerdeSena
@@ -89,7 +92,19 @@ fun VistaDetalleAmbiente(
             val repoUser = com.example.sennaccess.datos.repositorios.RepositorioUsuarios()
             val lista = repoUser.getUsers(t)
             val idsYa = aprendices.mapNotNull { it.id_usuario }.toSet()
-            aprendicesDisponibles = lista.filter { it.role?.rol_name.equals("Aprendiz", true) && it.id_usuario !in idsYa }
+            val jornadaAmb = ambiente.ambiente_jornada?.trim()?.lowercase()
+            aprendicesDisponibles = lista.filter { u ->
+                // Solo aprendices reales: fuera invitados temporales y otros roles.
+                if (u.esInvitado()) return@filter false
+                if (!u.role?.rol_name.equals("Aprendiz", true)) return@filter false
+                if (u.id_usuario in idsYa) return@filter false
+                // Solo la jornada del salón (incluye sábado especial del aprendiz).
+                if (!jornadaAmb.isNullOrBlank()) {
+                    val jHoy = u.jornadaHoy()?.trim()?.lowercase()
+                    if (!jHoy.isNullOrBlank() && jHoy != jornadaAmb) return@filter false
+                }
+                true
+            }
         } catch (_: Exception) { aprendicesDisponibles = emptyList() }
     }
 
@@ -102,62 +117,79 @@ fun VistaDetalleAmbiente(
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) { Icon(Icons.Default.ArrowBack, null, tint = colors.textPrimary) }
             Column(modifier = Modifier.weight(1f)) {
-                Text(ambiente.ambiente_nombre ?: "Ambiente", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                val meta = listOfNotNull(
-                    ambiente.ambiente_ubicacion?.takeIf { it.isNotBlank() },
-                    ambiente.ambiente_jornada?.takeIf { it.isNotBlank() }
-                ).joinToString(" • ")
-                if (meta.isNotBlank()) Text(meta, color = colors.textSecondary, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(ambiente.ambiente_nombre ?: "Ambiente", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 20.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text("Detalle del salón", color = colors.textSecondary, fontSize = 12.sp)
             }
             IconButton(onClick = { scope.launch { cargarAprendices() } }, modifier = Modifier.size(48.dp)) { Icon(Icons.Default.Refresh, null, tint = colors.textSecondary) }
         }
         Spacer(modifier = Modifier.height(12.dp))
 
+        // Cabecera profesional del aula: identidad + chips de sede/jornada/horario.
+        EntradaSuave(indice = 0) {
         Box(modifier = Modifier.fillMaxWidth().superficieVidrio(cornerRadius = RadioVidrio).padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(56.dp).clip(CircleShape).background(VerdeSena.copy(0.18f)), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.MeetingRoom, null, tint = verdeMarca(), modifier = Modifier.size(28.dp))
-                }
-                Spacer(modifier = Modifier.width(16.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        if (capacidad > 0) "${aprendices.size} de $capacidad estudiantes" else "${aprendices.size} estudiantes",
-                        color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp
-                    )
-                    if (capacidad > 0) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        LinearProgressIndicator(
-                            progress = { ocupacion },
-                            modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(50)),
-                            color = verdeMarca(),
-                            trackColor = colors.border
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(56.dp).clip(CircleShape).background(VerdeSena.copy(0.18f)), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.MeetingRoom, null, tint = verdeMarca(), modifier = Modifier.size(28.dp))
+                    }
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            ambiente.ambiente_nombre ?: "Ambiente",
+                            color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 17.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text("${(ocupacion * 100).toInt()}% del cupo", color = colors.textSecondary, fontSize = 11.sp)
-                    } else {
-                        Text("Sin límite de cupo configurado", color = colors.textSecondary, fontSize = 11.sp)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        @OptIn(ExperimentalLayoutApi::class)
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            ambiente.ambiente_ubicacion?.takeIf { it.isNotBlank() }?.let { ChipAmbiente(it) }
+                            ambiente.ambiente_jornada?.takeIf { it.isNotBlank() }?.let { ChipAmbiente(it) }
+                            val horario = listOfNotNull(ambiente.hora_inicio, ambiente.hora_fin).joinToString("–")
+                            if (horario.isNotBlank()) ChipAmbiente(horario)
+                        }
                     }
                 }
+                Spacer(modifier = Modifier.height(14.dp))
+                HorizontalDivider(color = colors.border)
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        if (capacidad > 0) "${aprendices.size} de $capacidad estudiantes" else "${aprendices.size} estudiantes",
+                        color = colors.textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (capacidad > 0) Text("${(ocupacion * 100).toInt()}%", color = verdeMarca(), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                }
+                if (capacidad > 0) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LinearProgressIndicator(
+                        progress = { ocupacion },
+                        modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(50)),
+                        color = verdeMarca(),
+                        trackColor = colors.border
+                    )
+                } else {
+                    Text("Sin límite de cupo configurado", color = colors.textSecondary, fontSize = 11.sp)
+                }
             }
+        }
         }
         Spacer(modifier = Modifier.height(12.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-            OutlinedButton(
+            Button(
                 onClick = { mostrarAgregar = true; scope.launch { cargarDisponibles() } },
-                modifier = Modifier.weight(1.2f).height(50.dp),
-                shape = RoundedCornerShape(28.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = verdeMarca()),
-                border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(verdeMarca()))
+                modifier = Modifier.weight(1f).height(52.dp).escalaPresion(pressedScale = 0.97f),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = VerdeSena, contentColor = Color.Black)
             ) {
-                Icon(Icons.Default.Add, null, modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(6.dp))
                 Text("AGREGAR", fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1)
             }
             OutlinedButton(
                 onClick = onAutorizarSalida,
-                modifier = Modifier.weight(1f).height(50.dp),
-                shape = RoundedCornerShape(28.dp),
+                modifier = Modifier.weight(1f).height(52.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = verdeMarca()),
                 border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(verdeMarca()))
             ) {
@@ -168,7 +200,14 @@ fun VistaDetalleAmbiente(
         }
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text("ESTUDIANTES (${aprendices.size})", color = verdeMarca(), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Text("ESTUDIANTES", color = verdeMarca(), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp, modifier = Modifier.weight(1f))
+            Box(
+                modifier = Modifier.clip(RoundedCornerShape(50)).background(VerdeSena.copy(alpha = 0.15f)).padding(horizontal = 10.dp, vertical = 4.dp)
+            ) {
+                Text("${aprendices.size}", color = verdeMarca(), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+        }
         Spacer(modifier = Modifier.height(8.dp))
 
         when (val s = estado) {
@@ -176,7 +215,7 @@ fun VistaDetalleAmbiente(
             is EstadoCarga.Error -> CajaError(s.mensaje, onReintentar = { scope.launch { cargarAprendices() } })
             is EstadoCarga.Success -> {
                 if (aprendices.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxWidth().superficieVidrio(cornerRadius = RadioVidrio).padding(24.dp), contentAlignment = Alignment.Center) {
+                    Box(modifier = Modifier.fillMaxWidth().superficiePlana(cornerRadius = RadioVidrio).padding(24.dp), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(Icons.Default.Person, null, tint = colors.textSecondary, modifier = Modifier.size(36.dp))
                             Spacer(modifier = Modifier.height(8.dp))
@@ -207,17 +246,33 @@ fun VistaDetalleAmbiente(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     val estudiantesFicha = fichaActiva?.value ?: emptyList()
-                    estudiantesFicha.forEach { ap ->
-                        Row(modifier = Modifier.fillMaxWidth().superficieVidrio(cornerRadius = 12.dp).padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                            FotoPerfil(fotoPath = ap.profile_photo_path, nombre = ap.nombreCompleto, tamano = 40.dp)
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(ap.nombreCompleto, color = colors.textPrimary, fontWeight = FontWeight.Medium, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                Text(ap.user_email ?: "", color = colors.textSecondary, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Box(modifier = Modifier.fillMaxWidth().superficiePlana(cornerRadius = RadioVidrio).padding(vertical = 4.dp)) {
+                        Column {
+                            estudiantesFicha.forEachIndexed { idx, ap ->
+                                if (idx > 0) HorizontalDivider(color = colors.border, modifier = Modifier.padding(horizontal = 12.dp))
+                                Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    FotoPerfil(fotoPath = ap.profile_photo_path, nombre = ap.nombreCompleto, tamano = 42.dp)
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(ap.nombreCompleto, color = colors.textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        val sub = listOfNotNull(
+                                            ap.user_identification?.takeIf { it.isNotBlank() },
+                                            ap.user_jornada?.takeIf { it.isNotBlank() }
+                                        ).joinToString(" • ")
+                                        if (sub.isNotBlank()) Text(sub, color = colors.textSecondary, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    }
+                                    if ((ap.user_coursenumber ?: 0) > 0) {
+                                        Box(
+                                            modifier = Modifier.clip(RoundedCornerShape(50)).background(VerdeSena.copy(alpha = 0.12f)).padding(horizontal = 8.dp, vertical = 4.dp)
+                                        ) {
+                                            Text("Ficha ${ap.user_coursenumber}", color = verdeMarca(), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                    }
+                                    IconButton(onClick = { aprendizAEliminar = ap }, modifier = Modifier.size(40.dp)) { Icon(Icons.Default.Delete, null, tint = RojoError, modifier = Modifier.size(20.dp)) }
+                                }
                             }
-                            IconButton(onClick = { aprendizAEliminar = ap }, modifier = Modifier.size(48.dp)) { Icon(Icons.Default.Delete, null, tint = RojoError, modifier = Modifier.size(20.dp)) }
                         }
-                        Spacer(modifier = Modifier.height(12.dp))
                     }
                 }
             }
@@ -226,27 +281,76 @@ fun VistaDetalleAmbiente(
     }
 
     if (mostrarAgregar) {
+        var busquedaAgregar by remember { mutableStateOf("") }
+        var filtroNuevo by remember { mutableStateOf(0) }
         AlertDialog(
             onDismissRequest = { mostrarAgregar = false; errorAgregar = null; seleccionado = null },
             containerColor = colors.cardBackground.copy(alpha = 0.98f),
-            shape = RoundedCornerShape(28.dp),
+            shape = RoundedCornerShape(24.dp),
             title = { Text("Agregar aprendiz", color = colors.textPrimary, fontWeight = FontWeight.Bold) },
             text = {
                 Column {
-                    if (aprendicesDisponibles.isEmpty()) {
-                        Text("No hay aprendices disponibles", color = colors.textSecondary, fontSize = 13.sp)
+                    val jornadaAmbTxt = ambiente.ambiente_jornada?.takeIf { it.isNotBlank() }
+                    Text(
+                        if (jornadaAmbTxt != null) "Solo aprendices de jornada $jornadaAmbTxt (invitados excluidos)."
+                        else "Invitados excluidos.",
+                        color = colors.textSecondary, fontSize = 12.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FiltroSena(texto = "Todos", seleccionado = filtroNuevo == 0, onClick = { filtroNuevo = 0 })
+                        FiltroSena(texto = "Nuevos (sin ficha)", seleccionado = filtroNuevo == 1, onClick = { filtroNuevo = 1 })
+                        FiltroSena(texto = "Con ficha", seleccionado = filtroNuevo == 2, onClick = { filtroNuevo = 2 })
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = busquedaAgregar,
+                        onValueChange = { busquedaAgregar = it; seleccionado = null },
+                        label = { Text("Buscar por nombre o cédula") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    val listaFiltrada = aprendicesDisponibles.filter { ap ->
+                        val porFiltro = when (filtroNuevo) {
+                            1 -> (ap.user_coursenumber ?: 0) <= 0
+                            2 -> (ap.user_coursenumber ?: 0) > 0
+                            else -> true
+                        }
+                        val q = busquedaAgregar.trim()
+                        porFiltro && (q.isBlank() ||
+                            ap.nombreCompleto.contains(q, ignoreCase = true) ||
+                            (ap.user_identification ?: "").contains(q))
+                    }
+                    if (listaFiltrada.isEmpty()) {
+                        Text(
+                            if (aprendicesDisponibles.isEmpty()) "No hay aprendices disponibles"
+                            else "Sin coincidencias",
+                            color = colors.textSecondary, fontSize = 13.sp
+                        )
                     } else {
-                        Text("Aprendices disponibles (${aprendicesDisponibles.size})", color = colors.textSecondary, fontSize = 12.sp)
+                        Text("Disponibles (${listaFiltrada.size})", color = colors.textSecondary, fontSize = 12.sp)
                         Spacer(modifier = Modifier.height(8.dp))
                         var expandir by remember { mutableStateOf(false) }
-                        Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).superficieVidrio(cornerRadius = 10.dp).padding(8.dp)) {
+                        // Toca cualquier parte del campo para desplegar (no solo la flecha).
+                        Box(
+                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
+                                .superficieVidrio(cornerRadius = 10.dp)
+                                .clickable { expandir = !expandir }.padding(8.dp)
+                        ) {
                             Column {
-                                Text(seleccionado?.nombreCompleto ?: "Selecciona aprendiz", color = if (seleccionado == null) colors.textSecondary else colors.textPrimary, fontSize = 13.sp, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { expandir = !expandir }.padding(8.dp))
+                                Text(seleccionado?.nombreCompleto ?: "Selecciona aprendiz", color = if (seleccionado == null) colors.textSecondary else colors.textPrimary, fontSize = 13.sp, modifier = Modifier.fillMaxWidth().padding(8.dp))
                                 if (expandir) {
                                     Spacer(modifier = Modifier.height(6.dp))
                                     androidx.compose.foundation.lazy.LazyColumn(modifier = Modifier.heightIn(max = 180.dp)) {
-                                        items(aprendicesDisponibles, key = { it.id_usuario ?: it.user_email ?: it.hashCode().toString() }) { ap ->
-                                            Text("${ap.nombreCompleto} • ${ap.user_identification ?: ""}", color = colors.textPrimary, fontSize = 12.sp, modifier = Modifier.fillMaxWidth().clickable { seleccionado = ap; expandir = false }.padding(8.dp))
+                                        items(listaFiltrada, key = { it.id_usuario ?: it.user_email ?: it.hashCode().toString() }) { ap ->
+                                            val fichaTxt = if ((ap.user_coursenumber ?: 0) > 0) "Ficha ${ap.user_coursenumber}" else "Sin ficha"
+                                            Text(
+                                                "${ap.nombreCompleto} • ${ap.user_identification ?: ""} • $fichaTxt",
+                                                color = colors.textPrimary, fontSize = 12.sp,
+                                                modifier = Modifier.fillMaxWidth().clickable { seleccionado = ap; expandir = false }.padding(8.dp)
+                                            )
                                         }
                                     }
                                 }
@@ -314,5 +418,18 @@ fun VistaDetalleAmbiente(
             },
             dismissButton = { TextButton(onClick = { aprendizAEliminar = null }) { Text("Cancelar") } }
         )
+    }
+}
+
+// Chip de metadato del aula (sede, jornada, horario): píldora vidrio compacta.
+@Composable
+private fun ChipAmbiente(texto: String) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(VerdeSena.copy(alpha = 0.12f))
+            .padding(horizontal = 10.dp, vertical = 5.dp)
+    ) {
+        Text(texto, color = verdeMarca(), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
     }
 }

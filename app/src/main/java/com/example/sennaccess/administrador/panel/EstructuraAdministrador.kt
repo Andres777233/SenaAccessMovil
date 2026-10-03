@@ -26,10 +26,12 @@ import com.example.sennaccess.comun.tema.ColoresAppLocal
 import com.example.sennaccess.comun.tema.VerdeSena
 import com.example.sennaccess.comun.tema.verdeMarca
 import com.example.sennaccess.comun.diseno.EsferasBrillo
+import com.example.sennaccess.comun.diseno.MenuPerfilSena
 import com.example.sennaccess.comun.diseno.MenuDesplegableVidrio
 import com.example.sennaccess.comun.diseno.BarraSuperiorVidrio
 import com.example.sennaccess.comun.diseno.BotonCambiarTema
 import com.example.sennaccess.comun.diseno.superficieVidrio
+import com.example.sennaccess.comun.diseno.superficiePlana
 import com.example.sennaccess.comun.diseno.RadioVidrio
 @Composable
 fun EstructuraAdministrador(
@@ -77,119 +79,32 @@ fun BarraSuperiorAdmin(
     isDark: Boolean = true,
     onToggleTheme: () -> Unit = {}
 ) {
-    var showMenu by remember { mutableStateOf(false) }
-    val colors = ColoresAppLocal.current
-
-    BarraSuperiorVidrio {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("SENA ", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-            Text("ACCESS", color = verdeMarca(), fontWeight = FontWeight.Bold, fontSize = 18.sp)
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Box(
-                modifier = Modifier
-                    .border(1.dp, VerdeSena.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
-            ) {
-                Text(
-                    text = "ADMINISTRADOR",
-                    color = verdeMarca(),
-                    fontSize = 8.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            if (onNavigate != null) {
-                Box {
-                    IconButton(
-                        onClick = { onNavigate(PantallaAdmin.NOTIFICACIONES) },
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Notifications,
-                            contentDescription = "Notificaciones",
-                            tint = colors.textPrimary
-                        )
-                    }
-                    if (noLeidas > 0) {
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .size(18.dp)
-                                .clip(CircleShape)
-                                .background(RojoError),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = if (noLeidas > 99) "99+" else noLeidas.toString(),
-                                color = Color.White,
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-            }
-            BotonCambiarTema(isDark = isDark, onToggleTheme = onToggleTheme)
-            Box {
-                IconButton(onClick = { showMenu = true }, modifier = Modifier.size(48.dp)) {
-                    Icon(Icons.Default.Menu, contentDescription = "Abrir menú", tint = colors.textPrimary)
-                }
-                MenuDesplegableVidrio(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false }
-                ) {
-                    if (onNavigate != null) {
-                        DropdownMenuItem(
-                            text = { Text("Perfil", color = colors.textPrimary) },
-                            leadingIcon = { Icon(Icons.Default.Person, null, tint = verdeMarca()) },
-                            onClick = { showMenu = false; onNavigate(PantallaAdmin.PERFIL) }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Notificaciones", color = colors.textPrimary) },
-                            leadingIcon = { Icon(Icons.Default.Notifications, null, tint = verdeMarca()) },
-                            onClick = { showMenu = false; onNavigate(PantallaAdmin.NOTIFICACIONES) }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Ambientes", color = colors.textPrimary) },
-                            leadingIcon = { Icon(Icons.Default.MeetingRoom, null, tint = verdeMarca()) },
-                            onClick = { showMenu = false; onNavigate(PantallaAdmin.AMBIENTES) }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Validar excusa (PIN)", color = colors.textPrimary) },
-                            leadingIcon = { Icon(Icons.Default.VpnKey, null, tint = verdeMarca()) },
-                            onClick = { showMenu = false; onNavigate(PantallaAdmin.VALIDAR_EXCUSA) }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Escanear QR de invitado", color = colors.textPrimary) },
-                            leadingIcon = { Icon(Icons.Default.QrCodeScanner, null, tint = verdeMarca()) },
-                            onClick = { showMenu = false; onNavigate(PantallaAdmin.ESCANEAR_QR) }
-                        )
-                    }
-                    DropdownMenuItem(
-                        text = { Text("Cerrar sesion", color = Color.Red) },
-                        leadingIcon = { Icon(Icons.Default.Logout, contentDescription = null, tint = Color.Red) },
-                        onClick = { showMenu = false; onLogout() }
-                    )
-                }
-            }
-        }
-    }
+    // Barra unificada de los 4 roles: marca + chip de rol + notis + menú perfil.
+    com.example.sennaccess.comun.diseno.BarraSuperiorSena(
+        rol = "Administrador",
+        noLeidas = noLeidas,
+        isDark = isDark,
+        onToggleTheme = onToggleTheme,
+        onNotificaciones = onNavigate?.let { nav -> { nav(PantallaAdmin.NOTIFICACIONES) } },
+        menu = { cerrar ->
+            MenuPerfilSena(
+                cerrar = cerrar,
+                nombre = com.example.sennaccess.datos.sesion.GestorSesion.userName ?: "Administrador",
+                email = com.example.sennaccess.datos.sesion.GestorSesion.userEmail ?: "",
+                fotoPath = com.example.sennaccess.datos.sesion.GestorSesion.userPhoto,
+                onPerfil = onNavigate?.let { nav -> { nav(PantallaAdmin.PERFIL) } }
+            )
+        },
+        onLogout = onLogout
+    )
 }
 
 @Composable
 fun ContenedorVidrioAdmin(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    val colors = ColoresAppLocal.current
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .superficieVidrio(cornerRadius = RadioVidrio)
+            .superficiePlana(cornerRadius = RadioVidrio)
             .padding(16.dp),
         content = content
     )

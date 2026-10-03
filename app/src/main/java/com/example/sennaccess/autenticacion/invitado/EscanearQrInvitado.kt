@@ -12,6 +12,7 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -48,11 +49,13 @@ import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
 fun EscanearQrInvitado(
-    onVolver: () -> Unit
+    onVolver: () -> Unit,
+    mostrarCabecera: Boolean = true
 ) {
     val colors = ColoresAppLocal.current
     val context = LocalContext.current
@@ -104,11 +107,17 @@ fun EscanearQrInvitado(
                 resultadoExito = false
                 resultadoMensaje = "Error de conexión: ${e.message ?: e.javaClass.simpleName}"
             }
+            // Auto-libera el analizador para el siguiente QR sin exigir "ESCANEAR OTRO".
+            // Fix bug "la cámara no detecta el QR del invitado" en el segundo intento.
+            delay(2500)
+            detenerAnalisis.value = false
         }
     }
 
     Box(modifier = Modifier.fillMaxSize().background(colors.background)) {
         Column(modifier = Modifier.fillMaxSize().imePadding().padding(16.dp)) {
+            // Cabecera propia solo fuera de la vista unificada (ella ya trae volver).
+            if (mostrarCabecera) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onVolver, modifier = Modifier.size(48.dp)) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = colors.textPrimary)
@@ -120,6 +129,7 @@ fun EscanearQrInvitado(
             }
 
             Spacer(modifier = Modifier.height(12.dp))
+            }
 
             Row(
                 modifier = Modifier
@@ -147,6 +157,10 @@ fun EscanearQrInvitado(
             when (pestana) {
                 0 -> {
                     if (permisoCamara) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().aspectRatio(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
                         AndroidView(
                             factory = { ctx ->
                                 PreviewView(ctx).apply {
@@ -201,6 +215,9 @@ fun EscanearQrInvitado(
                                 .clip(RoundedCornerShape(18.dp))
                                 .background(colors.surface)
                         )
+                        // Marco de encuadre profesional sobre el visor.
+                        MarcoEscanerQr(modifier = Modifier.fillMaxWidth().aspectRatio(1f))
+                        }
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
                             "Apunta al código QR del visitante",
@@ -346,5 +363,29 @@ private fun RowScope.ModoEscaneoItem(
             fontSize = 12.sp,
             fontWeight = if (activo) FontWeight.Bold else FontWeight.Normal
         )
+    }
+}
+
+// Marco de encuadre con esquinas verdes sobre el visor de la cámara.
+@Composable
+private fun MarcoEscanerQr(modifier: Modifier = Modifier) {
+    val verde = com.example.sennaccess.comun.tema.verdeMarca()
+    Canvas(modifier = modifier.padding(28.dp)) {
+        val largo = 64.dp.toPx()
+        val grosor = 6.dp.toPx()
+        val w = size.width
+        val h = size.height
+        // Sup-izq
+        drawLine(verde, androidx.compose.ui.geometry.Offset(0f, grosor / 2), androidx.compose.ui.geometry.Offset(largo, grosor / 2), grosor)
+        drawLine(verde, androidx.compose.ui.geometry.Offset(grosor / 2, 0f), androidx.compose.ui.geometry.Offset(grosor / 2, largo), grosor)
+        // Sup-der
+        drawLine(verde, androidx.compose.ui.geometry.Offset(w - largo, grosor / 2), androidx.compose.ui.geometry.Offset(w, grosor / 2), grosor)
+        drawLine(verde, androidx.compose.ui.geometry.Offset(w - grosor / 2, 0f), androidx.compose.ui.geometry.Offset(w - grosor / 2, largo), grosor)
+        // Inf-izq
+        drawLine(verde, androidx.compose.ui.geometry.Offset(0f, h - grosor / 2), androidx.compose.ui.geometry.Offset(largo, h - grosor / 2), grosor)
+        drawLine(verde, androidx.compose.ui.geometry.Offset(grosor / 2, h - largo), androidx.compose.ui.geometry.Offset(grosor / 2, h), grosor)
+        // Inf-der
+        drawLine(verde, androidx.compose.ui.geometry.Offset(w - largo, h - grosor / 2), androidx.compose.ui.geometry.Offset(w, h - grosor / 2), grosor)
+        drawLine(verde, androidx.compose.ui.geometry.Offset(w - grosor / 2, h - largo), androidx.compose.ui.geometry.Offset(w - grosor / 2, h), grosor)
     }
 }

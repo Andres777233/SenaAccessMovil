@@ -19,9 +19,11 @@ fun Modifier.escalaPresion(
     val source = interactionSource ?: remember { MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
 
+    // Press: respuesta instantánea sin rebote; release: muelle suave.
+    // (Un press con bounce se siente flojo; el feedback debe ser inmediato.)
     val scale by animateFloatAsState(
         targetValue = if (pressed) pressedScale else 1f,
-        animationSpec = if (pressed) ResorteIos.Rebote else ResorteIos.Suave,
+        animationSpec = if (pressed) ResorteIos.Presion else ResorteIos.Suave,
         label = "escalaPresion"
     )
 

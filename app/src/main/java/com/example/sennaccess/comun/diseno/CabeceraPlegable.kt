@@ -30,7 +30,12 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import com.example.sennaccess.comun.tema.ColoresAppLocal
 import com.example.sennaccess.comun.tema.VerdeSena
+import com.example.sennaccess.comun.tema.verdeMarca
 
+// Cabecera senior fija: eyebrow + título + subtítulo + acción lateral.
+// Reemplaza el colapso animado (movimiento gratuito en listados): una sola
+// jerarquía izquierda, sin re-animar en cada scroll. Misma firma para no
+// romper las 20 pantallas que ya la usan.
 @Composable
 fun CabeceraPlegable(
     title: String,
@@ -41,83 +46,42 @@ fun CabeceraPlegable(
     trailing: (@Composable RowScope.() -> Unit)? = null
 ) {
     val colors = ColoresAppLocal.current
-
-    val collapse = (scrollOffset / collapseRange).coerceIn(0f, 1f)
-    val animatedCollapse by animateFloatAsState(
-        targetValue = collapse,
-        animationSpec = ResorteIos.Suave,
-        label = "headerCollapse"
-    )
-
-    val largeScale = lerp(1f, 0.72f, animatedCollapse)
-    val largeAlpha = lerp(1f, 0f, (animatedCollapse * 1.4f).coerceIn(0f, 1f))
-    val largeOffsetY = lerp(0f, -28f, animatedCollapse)
-
-    val topBarAlpha = ((animatedCollapse - 0.5f) * 2f).coerceIn(0f, 1f)
-
-    Box(modifier.fillMaxWidth()) {
-        // --- TÍTULO GRANDE ---
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .graphicsLayer {
-                    scaleX = largeScale
-                    scaleY = largeScale
-                    translationY = largeOffsetY
-                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 1f)
-                }
-                .alpha(largeAlpha)
-        ) {
-            androidx.compose.foundation.layout.Column {
+    androidx.compose.foundation.layout.Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "SENA ACCESS",
+                color = verdeMarca(),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.8.sp
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = title,
+                color = colors.textPrimary,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 0.sp,
+                maxLines = 2
+            )
+            if (subtitle != null) {
+                Spacer(Modifier.height(4.dp))
                 Text(
-                    text = title,
-                    color = colors.textPrimary,
-                    fontSize = 34.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 0.5.sp
+                    text = subtitle,
+                    color = colors.textSecondary,
+                    fontSize = 13.sp,
+                    maxLines = 2
                 )
-                if (subtitle != null) {
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = subtitle,
-                        color = colors.textSecondary,
-                        fontSize = 13.sp
-                    )
-                }
             }
         }
-
-        // --- BARRA SUPERIOR DE VIDRIO (colapsada) ---
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .alpha(topBarAlpha)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            VerdeSena.copy(alpha = 0.10f),
-                            colors.topBarBackground.copy(alpha = 0.85f),
-                            colors.topBarBackground.copy(alpha = 0.6f)
-                        )
-                    )
-                )
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-        ) {
-            androidx.compose.foundation.layout.Row(
-                Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = title,
-                    color = colors.textPrimary,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
-                )
-                trailing?.invoke(this)
-            }
+        if (trailing != null) {
+            Spacer(Modifier.width(12.dp))
+            trailing()
         }
     }
 }
@@ -131,17 +95,8 @@ fun BarraSuperiorVidrio(
     Box(
         modifier
             .fillMaxWidth()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        VerdeSena.copy(alpha = 0.10f),
-                        colors.topBarBackground.copy(alpha = 0.75f),
-                        colors.topBarBackground.copy(alpha = 0.45f)
-                    )
-                )
-            )
-            .background(colors.surface.copy(alpha = 0.15f))
-            .padding(horizontal = 16.dp, vertical = 14.dp)
+            .background(colors.topBarBackground.copy(alpha = 0.92f))
+            .padding(horizontal = 16.dp, vertical = 10.dp)
     ) {
         androidx.compose.foundation.layout.Row(
             Modifier.fillMaxWidth(),

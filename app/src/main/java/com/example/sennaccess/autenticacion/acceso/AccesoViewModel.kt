@@ -53,7 +53,8 @@ class AccesoViewModel : ViewModel() {
                 }
                 if (!RolSeguro.esValido(response.role)) {
                     GestorSesion.clear()
-                    _uiState.value = EstadoAcceso.Error("Tu cuenta no tiene un rol válido. Contacta al administrador.")
+                    val recibido = response.role?.trim().takeUnless { it.isNullOrBlank() } ?: "vacío"
+                    _uiState.value = EstadoAcceso.Error("Tu cuenta no tiene un rol válido (recibido: $recibido). Contacta al administrador.")
                     return@launch
                 }
                 token = response.access_token

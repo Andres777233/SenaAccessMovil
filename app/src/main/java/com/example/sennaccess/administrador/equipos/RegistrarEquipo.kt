@@ -8,6 +8,7 @@ package com.example.sennaccess.administrador.equipos
 // /admin/equipment con fk_id_usuario; al guardar llama a la API y al terminar
 // regresa a la lista de equipos.
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -72,6 +73,7 @@ fun VistaRegistrarEquipo(onBack: () -> Unit, onRegistrado: () -> Unit, adminMode
     var errorDuenos by remember { mutableStateOf<String?>(null) }
 
     // En modo admin se cargan los usuarios con rol Instructor/Aprendiz (GET /admin/users).
+    // Invitados temporales excluidos: no son dueños permanentes de equipos.
     LaunchedEffect(adminMode) {
         if (!adminMode) return@LaunchedEffect
         cargandoDuenos = true
@@ -79,7 +81,7 @@ fun VistaRegistrarEquipo(onBack: () -> Unit, onRegistrado: () -> Unit, adminMode
         if (token != null) {
             try {
                 usuariosDisponibles = RepositorioUsuarios().getUsers(token)
-                    .filter { it.esRol("Instructor") || it.esRol("Aprendiz") }
+                    .filter { (it.esRol("Instructor") || it.esRol("Aprendiz")) && !it.esInvitado() }
                 if (usuariosDisponibles.isNotEmpty()) dueno = usuariosDisponibles.first()
             } catch (e: Exception) {
                 errorDuenos = "No se pudieron cargar los usuarios."
@@ -175,7 +177,7 @@ fun VistaRegistrarEquipo(onBack: () -> Unit, onRegistrado: () -> Unit, adminMode
                         color = Color(0xFFE53935),
                         fontSize = 13.sp
                     )
-                    else -> Box(modifier = Modifier.fillMaxWidth()) {
+                    else -> Box(modifier = Modifier.fillMaxWidth().clickable { menuDuenoAbierto = !menuDuenoAbierto }) {
                         OutlinedTextField(
                             value = dueno?.nombreCompleto ?: "",
                             onValueChange = {},
@@ -183,13 +185,14 @@ fun VistaRegistrarEquipo(onBack: () -> Unit, onRegistrado: () -> Unit, adminMode
                             label = { Text("Dueño del equipo", color = colors.textSecondary, fontSize = 14.sp) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
+                            enabled = false,
                             colors = camposEquipoColors(),
                             trailingIcon = {
-                                IconButton(onClick = { menuDuenoAbierto = !menuDuenoAbierto }) {
-                                    Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = verdeMarca())
-                                }
+                                Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = verdeMarca())
                             }
                         )
+                        // Capa full-touch: toda la barra abre el menú, no solo la flecha.
+                        Box(modifier = Modifier.matchParentSize().clickable { menuDuenoAbierto = !menuDuenoAbierto })
                         DropdownMenu(
                             expanded = menuDuenoAbierto,
                             onDismissRequest = { menuDuenoAbierto = false },

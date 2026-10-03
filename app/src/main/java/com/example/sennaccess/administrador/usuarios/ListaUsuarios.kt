@@ -46,6 +46,7 @@ import com.example.sennaccess.administrador.usuarios.ModeloUsuarios
 import com.example.sennaccess.comun.diseno.RadioVidrio
 import com.example.sennaccess.comun.diseno.CabeceraPlegable
 import com.example.sennaccess.comun.diseno.superficieVidrio
+import com.example.sennaccess.comun.diseno.superficiePlana
 import com.example.sennaccess.comun.diseno.escalaPresion
 import com.example.sennaccess.administrador.panel.PantallaAdmin
 // cada una con su propia vista conectada a la API (GET /admin/users).
@@ -94,10 +95,38 @@ fun ContenidoUsuarios(
                 onEditar = { onEditarUsuario(it) },
                 onBorrar = { usuarioAEliminar = it; errorEliminar = null }
             )
+            "PORTEROS" -> VistaListaUsuarios(
+                titulo = "Porteros",
+                icono = Icons.Default.Shield,
+                estado = uiState,
+                rol = "Portero",
+                busqueda = busqueda,
+                onBusqueda = { busqueda = it },
+                onBack = { vista = ""; busqueda = "" },
+                onReintentar = viewModel::cargarUsuarios,
+                onAgregarUsuario = { onNavigate(PantallaAdmin.CREAR_USUARIO) },
+                onEditar = { onEditarUsuario(it) },
+                onBorrar = { usuarioAEliminar = it; errorEliminar = null }
+            )
+            "INVITADOS" -> VistaListaUsuarios(
+                titulo = "Invitados",
+                icono = Icons.Default.PersonSearch,
+                estado = uiState,
+                rol = "Invitado",
+                busqueda = busqueda,
+                onBusqueda = { busqueda = it },
+                onBack = { vista = ""; busqueda = "" },
+                onReintentar = viewModel::cargarUsuarios,
+                onAgregarUsuario = { onNavigate(PantallaAdmin.CREAR_USUARIO) },
+                onEditar = { onEditarUsuario(it) },
+                onBorrar = { usuarioAEliminar = it; errorEliminar = null }
+            )
             else -> MenuUsuarios(
                 estado = uiState,
                 onInstructores = { vista = "INSTRUCTORES"; busqueda = "" },
-                onAprendices = { vista = "APRENDICES"; busqueda = "" }
+                onAprendices = { vista = "APRENDICES"; busqueda = "" },
+                onPorteros = { vista = "PORTEROS"; busqueda = "" },
+                onInvitados = { vista = "INVITADOS"; busqueda = "" }
             )
         }
 
@@ -137,36 +166,61 @@ fun ContenidoUsuarios(
 private fun MenuUsuarios(
     estado: EstadoCarga<List<UsuarioApi>>,
     onInstructores: () -> Unit,
-    onAprendices: () -> Unit
+    onAprendices: () -> Unit,
+    onPorteros: () -> Unit = {},
+    onInvitados: () -> Unit = {}
 ) {
     val colors = ColoresAppLocal.current
     val datos = (estado as? EstadoCarga.Success)?.datos.orEmpty()
     val nIns = datos.count { it.role?.rol_name.equals("Instructor", ignoreCase = true) }
     val nApr = datos.count { it.role?.rol_name.equals("Aprendiz", ignoreCase = true) }
+    val nPor = datos.count { it.role?.rol_name.equals("Portero", ignoreCase = true) }
+    val nInv = datos.count { it.esInvitado() }
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 4.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.Top
     ) {
-        CabeceraPlegable(
-            title = "Usuarios",
-            subtitle = if (estado is EstadoCarga.Loading) "Cargando personal..." else "${datos.size} registrados • $nIns instructores • $nApr aprendices",
-            scrollOffset = 0f
+        // Cabecera editorial de usuarios.
+        Text("GESTIÓN DE PERSONAS", color = verdeMarca(), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp)
+        Spacer(modifier = Modifier.height(4.dp))
+        Text("Usuarios", color = colors.textPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp)
+        Text(
+            if (estado is EstadoCarga.Loading) "Cargando personal..." else "${datos.size} registrados • $nIns instructores • $nApr aprendices • $nPor porteros • $nInv invitados",
+            color = colors.textSecondary, fontSize = 12.sp
         )
-        Spacer(modifier = Modifier.height(12.dp))
-        CategoriaUsuarioRow(
+        Spacer(modifier = Modifier.height(14.dp))
+        CategoriaUsuarioCard(
             titulo = "Instructores",
-            subtitulo = if (estado is EstadoCarga.Loading) "Cargando..." else "$nIns registrados",
+            descripcion = "Docentes y guías de ambiente",
+            conteo = if (estado is EstadoCarga.Loading) "…" else "$nIns registrados",
             icono = Icons.Default.School,
             onClick = onInstructores
         )
-        Spacer(modifier = Modifier.height(14.dp))
-        CategoriaUsuarioRow(
+        Spacer(modifier = Modifier.height(12.dp))
+        CategoriaUsuarioCard(
             titulo = "Aprendices",
-            subtitulo = if (estado is EstadoCarga.Loading) "Cargando..." else "$nApr registrados",
+            descripcion = "Estudiantes en formación",
+            conteo = if (estado is EstadoCarga.Loading) "…" else "$nApr registrados",
             icono = Icons.Default.Person,
             onClick = onAprendices
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        CategoriaUsuarioCard(
+            titulo = "Porteros",
+            descripcion = "Control de accesos y recepción",
+            conteo = if (estado is EstadoCarga.Loading) "…" else "$nPor registrados",
+            icono = Icons.Default.Shield,
+            onClick = onPorteros
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        CategoriaUsuarioCard(
+            titulo = "Invitados",
+            descripcion = "Cuentas temporales con QR de un uso",
+            conteo = if (estado is EstadoCarga.Loading) "…" else "$nInv registrados",
+            icono = Icons.Default.PersonSearch,
+            onClick = onInvitados
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
@@ -178,25 +232,26 @@ private fun MenuUsuarios(
 }
 
 @Composable
-private fun CategoriaUsuarioRow(
+private fun CategoriaUsuarioCard(
     titulo: String,
+    descripcion: String,
+    conteo: String,
     icono: ImageVector,
-    onClick: () -> Unit,
-    subtitulo: String = ""
+    onClick: () -> Unit
 ) {
     val colors = ColoresAppLocal.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .escalaPresion(pressedScale = 0.96f)
-            .superficieVidrio(cornerRadius = RadioVidrio)
+            .escalaPresion(pressedScale = 0.97f)
+            .superficiePlana(cornerRadius = RadioVidrio)
             .clickable(onClick = onClick)
-            .padding(20.dp),
+            .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(48.dp)
+                .size(52.dp)
                 .clip(CircleShape)
                 .background(VerdeSena.copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center
@@ -205,8 +260,10 @@ private fun CategoriaUsuarioRow(
         }
         Spacer(modifier = Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(titulo, color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 17.sp)
-            if (subtitulo.isNotBlank()) Text(subtitulo, color = colors.textSecondary, fontSize = 12.sp)
+            Text("GRUPO • $conteo".uppercase(), color = verdeMarca(), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.0.sp)
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(titulo, color = colors.textPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+            Text(descripcion, color = colors.textSecondary, fontSize = 12.sp)
         }
         Icon(Icons.Default.KeyboardArrowRight, contentDescription = null, tint = verdeMarca(), modifier = Modifier.size(28.dp))
     }
@@ -402,7 +459,13 @@ private fun VistaListaUsuarios(
             is EstadoCarga.Success -> {
                 val q = busqueda.trim()
                 val progQ = filtroPrograma.trim()
-                val base = estado.datos.filter { it.role?.rol_name.equals(rol, ignoreCase = true) }
+                // Cada rol en su bandeja. La bandeja Invitados muestra los
+                // temporales (QR); el resto los excluye como antes.
+                val esBandejaInvitados = rol.equals("Invitado", ignoreCase = true)
+                val base = estado.datos.filter { u ->
+                    if (esBandejaInvitados) u.esInvitado()
+                    else !u.esInvitado() && u.role?.rol_name.equals(rol, ignoreCase = true)
+                }
                 val filtrados = base
                     .filter { u ->
                         val pasaTexto = if (q.isBlank()) true
@@ -442,21 +505,31 @@ private fun VistaListaUsuarios(
                         }
                     )
                 } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                        contentPadding = PaddingValues(bottom = 16.dp)
+                    // Tarjetas separadas por usuario: cada persona en su
+                    // propia plana con aire para lectura rápida.
+                    Text(
+                        "${filtrados.size} de ${base.size} • ${titulo.uppercase()}",
+                        color = verdeMarca(),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.4.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        items(
-                            items = filtrados,
-                            key = { u -> u.id_usuario ?: u.user_email ?: u.hashCode().toString() }
-                        ) { usuario ->
-                            FilaUsuario(
+                        filtrados.forEach { usuario ->
+                            FilaUsuarioCard(
                                 usuario,
                                 onEditar = { onEditar(usuario) },
                                 onBorrar = { onBorrar(usuario) }
                             )
                         }
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
             }
@@ -509,45 +582,70 @@ private fun EliminarUsuarioDialog(
 
 @Composable
 fun FilaUsuario(usuario: UsuarioApi, onEditar: () -> Unit, onBorrar: () -> Unit, modifier: Modifier = Modifier) {
+    FilaUsuarioCard(usuario, onEditar, onBorrar, modifier)
+}
+
+// Tarjeta profesional por usuario: avatar con anillo + identidad + badge
+// de rol + documento/ficha/correo + acciones de 48dp.
+@Composable
+private fun FilaUsuarioCard(usuario: UsuarioApi, onEditar: () -> Unit, onBorrar: () -> Unit, modifier: Modifier = Modifier) {
     val colors = ColoresAppLocal.current
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .superficieVidrio(cornerRadius = RadioVidrio)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .superficiePlana(cornerRadius = RadioVidrio)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        FotoPerfil(fotoPath = usuario.profile_photo_path, nombre = usuario.nombreCompleto, tamano = 52.dp)
+        Box(
+            modifier = Modifier
+                .size(52.dp)
+                .clip(CircleShape)
+                .background(VerdeSena.copy(alpha = 0.12f))
+                .padding(2.dp)
+                .clip(CircleShape)
+        ) {
+            FotoPerfil(fotoPath = usuario.profile_photo_path, nombre = usuario.nombreCompleto, tamano = 48.dp)
+        }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 usuario.nombreCompleto,
                 color = colors.textPrimary,
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 15.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            val ficha = usuario.user_coursenumber ?: 0
-            val detalle = buildString {
-                append("${usuario.user_documento_tipo ?: "CC"} ${usuario.user_identification ?: "—"}")
-                if (ficha > 0) append(" • Ficha $ficha")
-                if (!usuario.user_program.isNullOrBlank()) append(" • ${usuario.user_program}")
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                val rolTxt = usuario.role?.rol_name?.trim()?.uppercase()?.takeIf { it.isNotBlank() } ?: "—"
+                Box(
+                    modifier = Modifier.clip(CircleShape).background(VerdeSena.copy(alpha = 0.15f)).padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    Text(rolTxt, color = verdeMarca(), fontSize = 9.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                }
+                Spacer(modifier = Modifier.width(6.dp))
+                val ficha = usuario.user_coursenumber ?: 0
+                Text(
+                    "${usuario.user_documento_tipo ?: "CC"} ${usuario.user_identification ?: "—"}${if (ficha > 0) " • Ficha $ficha" else ""}",
+                    color = colors.textSecondary, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
             }
-            Text(detalle, color = colors.textSecondary, fontSize = 11.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            Text(
-                usuario.user_email ?: "",
-                color = colors.textSecondary,
-                fontSize = 11.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(usuario.user_email ?: "", color = colors.textSecondary, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (!usuario.user_program.isNullOrBlank()) {
+                Text(usuario.user_program!!, color = colors.textSecondary, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
         }
-        IconButton(onClick = onEditar, modifier = Modifier.size(48.dp)) {
-            Icon(Icons.Default.Edit, contentDescription = "Editar usuario", tint = verdeMarca(), modifier = Modifier.size(20.dp))
-        }
-        IconButton(onClick = onBorrar, modifier = Modifier.size(48.dp)) {
-            Icon(Icons.Default.Delete, contentDescription = "Eliminar usuario", tint = Color.Red, modifier = Modifier.size(20.dp))
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            IconButton(onClick = onEditar, modifier = Modifier.size(48.dp)) {
+                Icon(Icons.Default.Edit, contentDescription = "Editar usuario", tint = verdeMarca(), modifier = Modifier.size(22.dp))
+            }
+            IconButton(onClick = onBorrar, modifier = Modifier.size(48.dp)) {
+                Icon(Icons.Default.Delete, contentDescription = "Eliminar usuario", tint = Color.Red, modifier = Modifier.size(22.dp))
+            }
         }
     }
 }

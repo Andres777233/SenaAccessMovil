@@ -29,6 +29,10 @@ object GestorSesion {
         private set
     var userPhoto: String? = null
         private set
+    // Versión de foto: se incrementa en cada guardado para que Coil tome la
+    // imagen nueva al instante (cache-busting ?v=N) sin esperar recarga.
+    var photoVersion: Int = 0
+        private set
     var emailVerified: Boolean? = null
         private set
 
@@ -57,8 +61,10 @@ object GestorSesion {
     }
 
     // Guarda la foto de perfil y la persiste ligada al usuario actual.
+    // Incrementa photoVersion para refresco instantáneo en FotoPerfil.
     fun savePhoto(photo: String?) {
         this.userPhoto = photo
+        photoVersion++
         appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             ?.edit()?.putString(claveFoto(userId), photo)?.apply()
     }
@@ -120,5 +126,22 @@ object GestorSesion {
         val raw = prefs.getString("correos_guardados", "") ?: ""
         if (raw.isBlank()) return emptyList()
         return raw.split("|").filter { it.isNotBlank() }
+    }
+
+    // Autorrelleno de contraseña: guarda la clave del último ingreso exitoso
+    // por correo (prefs privadas del dispositivo) y la devuelve al elegir
+    // ese correo en el login. No viaja a ningún servidor.
+    private const val PREFS_CLAVES = "login_claves"
+    fun guardarClavePara(context: Context, email: String, password: String) {
+        val correo = email.trim().lowercase()
+        if (correo.isBlank() || password.isEmpty()) return
+        context.getSharedPreferences(PREFS_CLAVES, Context.MODE_PRIVATE)
+            .edit().putString(correo, password).apply()
+    }
+    fun obtenerClavePara(context: Context, email: String): String? {
+        val correo = email.trim().lowercase()
+        if (correo.isBlank()) return null
+        return context.getSharedPreferences(PREFS_CLAVES, Context.MODE_PRIVATE)
+            .getString(correo, null)?.takeIf { it.isNotEmpty() }
     }
 }

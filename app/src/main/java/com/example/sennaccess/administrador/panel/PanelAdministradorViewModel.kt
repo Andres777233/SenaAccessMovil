@@ -145,7 +145,9 @@ class PanelAdministradorViewModel : ViewModel() {
         }
     }
 
-    // Carga el catalogo de roles desde la API (GET /admin/roles); fallback a los
+    // Carga el catalogo de roles desde la API (GET /admin/roles).
+    // NO se inventa ningún rol local: el id debe existir en el servidor o la
+    // cuenta queda con rol inválido (el id 4 del servidor es Invitado, no Portero).
     fun cargarRoles() {
         val mockRoles = listOf(DatosSimulados.rolAdmin, DatosSimulados.rolInstructor, DatosSimulados.rolAprendiz)
         cargarConRespaldo(fallback = { mockRoles }, setState = { _roles.value = it }) {
@@ -164,6 +166,18 @@ class PanelAdministradorViewModel : ViewModel() {
     fun cargarNotificaciones() {
         cargarConRespaldo(fallback = { DatosSimulados.notificaciones }, setState = { _notificaciones.value = it }) {
             notificacionRepo.getNotificaciones(GestorSesion.token!!)
+        }
+    }
+
+    // Polling silencioso: actualiza sin pasar por Loading para no parpadear.
+    // Hace que las notificaciones lleguen en tiempo real a todos los roles.
+    fun cargarNotificacionesSilencioso() {
+        val token = GestorSesion.token ?: return
+        viewModelScope.launch {
+            try {
+                val lista = notificacionRepo.getNotificaciones(token)
+                _notificaciones.value = EstadoCarga.Success(lista)
+            } catch (_: Exception) { }
         }
     }
 

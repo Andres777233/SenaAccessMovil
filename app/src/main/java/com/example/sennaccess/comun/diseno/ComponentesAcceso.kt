@@ -8,6 +8,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
@@ -164,18 +167,29 @@ fun CampoAcceso(
 @Composable
 fun CajaError(texto: String, modifier: Modifier = Modifier) {
     val colors = ColoresAppLocal.current
-    Box(
+    Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(colors.errorBackground, RoundedCornerShape(12.dp))
-            .padding(horizontal = 14.dp, vertical = 12.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(colors.errorBackground)
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        Box(
+            modifier = Modifier
+                .width(4.dp)
+                .height(44.dp)
+                .clip(RoundedCornerShape(100.dp))
+                .background(TextoError)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = texto,
-            color = TextoError,
+            color = colors.textPrimary,
             fontSize = 13.sp,
             lineHeight = 18.sp,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.weight(1f)
         )
     }
 }

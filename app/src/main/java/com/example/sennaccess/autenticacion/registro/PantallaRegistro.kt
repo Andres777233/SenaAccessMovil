@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -41,6 +42,9 @@ import com.example.sennaccess.comun.diseno.BotonBordeBrillante
 import com.example.sennaccess.comun.diseno.TarjetaVidrio
 import com.example.sennaccess.comun.diseno.BotonPrimarioNeon
 import com.example.sennaccess.comun.diseno.BotonCambiarTema
+import com.example.sennaccess.comun.diseno.superficiePlana
+import com.example.sennaccess.comun.diseno.DesplegableSena
+import com.example.sennaccess.comun.Jornadas
 import com.example.sennaccess.comun.tema.ColoresAppLocal
 import com.example.sennaccess.comun.tema.VerdeSena
 import com.example.sennaccess.comun.tema.verdeMarca
@@ -62,6 +66,8 @@ fun PantallaRegistro(onBackToLogin: () -> Unit, isDark: Boolean = true, onToggle
     var courseNumber by remember { mutableStateOf("") }
     var program by remember { mutableStateOf("") }
     var telefono by remember { mutableStateOf("") }
+    var jornada by remember { mutableStateOf(Jornadas.TARDE) }
+    var jornadaSabado by remember { mutableStateOf(Jornadas.MANANA) }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
 
@@ -80,82 +86,63 @@ fun PantallaRegistro(onBackToLogin: () -> Unit, isDark: Boolean = true, onToggle
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(horizontal = 20.dp)
                 .verticalScroll(rememberScrollState())
-                .padding(vertical = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(top = 48.dp, bottom = 20.dp),
+            horizontalAlignment = Alignment.Start
         ) {
-            TarjetaVidrio {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                LogoAcceso(modifier = Modifier.size(48.dp))
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "CREAR CUENTA",
+                        style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.8.sp),
+                        color = verdeMarca(),
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Únete a Sena Access",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = colors.textPrimary,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                    Text(
+                        text = "Solo aprendices • activación inmediata",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.textSecondary
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(20.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .superficiePlana(cornerRadius = 24.dp)
+                    .padding(horizontal = 20.dp, vertical = 22.dp)
+            ) {
                 Column(
-                    modifier = Modifier
-                        .padding(horizontal = 24.dp, vertical = 32.dp)
-                        .fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.Start
                 ) {
-                    LogoAcceso(modifier = Modifier.size(90.dp).padding(bottom = 12.dp))
-                    Text(
-                        text = "Sena Access",
-                        fontSize = 28.sp,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                        color = colors.textPrimary
-                    )
-                    Text(
-                        text = "Crea tu cuenta institucional",
-                        fontSize = 14.sp,
-                        color = verdeMarca()
-                    )
-                    Spacer(modifier = Modifier.height(32.dp))
 
                     // --- SECCIÓN 1: INFORMACIÓN PERSONAL ---
                     EncabezadoSeccion(icon = Icons.Default.Person, title = "Información Personal")
 
-                    var docDropdownAbierto by remember { mutableStateOf(false) }
                     val tiposDoc = listOf(
-                        "CC" to "Cédula de Ciudadanía",
-                        "CE" to "Cédula de Extranjería",
-                        "TI" to "Tarjeta de Identidad",
-                        "PAS" to "Pasaporte"
+                        "CC: Cédula de Ciudadanía",
+                        "CE: Cédula de Extranjería",
+                        "TI: Tarjeta de Identidad",
+                        "PAS: Pasaporte"
                     )
-                    val docSeleccionado = tiposDoc.firstOrNull { it.first == documentoTipo } ?: tiposDoc.first()
-                    @OptIn(ExperimentalMaterial3Api::class)
-                    ExposedDropdownMenuBox(
-                        expanded = docDropdownAbierto,
-                        onExpandedChange = { docDropdownAbierto = it },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        OutlinedTextField(
-                            value = "${docSeleccionado.first}: ${docSeleccionado.second}",
-                            onValueChange = {},
-                            readOnly = true,
-                            singleLine = true,
-                            label = { Text("Tipo de Documento", color = colors.textSecondary, fontSize = 14.sp) },
-                            modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
-                            trailingIcon = {
-                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = docDropdownAbierto)
-                            },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = verdeMarca(), unfocusedBorderColor = colors.divider,
-                                focusedTextColor = colors.textPrimary, unfocusedTextColor = colors.textPrimary,
-                                focusedContainerColor = colors.surfaceVariant.copy(alpha = 0.5f), unfocusedContainerColor = colors.surfaceVariant.copy(alpha = 0.5f)
-                            )
-                        )
-                        ExposedDropdownMenu(
-                            expanded = docDropdownAbierto,
-                            onDismissRequest = { docDropdownAbierto = false },
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            tiposDoc.forEach { (codigo, significado) ->
-                                DropdownMenuItem(
-                                    text = { Text("$codigo: $significado", color = colors.textPrimary, fontSize = 14.sp) },
-                                    onClick = {
-                                        documentoTipo = codigo
-                                        docDropdownAbierto = false
-                                    },
-                                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                                )
-                            }
-                        }
-                    }
+                    val docCodigo = documentoTipo.substringBefore(":").trim().ifBlank { "CC" }
+                    val docActual = tiposDoc.firstOrNull { it.startsWith(docCodigo) } ?: tiposDoc.first()
+                    DesplegableSena(
+                        valor = docActual,
+                        opciones = tiposDoc,
+                        onElegir = { documentoTipo = it.substringBefore(":").trim() },
+                        label = "Tipo de Documento"
+                    )
                     Spacer(modifier = Modifier.height(12.dp))
                     CampoAcceso(
                         value = identification,
@@ -211,6 +198,26 @@ fun PantallaRegistro(onBackToLogin: () -> Unit, isDark: Boolean = true, onToggle
                         value = program,
                         onValueChange = { program = it },
                         label = "Programa de Formación"
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    DesplegableSena(
+                        valor = jornada,
+                        opciones = Jornadas.TODAS,
+                        onElegir = { jornada = it },
+                        label = "Jornada (lunes a viernes)"
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    DesplegableSena(
+                        valor = jornadaSabado,
+                        opciones = Jornadas.TODAS,
+                        onElegir = { jornadaSabado = it },
+                        label = "Jornada de los sábados"
+                    )
+                    Text(
+                        text = "Si los sábados estudias en otra jornada, elígela aquí.",
+                        color = colors.textSecondary,
+                        fontSize = 12.sp,
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -311,7 +318,9 @@ fun PantallaRegistro(onBackToLogin: () -> Unit, isDark: Boolean = true, onToggle
                                                     user_coursenumber = ficha,
                                                     user_program = program.trim(),
                                                     user_documento_tipo = documentoTipo,
-                                                    user_telefono = telefono.trim().ifBlank { null }
+                                                    user_telefono = telefono.trim().ifBlank { null },
+                                                    user_jornada = jornada,
+                                                    user_jornada_sabado = jornadaSabado
                                                 )
                                             )
                                             enviando = false

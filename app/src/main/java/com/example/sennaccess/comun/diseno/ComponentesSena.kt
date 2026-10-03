@@ -24,6 +24,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
@@ -32,6 +35,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -55,6 +59,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.clickable
 import com.example.sennaccess.comun.tema.RojoError
 import com.example.sennaccess.comun.tema.ColoresAppLocal
 import com.example.sennaccess.comun.tema.NaranjaAmbar
@@ -68,14 +74,193 @@ import com.example.sennaccess.comun.diseno.MenuDesplegableVidrio
 import com.example.sennaccess.comun.diseno.BarraSuperiorVidrio
 import com.example.sennaccess.comun.diseno.BotonCambiarTema
 import com.example.sennaccess.comun.diseno.superficieVidrio
+import com.example.sennaccess.comun.diseno.superficiePlana
+import com.example.sennaccess.perfil.FotoPerfil
 @Composable
 fun TituloSeccionSena(texto: String, modifier: Modifier = Modifier) {
     Text(
         text = texto.uppercase(),
-        style = MaterialTheme.typography.labelSmall,
-        color = ColoresAppLocal.current.textSecondary,
+        style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.6.sp),
+        color = verdeMarca(),
+        fontWeight = FontWeight.Bold,
         modifier = modifier.padding(horizontal = EspaciadoSena.screenH, vertical = EspaciadoSena.xs)
     )
+}
+
+// Cabecera de pantalla senior: eyebrow + título + subtítulo + acción.
+// Reubica el título a la izquierda con jerarquía clara; reemplaza el
+// uso repetido de CabeceraPlegable en listados y formularios.
+@Composable
+fun CabeceraPantalla(
+    eyebrow: String,
+    titulo: String,
+    subtitulo: String? = null,
+    modifier: Modifier = Modifier,
+    accion: (@Composable () -> Unit)? = null
+) {
+    val colors = ColoresAppLocal.current
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = EspaciadoSena.screenH, vertical = EspaciadoSena.sm),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = eyebrow.uppercase(),
+                style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.8.sp),
+                color = verdeMarca(),
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = titulo,
+                style = MaterialTheme.typography.headlineSmall,
+                color = colors.textPrimary,
+                fontWeight = FontWeight.ExtraBold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (subtitulo != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = subtitulo,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.textSecondary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+        if (accion != null) {
+            Spacer(modifier = Modifier.width(EspaciadoSena.sm))
+            accion()
+        }
+    }
+}
+
+// Grupo con contador: título de sección + píldora de conteo + contenido.
+// Ordena los listados largos en bloques escaneables.
+@Composable
+fun GrupoSeccion(
+    titulo: String,
+    conteo: Int? = null,
+    modifier: Modifier = Modifier,
+    accionTexto: String? = null,
+    onAccion: (() -> Unit)? = null,
+    contenido: @Composable ColumnScope.() -> Unit
+) {
+    val colors = ColoresAppLocal.current
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = EspaciadoSena.screenH, vertical = EspaciadoSena.xs)
+        ) {
+            Text(
+                text = titulo.uppercase(),
+                style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.6.sp),
+                color = verdeMarca(),
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f)
+            )
+            if (conteo != null) {
+                Box(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(VerdeSena.copy(alpha = 0.15f))
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "$conteo",
+                        color = verdeMarca(),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            if (accionTexto != null && onAccion != null) {
+                Spacer(modifier = Modifier.width(EspaciadoSena.xs))
+                androidx.compose.material3.TextButton(onClick = onAccion) {
+                    Text(accionTexto, color = verdeMarca(), fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = EspaciadoSena.screenH)
+                .superficiePlana(cornerRadius = RadioSena.lg)
+                .padding(vertical = 4.dp),
+            content = contenido
+        )
+    }
+}
+
+// Fila de navegación senior: icono + textos + accesorio a la derecha.
+// Unifica filas de ajustes, menús y accesos directos con divisor fino.
+@Composable
+fun FilaNavegacionSena(
+    titulo: String,
+    subtitulo: String? = null,
+    icono: ImageVector? = null,
+    accesorio: (@Composable () -> Unit)? = null,
+    onClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
+    val colors = ColoresAppLocal.current
+    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .escalaPresion(pressedScale = 0.98f, interactionSource = interaction)
+            .clip(RoundedCornerShape(RadioSena.md))
+            .clickable(
+                interactionSource = interaction,
+                indication = null,
+                enabled = onClick != null,
+                onClick = { onClick?.invoke() }
+            )
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (icono != null) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(VerdeSena.copy(alpha = 0.13f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icono, contentDescription = null, tint = verdeMarca(), modifier = Modifier.size(20.dp))
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = titulo,
+                style = MaterialTheme.typography.bodyMedium,
+                color = colors.textPrimary,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (subtitulo != null) {
+                Text(
+                    text = subtitulo,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.textSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+        if (accesorio != null) {
+            Spacer(modifier = Modifier.width(8.dp))
+            accesorio()
+        }
+    }
 }
 
 @Composable
@@ -96,11 +281,11 @@ fun TarjetaSena(
 fun InsigniaSena(texto: String, tipo: TipoInsignia, modifier: Modifier = Modifier) {
     val colors = ColoresAppLocal.current
     val fondo = when (tipo) {
-        TipoInsignia.EXITO -> VerdeSena.copy(alpha = 0.16f)
+        TipoInsignia.EXITO -> VerdeSena.copy(alpha = 0.15f)
         TipoInsignia.AVISO -> AmarilloAviso.copy(alpha = 0.16f)
         TipoInsignia.ALERTA -> NaranjaAmbar.copy(alpha = 0.18f)
-        TipoInsignia.ERROR -> RojoError.copy(alpha = 0.14f)
-        TipoInsignia.NEUTRO -> colors.surfaceVariant.copy(alpha = 0.6f)
+        TipoInsignia.ERROR -> RojoError.copy(alpha = 0.13f)
+        TipoInsignia.NEUTRO -> colors.surfaceVariant.copy(alpha = 0.7f)
     }
     val tinta = when (tipo) {
         TipoInsignia.EXITO -> verdeMarca()
@@ -111,16 +296,17 @@ fun InsigniaSena(texto: String, tipo: TipoInsignia, modifier: Modifier = Modifie
     }
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(RadioSena.sm))
+            .clip(RoundedCornerShape(100.dp))
             .background(fondo)
-            .padding(horizontal = EspaciadoSena.xs, vertical = EspaciadoSena.xxs),
+            .padding(horizontal = 10.dp, vertical = 5.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = texto.uppercase(),
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.8.sp),
             color = tinta,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            maxLines = 1
         )
     }
 }
@@ -141,7 +327,7 @@ fun BuscadorSena(
         onValueChange = onValor,
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(min = ToqueSena.min),
+            .heightIn(min = 52.dp),
         placeholder = { Text(placeholder, style = MaterialTheme.typography.bodyMedium) },
         leadingIcon = {
             Icon(
@@ -150,6 +336,17 @@ fun BuscadorSena(
                 tint = colors.textSecondary
             )
         },
+        trailingIcon = if (valor.isNotEmpty()) {
+            {
+                IconButton(onClick = { onValor("") }) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Limpiar búsqueda",
+                        tint = colors.textSecondary
+                    )
+                }
+            }
+        } else null,
         singleLine = true,
         shape = RoundedCornerShape(RadioSena.md),
         colors = OutlinedTextFieldDefaults.colors(
@@ -159,8 +356,8 @@ fun BuscadorSena(
             cursorColor = verdeMarca(),
             focusedTextColor = colors.textPrimary,
             unfocusedTextColor = colors.textPrimary,
-            focusedContainerColor = colors.surfaceVariant.copy(alpha = 0.5f),
-            unfocusedContainerColor = colors.surfaceVariant.copy(alpha = 0.5f)
+            focusedContainerColor = colors.surface,
+            unfocusedContainerColor = colors.surface
         )
     )
 }
@@ -175,16 +372,104 @@ fun FiltroSena(
     FilterChip(
         selected = seleccionado,
         onClick = onClick,
-        label = { Text(texto, style = MaterialTheme.typography.labelMedium) },
-        modifier = modifier.heightIn(min = ToqueSena.min),
-        shape = RoundedCornerShape(RadioSena.sm),
+        label = { Text(texto, style = MaterialTheme.typography.labelMedium, fontWeight = if (seleccionado) FontWeight.Bold else FontWeight.Medium) },
+        modifier = modifier.heightIn(min = 38.dp),
+        shape = RoundedCornerShape(100.dp),
+        border = if (seleccionado) null else androidx.compose.foundation.BorderStroke(1.dp, ColoresAppLocal.current.divider),
         colors = FilterChipDefaults.filterChipColors(
             selectedContainerColor = VerdeSena,
             selectedLabelColor = Color.Black,
-            containerColor = ColoresAppLocal.current.surfaceVariant.copy(alpha = 0.4f),
+            containerColor = ColoresAppLocal.current.surface,
             labelColor = ColoresAppLocal.current.textSecondary
         )
     )
+}
+
+// Menú hamburguesa compartido por los 4 roles: hero informativo (sin acción)
+// + una única fila Perfil y Cerrar sesión. Un solo camino al perfil.
+@Composable
+fun ColumnScope.MenuPerfilSena(
+    cerrar: () -> Unit,
+    nombre: String,
+    email: String,
+    fotoPath: String?,
+    onPerfil: (() -> Unit)? = null,
+    onEditarPerfil: (() -> Unit)? = null
+) {
+    val colors = ColoresAppLocal.current
+    // Hero de cuenta: solo informa quién está dentro, no navega.
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(RadioSena.md))
+            .background(VerdeSena.copy(alpha = 0.08f))
+            .padding(horizontal = 14.dp, vertical = 12.dp)
+    ) {
+        FotoPerfil(fotoPath = fotoPath, nombre = nombre, tamano = 56.dp)
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "MI CUENTA",
+                color = verdeMarca(),
+                style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.4.sp),
+                fontWeight = FontWeight.Bold,
+                fontSize = 10.sp
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = nombre,
+                color = colors.textPrimary,
+                fontWeight = FontWeight.ExtraBold,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = email,
+                color = colors.textSecondary,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+    Spacer(modifier = Modifier.height(6.dp))
+    HorizontalDivider(color = colors.divider)
+    Spacer(modifier = Modifier.height(6.dp))
+    // Único camino al perfil: respeta el destino de edición cuando existe.
+    val irPerfil = onEditarPerfil ?: onPerfil
+    if (irPerfil != null) {
+        DropdownMenuItem(
+            text = {
+                Column {
+                    Text("Perfil", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    Text("Ver y editar tu información", color = colors.textSecondary, fontSize = 12.sp)
+                }
+            },
+            leadingIcon = {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(VerdeSena.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Person,
+                        contentDescription = null,
+                        tint = verdeMarca(),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            },
+            trailingIcon = {
+                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(18.dp))
+            },
+            onClick = { cerrar(); irPerfil() },
+            modifier = Modifier.heightIn(min = 60.dp)
+        )
+    }
 }
 
 @Composable
@@ -200,42 +485,64 @@ fun BarraSuperiorSena(
     val colors = ColoresAppLocal.current
     var showMenu by remember { mutableStateOf(false) }
     BarraSuperiorVidrio {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                "SENA ",
-                style = MaterialTheme.typography.titleMedium,
-                color = colors.textPrimary
-            )
-            Text(
-                "ACCESS",
-                style = MaterialTheme.typography.titleMedium,
-                color = verdeMarca()
-            )
-            Spacer(modifier = Modifier.width(EspaciadoSena.xs))
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
             Box(
                 modifier = Modifier
-                    .background(Color.Transparent)
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(11.dp))
+                    .background(VerdeSena),
+                contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = rol.uppercase(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = verdeMarca()
+                    text = "S",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.Black,
+                    fontWeight = FontWeight.ExtraBold
                 )
             }
+            Spacer(modifier = Modifier.width(10.dp))
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "SENA ",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = colors.textPrimary,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                    Text(
+                        "ACCESS",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = verdeMarca(),
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(100.dp))
+                        .background(VerdeSena.copy(alpha = 0.14f))
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = rol.uppercase(),
+                        style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.2.sp),
+                        color = verdeMarca(),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
         }
-        Spacer(modifier = Modifier.weight(1f))
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (onNotificaciones != null) {
                 Box {
                     IconButton(
                         onClick = onNotificaciones,
-                        modifier = Modifier.size(ToqueSena.min)
+                        modifier = Modifier.size(44.dp)
                     ) {
                         Icon(
                             Icons.Default.Notifications,
                             contentDescription = "Abrir notificaciones",
-                            tint = colors.textPrimary
+                            tint = colors.textPrimary,
+                            modifier = Modifier.size(22.dp)
                         )
                     }
                     if (noLeidas > 0) {
@@ -244,28 +551,44 @@ fun BarraSuperiorSena(
                                 .align(Alignment.TopEnd)
                                 .size(18.dp)
                                 .clip(CircleShape)
-                                .background(RojoError),
+                                .background(RojoError)
+                                .padding(1.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = if (noLeidas > 99) "99+" else noLeidas.toString(),
                                 color = Color.White,
-                                style = MaterialTheme.typography.labelSmall
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                fontWeight = FontWeight.Bold
                             )
                         }
                     }
                 }
             }
-            BotonCambiarTema(isDark = isDark, onToggleTheme = onToggleTheme)
+            BotonCambiarTema(isDark = isDark, onToggleTheme = onToggleTheme, modifier = Modifier.size(44.dp))
             Box {
-                IconButton(
-                    onClick = { showMenu = true },
-                    modifier = Modifier.size(ToqueSena.min)
+                // Botón hamburguesa profesional: pastilla con borde y punto verde.
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(colors.surfaceVariant.copy(alpha = 0.6f))
+                        .clickable { showMenu = true },
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Menu,
                         contentDescription = "Abrir menú",
-                        tint = colors.textPrimary
+                        tint = colors.textPrimary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(top = 9.dp, end = 9.dp)
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(VerdeSena)
                     )
                 }
                 MenuDesplegableVidrio(
@@ -273,16 +596,34 @@ fun BarraSuperiorSena(
                     onDismissRequest = { showMenu = false }
                 ) {
                     menu?.invoke(this) { showMenu = false }
+                    Spacer(modifier = Modifier.height(2.dp))
+                    HorizontalDivider(color = colors.divider)
+                    Spacer(modifier = Modifier.height(2.dp))
                     DropdownMenuItem(
-                        text = { Text("Cerrar sesión", color = RojoError) },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Default.Logout,
-                                contentDescription = null,
-                                tint = RojoError
-                            )
+                        text = {
+                            Column {
+                                Text("Cerrar sesión", color = RojoError, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                Text("Salir de este dispositivo", color = colors.textSecondary, fontSize = 12.sp)
+                            }
                         },
-                        onClick = { showMenu = false; onLogout() }
+                        leadingIcon = {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(RojoError.copy(alpha = 0.12f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.Logout,
+                                    contentDescription = null,
+                                    tint = RojoError,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        },
+                        onClick = { showMenu = false; onLogout() },
+                        modifier = Modifier.heightIn(min = 60.dp)
                     )
                 }
             }
@@ -384,16 +725,24 @@ fun DialogoSena(
     val colors = ColoresAppLocal.current
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = colors.cardBackground.copy(alpha = 0.98f),
-        shape = RoundedCornerShape(RadioSena.pill),
+        containerColor = colors.surface,
+        shape = RoundedCornerShape(RadioSena.lg),
         icon = icono?.let {
             {
-                Icon(
-                    it,
-                    contentDescription = null,
-                    tint = verdeMarca(),
-                    modifier = Modifier.size(36.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .background(VerdeSena.copy(alpha = 0.14f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        it,
+                        contentDescription = null,
+                        tint = verdeMarca(),
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
             }
         },
         title = {
@@ -401,6 +750,7 @@ fun DialogoSena(
                 titulo,
                 style = MaterialTheme.typography.titleMedium,
                 color = colors.textPrimary,
+                fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
         },
@@ -416,13 +766,13 @@ fun DialogoSena(
             Button(
                 onClick = onConfirmar,
                 modifier = Modifier.heightIn(min = ToqueSena.min),
-                shape = RoundedCornerShape(RadioSena.pill),
+                shape = RoundedCornerShape(RadioSena.md),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = VerdeSena,
                     contentColor = Color.Black
                 )
             ) {
-                Text(textoConfirmar.uppercase(), fontWeight = FontWeight.Bold)
+                Text(textoConfirmar.uppercase(), fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp)
             }
         },
         dismissButton = {
@@ -434,6 +784,65 @@ fun DialogoSena(
             }
         }
     )
+}
+
+// Tarjeta protagonista: número grande + etiqueta + icono lateral.
+// Una por pantalla, siempre en vidrio elevado; el resto va en plano.
+@Composable
+fun TarjetaHeroSena(
+    valor: String,
+    etiqueta: String,
+    icono: ImageVector,
+    modifier: Modifier = Modifier,
+    detalle: String? = null
+) {
+    val colors = ColoresAppLocal.current
+    Row(
+        modifier = modifier
+            .superficieVidrio(cornerRadius = RadioSena.lg, elevated = true)
+            .padding(18.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .width(4.dp)
+                .height(56.dp)
+                .clip(RoundedCornerShape(100.dp))
+                .background(VerdeSena)
+        )
+        Spacer(modifier = Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = etiqueta.uppercase(),
+                style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.6.sp),
+                color = verdeMarca(),
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = valor,
+                style = MaterialTheme.typography.displaySmall,
+                color = colors.textPrimary,
+                fontWeight = FontWeight.ExtraBold
+            )
+            if (detalle != null) {
+                Text(
+                    text = detalle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.textSecondary
+                )
+            }
+        }
+        Box(
+            modifier = Modifier
+                .size(52.dp)
+                .clip(CircleShape)
+                .background(VerdeSena.copy(alpha = 0.14f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icono, contentDescription = null, tint = verdeMarca(), modifier = Modifier.size(26.dp))
+        }
+    }
 }
 
 @Composable

@@ -41,9 +41,9 @@ fun BotonPrimarioNeon(
         modifier = modifier
             .escalaPresion(pressedScale = 0.97f)
             .shadow(
-                15.dp,
-                RoundedCornerShape(28.dp),
-                spotColor = VerdeSena.copy(alpha = 0.6f)
+                8.dp,
+                RoundedCornerShape(16.dp),
+                spotColor = VerdeSena.copy(alpha = 0.45f)
             ),
         colors = ButtonDefaults.buttonColors(
             containerColor = VerdeSena,
@@ -51,8 +51,8 @@ fun BotonPrimarioNeon(
             disabledContainerColor = VerdeSena.copy(alpha = 0.35f),
             disabledContentColor = ColoresAppLocal.current.textOnPrimary.copy(alpha = 0.6f)
         ),
-        shape = RoundedCornerShape(28.dp),
-        contentPadding = PaddingValues(vertical = 16.dp)
+        shape = RoundedCornerShape(16.dp),
+        contentPadding = PaddingValues(vertical = 15.dp, horizontal = 20.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (loading) {
@@ -66,16 +66,16 @@ fun BotonPrimarioNeon(
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(19.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                 }
             }
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = if (loading) loadingText(text) else text.uppercase(),
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 1.5.sp
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.8.sp
             )
         }
     }
@@ -94,27 +94,27 @@ fun BotonBordeBrillante(
         onClick = onClick,
         enabled = enabled,
         modifier = modifier.escalaPresion(pressedScale = 0.97f),
-        border = BorderStroke(2.dp, VerdeSena.copy(alpha = 0.5f)),
+        border = BorderStroke(1.5.dp, VerdeSena.copy(alpha = 0.55f)),
         colors = ButtonDefaults.outlinedButtonColors(
             contentColor = colors.textPrimary,
             disabledContentColor = colors.textSecondary
         ),
-        shape = RoundedCornerShape(28.dp),
-        contentPadding = PaddingValues(vertical = 16.dp)
+        shape = RoundedCornerShape(16.dp),
+        contentPadding = PaddingValues(vertical = 15.dp, horizontal = 20.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (icon != null) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(19.dp),
                     tint = VerdeSena
                 )
                 Spacer(modifier = Modifier.width(8.dp))
             }
             Text(
                 text = text.uppercase(),
-                letterSpacing = 1.5.sp,
+                letterSpacing = 0.8.sp,
                 fontWeight = FontWeight.Bold
             )
         }

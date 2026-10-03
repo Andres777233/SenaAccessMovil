@@ -85,44 +85,16 @@ fun FormularioInvitado(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                @OptIn(ExperimentalMaterial3Api::class)
-                ExposedDropdownMenuBox(
-                    expanded = docDropdownAbierto,
-                    onExpandedChange = { docDropdownAbierto = it },
+                // Tipo doc con barra full-touch (toda la barra abre, no solo la flecha).
+                com.example.sennaccess.comun.diseno.DesplegableSena(
+                    valor = "${docSeleccionado.first}: ${docSeleccionado.second}",
+                    opciones = tiposDoc.map { (codigo, significado) -> "$codigo: $significado" },
+                    onElegir = { elegido ->
+                        tipoDoc = elegido.substringBefore(":").trim().takeIf { it.isNotEmpty() } ?: tipoDoc
+                    },
+                    label = "Tipo de Documento",
                     modifier = Modifier.fillMaxWidth()
-                ) {
-                    OutlinedTextField(
-                        value = "${docSeleccionado.first}: ${docSeleccionado.second}",
-                        onValueChange = {},
-                        readOnly = true,
-                        singleLine = true,
-                        label = { Text("Tipo de Documento", color = colors.textSecondary, fontSize = 14.sp) },
-                        modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = docDropdownAbierto) },
-                        shape = RoundedCornerShape(16.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = verdeMarca(), unfocusedBorderColor = colors.divider,
-                            focusedTextColor = colors.textPrimary, unfocusedTextColor = colors.textPrimary,
-                            focusedContainerColor = colors.surfaceVariant.copy(alpha = 0.5f),
-                            unfocusedContainerColor = colors.surfaceVariant.copy(alpha = 0.5f)
-                        )
-                    )
-                    ExposedDropdownMenu(
-                        expanded = docDropdownAbierto,
-                        onDismissRequest = { docDropdownAbierto = false },
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        tiposDoc.forEach { (codigo, significado) ->
-                            DropdownMenuItem(
-                                text = { Text("$codigo: $significado", color = colors.textPrimary, fontSize = 14.sp) },
-                                onClick = {
-                                    tipoDoc = codigo
-                                    docDropdownAbierto = false
-                                }
-                            )
-                        }
-                    }
-                }
+                )
 
                 Spacer(modifier = Modifier.height(12.dp))
                 CampoAcceso(

@@ -23,6 +23,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -56,6 +57,7 @@ import com.example.sennaccess.datos.modelos.RespuestaQrInvitado
 import com.example.sennaccess.autenticacion.verificacion.PantallaVerificacion
 import com.example.sennaccess.comun.diseno.CampoAcceso
 import com.example.sennaccess.comun.diseno.CajaError
+import com.example.sennaccess.comun.diseno.superficiePlana
 import com.example.sennaccess.comun.diseno.BotonBordeBrillante
 import com.example.sennaccess.comun.diseno.EsferasBrillo
 import com.example.sennaccess.comun.diseno.TarjetaVidrio
@@ -89,6 +91,9 @@ fun PantallaAcceso(
     var verInvitado by remember { mutableStateOf(false) }
     var guestQr by remember { mutableStateOf<RespuestaQrInvitado?>(null) }
 
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+
     LaunchedEffect(uiState) {
         val estado = uiState
         if (estado is EstadoAcceso.Success) {
@@ -115,19 +120,28 @@ fun PantallaAcceso(
         if (estado is EstadoAcceso.Success) {
             estado.response.user?.user_email?.takeIf { it.isNotBlank() }?.let {
                 GestorSesion.guardarCorreoUsado(context, it.trim())
+                // Guarda la clave del ingreso exitoso para autorrellenarla
+                // cuando se elija ese correo en este mismo teléfono.
+                if (password.isNotEmpty()) GestorSesion.guardarClavePara(context, it.trim(), password)
             }
         }
+        // Fix bug huella: solo se desvincula si el backend rechazó las credenciales
+        // (401). Un fallo de red NO borra la huella guardada.
         if (estado is EstadoAcceso.Error && loginDesdeHuella) {
             loginDesdeHuella = false
-            AlmacenHuella.borrar(context)
-            huellaError = "Tus credenciales guardadas dejaron de ser válidas. Ingresa con tu contraseña y registra tu huella otra vez."
+            val msg = estado.message.lowercase()
+            val credencialesInvalidas = msg.contains("401") || msg.contains("no autorizado") ||
+                msg.contains("unauthorized") || msg.contains("credencial") || msg.contains("contraseña")
+            if (credencialesInvalidas) {
+                AlmacenHuella.borrar(context)
+                huellaError = "Tus credenciales guardadas dejaron de ser válidas. Ingresa con tu contraseña y registra tu huella otra vez."
+            } else {
+                huellaError = estado.message
+            }
         } else if (estado !is EstadoAcceso.Loading) {
             loginDesdeHuella = false
         }
     }
-
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
 
     Box(
         modifier = Modifier
@@ -171,30 +185,24 @@ fun PantallaAcceso(
         )
 
         TarjetaVidrio(modifier = Modifier.fillMaxWidth(0.95f).padding(vertical = 20.dp)) {
-
-                Column(
-                    modifier = Modifier
-                        .padding(horizontal = 24.dp, vertical = 32.dp)
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState())
-                        .imePadding(),
-
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 24.dp, vertical = 28.dp)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .imePadding(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-
                 Image(
                     painter = painterResource(R.drawable.logo_sena),
                     contentDescription = "Logo SENA",
                     modifier = Modifier
-                        .size(110.dp)
-                        .padding(bottom = 12.dp)
+                        .size(76.dp)
+                        .padding(bottom = 10.dp)
                 )
-
                 Text(
                     text = buildAnnotatedString {
-
                         append("Sena ")
-
                         withStyle(
                             style = SpanStyle(
                                 color = verdeMarca(),
@@ -204,19 +212,30 @@ fun PantallaAcceso(
                             append("Access")
                         }
                     },
-
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.ExtraBold,
                     color = colors.textPrimary
                 )
-
-                Text(
-                    "Acceso CCyS",
-                    fontSize = 16.sp,
-                    color = verdeMarca()
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(100.dp))
+                        .background(VerdeSena.copy(alpha = 0.14f))
+                        .padding(horizontal = 12.dp, vertical = 5.dp)
+                ) {
+                    Text(
+                        text = "ACCESO CCyS",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.6.sp,
+                        color = verdeMarca()
+                    )
+                }
+                Spacer(modifier = Modifier.height(20.dp))
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
 
                 FormularioAccesoNormal(
                     email = email,
@@ -224,6 +243,9 @@ fun PantallaAcceso(
 
                     onEmailChange = {
                         email = it
+                        // Si se completa un correo conocido, autorrellena su clave.
+                        val clave = GestorSesion.obtenerClavePara(context, it)
+                        if (!clave.isNullOrEmpty() && password.isEmpty()) password = clave
                     },
 
                     onPasswordChange = {
@@ -260,20 +282,19 @@ fun PantallaAcceso(
                                                 cryptoObject = BiometricPrompt.CryptoObject(cipher),
                                                 onSuccess = { result ->
                                                     huellaOcupado = false
-                                                    try {
-                                                        val seguro = result.cryptoObject?.cipher
-                                                        if (seguro == null) {
-                                                            huellaError = "No se pudo verificar tu huella. Inténtalo de nuevo."
-                                                            return@authenticate
-                                                        }
-                                                        val credenciales = AlmacenHuella.leer(context, seguro)
-                                                        loginDesdeHuella = true
-                                                        viewModel.login(credenciales.first, credenciales.second, deviceId.ifBlank { null })
-                                                    } catch (e: Exception) {
-                                                        AlmacenHuella.borrar(context)
-                                                        AlmacenHuella.borrarLlave()
-                                                        huellaError = "No se pudieron leer tus credenciales. Inicia sesión y registra tu huella de nuevo."
+                                                    val seguro = result.cryptoObject?.cipher
+                                                    if (seguro == null) {
+                                                        huellaError = "No se pudo verificar tu huella. Inténtalo de nuevo."
+                                                        return@authenticate
                                                     }
+                                                    val credenciales = try {
+                                                        AlmacenHuella.leer(context, seguro)
+                                                    } catch (e: Exception) {
+                                                        huellaError = "No se pudieron leer tus credenciales. Inténtalo de nuevo."
+                                                        return@authenticate
+                                                    }
+                                                    loginDesdeHuella = true
+                                                    viewModel.login(credenciales.first, credenciales.second, deviceId.ifBlank { null })
                                                 },
                                                 onError = { motivo ->
                                                     huellaOcupado = false
@@ -296,7 +317,6 @@ fun PantallaAcceso(
                         huellaError = huellaError,
                         onEntrarInvitado = { verInvitado = true }
                     )
-                }
 
                 if (uiState is EstadoAcceso.Success) {
                     val res = (uiState as EstadoAcceso.Success).response
@@ -433,6 +453,7 @@ fun PantallaAcceso(
                     Spacer(modifier = Modifier.height(12.dp))
                     CajaError(texto = errorRol!!)
                 }
+                }
             }
             }
         }
@@ -453,6 +474,7 @@ fun PantallaAcceso(
             )
         }
         }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -483,16 +505,9 @@ fun FormularioAccesoNormal(
 
     val isLoading = uiState is EstadoAcceso.Loading
 
-    Text(
-        "Iniciar Sesión",
-        style = MaterialTheme.typography.titleLarge,
-        color = colors.textPrimary
-    )
-
-    Spacer(modifier = Modifier.height(24.dp))
-
     val contextHistorial = LocalContext.current
     var expandirCorreos by remember { mutableStateOf(false) }
+    var correoEnfocado by remember { mutableStateOf(false) }
     val correosGuardados = remember { GestorSesion.obtenerCorreosUsados(contextHistorial) }
     val sugerenciasCorreo = remember(email, correosGuardados) {
         if (correosGuardados.isEmpty()) emptyList()
@@ -500,24 +515,27 @@ fun FormularioAccesoNormal(
         else correosGuardados.filter { it.contains(email, ignoreCase = true) && !it.equals(email, ignoreCase = true) }
     }
     ExposedDropdownMenuBox(
-        expanded = expandirCorreos && sugerenciasCorreo.isNotEmpty(),
+        expanded = expandirCorreos && sugerenciasCorreo.isNotEmpty() && correoEnfocado,
         onExpandedChange = { expandirCorreos = it }
     ) {
 CampoAcceso(
                 value = email,
-                onValueChange = {
-                    onEmailChange(it)
-                    expandirCorreos = true
+                onValueChange = { nuevo ->
+                    // Al borrar (texto más corto o vacío) se cierra el menú para
+                    // no interrumpir letra por letra; al escribir se mantiene.
+                    if (nuevo.length < email.length) expandirCorreos = false
+                    onEmailChange(nuevo)
                 },
                 label = "Correo electrónico",
                 modifier = Modifier
                     .menuAnchor()
+                    .onFocusChanged { correoEnfocado = it.isFocused }
                     .clip(RoundedCornerShape(16.dp)),
                 keyboardType = KeyboardType.Email,
                 imeAction = ImeAction.Next
             )
         ExposedDropdownMenu(
-            expanded = expandirCorreos && sugerenciasCorreo.isNotEmpty(),
+            expanded = expandirCorreos && sugerenciasCorreo.isNotEmpty() && correoEnfocado,
             onDismissRequest = { expandirCorreos = false },
             shape = RoundedCornerShape(16.dp)
         ) {
@@ -528,10 +546,30 @@ CampoAcceso(
                     onClick = {
                         onEmailChange(correo)
                         expandirCorreos = false
+                        // Autorrelleno: si esa cuenta ya ingresó en este teléfono,
+                        // se restaura su contraseña guardada al elegir el correo.
+                        GestorSesion.obtenerClavePara(contextHistorial, correo)?.let { clave ->
+                            if (clave.isNotEmpty()) onPasswordChange(clave)
+                        }
+                        // Esa cuenta ya estuvo aquí: si tiene huella registrada se
+                        // entra con el dedo (descifra la clave guardada cifrada)
+                        // sin escribir nada a mano. Sin huella, solo queda el
+                        // correo y la contraseña se escribe una vez.
+                        try {
+                            if (AlmacenHuella.hayGuardada(contextHistorial) &&
+                                AlmacenHuella.obtenerDueno(contextHistorial).equals(correo, ignoreCase = true)
+                            ) {
+                                onBiometricLogin()
+                            }
+                        } catch (_: Exception) { }
                     }
                 )
             }
         }
+    }
+    // Al enfocar el campo con historial, se ofrecen las sugerencias una vez.
+    LaunchedEffect(correoEnfocado) {
+        if (correoEnfocado && sugerenciasCorreo.isNotEmpty()) expandirCorreos = true
     }
 
     Spacer(modifier = Modifier.height(16.dp))

@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MeetingRoom
 import androidx.compose.material.icons.filled.ReportProblem
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.*
@@ -39,10 +40,14 @@ import com.example.sennaccess.datos.repositorios.RepositorioNovedades
 import com.example.sennaccess.datos.sesion.GestorSesion
 import com.example.sennaccess.datos.simulados.DatosSimulados
 import com.example.sennaccess.comun.diseno.FiltroSena
+import com.example.sennaccess.comun.diseno.EntradaSuave
 import com.example.sennaccess.comun.fechaRelativa
+import com.example.sennaccess.comun.diaMesCorto
 import com.example.sennaccess.comun.diseno.RadioVidrio
+import com.example.sennaccess.comun.diseno.RadioSena
 import com.example.sennaccess.comun.diseno.CabeceraPlegable
 import com.example.sennaccess.comun.diseno.superficieVidrio
+import com.example.sennaccess.comun.diseno.superficiePlana
 import com.example.sennaccess.comun.diseno.escalaPresion
 import com.example.sennaccess.comun.tema.RojoError
 import com.example.sennaccess.comun.tema.ColoresAppLocal
@@ -67,9 +72,20 @@ fun VistaNovedades(
     var titulo by remember { mutableStateOf("") }
     var detalle by remember { mutableStateOf("") }
     var ambiente by remember { mutableStateOf("") }
+    var ambienteId by remember { mutableStateOf<Int?>(null) }
     var enviando by remember { mutableStateOf(false) }
     var errorEnvio by remember { mutableStateOf<String?>(null) }
     var enviada by remember { mutableStateOf(false) }
+    // Ambientes registrados: el instructor elige de la lista, no escribe a mano.
+    var ambientesLista by remember { mutableStateOf<List<com.example.sennaccess.datos.modelos.Ambiente>>(emptyList()) }
+    LaunchedEffect(mostrandoFormulario) {
+        if (!mostrandoFormulario) return@LaunchedEffect
+        val t = GestorSesion.token ?: return@LaunchedEffect
+        try {
+            ambientesLista = com.example.sennaccess.datos.repositorios.RepositorioAmbientes().getMisAmbientes(t)
+                .ifEmpty { com.example.sennaccess.datos.repositorios.RepositorioAmbientes().getAmbientes(t) }
+        } catch (_: Exception) { }
+    }
 
     var novedadAEliminar by remember { mutableStateOf<Novedad?>(null) }
     var eliminando by remember { mutableStateOf(false) }
@@ -96,11 +112,19 @@ fun VistaNovedades(
             .fillMaxSize()
             .verticalScroll(scrollState)
     ) {
-        CabeceraPlegable(
-            title = "Novedades",
-            subtitle = "Avisos y reportes del centro de formación",
-            scrollOffset = scrollState.value.toFloat()
-        )
+        // Cabecera editorial de novedades: eyebrow + título + subtítulo.
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = "TABLÓN DEL CENTRO",
+                color = verdeMarca(),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.8.sp
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text("Novedades", color = colors.textPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp)
+            Text("Avisos y reportes del centro de formación", color = colors.textSecondary, fontSize = 12.sp)
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -111,9 +135,10 @@ fun VistaNovedades(
                 titulo = titulo,
                 detalle = detalle,
                 ambiente = ambiente,
+                ambientes = ambientesLista,
                 onTituloChange = { titulo = it },
                 onDetalleChange = { detalle = it },
-                onAmbienteChange = { ambiente = it },
+                onAmbienteChange = { nombre, id -> ambiente = nombre; ambienteId = id },
                 enviando = enviando,
                 errorMensaje = errorEnvio,
                 onEnviar = {
@@ -130,6 +155,7 @@ fun VistaNovedades(
                                         token,
                                         PeticionNovedad(
                                             novedad_ambiente = ambiente.trim(),
+                                            fk_id_ambiente = ambienteId,
                                             novedad_title = titulo.trim(),
                                             novedad_body = detalle.trim()
                                         )
@@ -138,6 +164,7 @@ fun VistaNovedades(
                                     titulo = ""
                                     detalle = ""
                                     ambiente = ""
+                                    ambienteId = null
                                     enviada = true
                                     mostrandoFormulario = false
                                     onReintentar()
@@ -161,9 +188,9 @@ fun VistaNovedades(
                 onClick = { mostrandoFormulario = true },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
+                    .height(52.dp)
                     .escalaPresion(pressedScale = 0.97f),
-                shape = RoundedCornerShape(28.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = VerdeSena, contentColor = Color.Black)
             ) {
                 Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
@@ -196,21 +223,13 @@ fun VistaNovedades(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        Text(
-            "NOVEDADES RECIENTES",
-            color = colors.textSecondary,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 2.sp,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
         if (estado == null) {
-            DatosSimulados.novedades.forEach { n ->
-                TarjetaNovedad(n, onEliminar = null)
-                Spacer(modifier = Modifier.height(12.dp))
+            Text("RECIENTES • ${DatosSimulados.novedades.size}", color = colors.textSecondary, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp)
+            Spacer(modifier = Modifier.height(8.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.fillMaxWidth()) {
+                DatosSimulados.novedades.forEach { n ->
+                    EntradaSuave(indice = 0) { TarjetaNovedad(n, onEliminar = null) }
+                }
             }
         } else {
             EstadoContenido(estado = estado, onReintentar = onReintentar) { items ->
@@ -234,25 +253,30 @@ fun VistaNovedades(
                         )
                     } else {
                         LaunchedEffect(visibles) { idsVisibles = visibles.mapNotNull { it.id_novedad }.toSet() }
-                        visibles.forEach { n ->
-                            val id = n.id_novedad
-                            val leida = id != null && leidas.contains(id.toString())
-                            TarjetaNovedad(
-                                n = n,
-                                onEliminar = if (puedeEliminar()) {
-                                    { novedadAEliminar = n }
-                                } else null,
-                                leida = leida,
-                                seleccionada = id != null && seleccionadas.contains(id),
-                                modoSeleccion = modoSeleccion,
-                                onMarcarLeida = id?.let { { AlmacenNovedadesLeidas.marcarLeida(context, id); leidas = AlmacenNovedadesLeidas.obtenerLeidas(context) } },
-                                onToggleSeleccion = if (puedeEliminar() && id != null) {
-                                    {
-                                        seleccionadas = if (seleccionadas.contains(id)) seleccionadas - id else seleccionadas + id
-                                    }
-                                } else null
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
+                        Text("RECIENTES • ${visibles.size}", color = colors.textSecondary, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Column(verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.fillMaxWidth()) {
+                            visibles.forEachIndexed { i, n ->
+                                EntradaSuave(indice = i.coerceAtMost(4)) {
+                                val id = n.id_novedad
+                                val leida = id != null && leidas.contains(id.toString())
+                                TarjetaNovedad(
+                                    n = n,
+                                    onEliminar = if (puedeEliminar()) {
+                                        { novedadAEliminar = n }
+                                    } else null,
+                                    leida = leida,
+                                    seleccionada = id != null && seleccionadas.contains(id),
+                                    modoSeleccion = modoSeleccion,
+                                    onMarcarLeida = id?.let { { AlmacenNovedadesLeidas.marcarLeida(context, id); leidas = AlmacenNovedadesLeidas.obtenerLeidas(context) } },
+                                    onToggleSeleccion = if (puedeEliminar() && id != null) {
+                                        {
+                                            seleccionadas = if (seleccionadas.contains(id)) seleccionadas - id else seleccionadas + id
+                                        }
+                                    } else null
+                                )
+                                }
+                            }
                         }
                     }
                 }
@@ -357,62 +381,83 @@ fun TarjetaNovedad(
 ) {
     val colors = ColoresAppLocal.current
     val colorAcento = if (leida) verdeMarca() else NaranjaAmbar
-    Row(
+    val fecha = diaMesCorto(n.novedad_datetime)
+    // Tarjeta revista: cabecera con fecha + badge, título grande, cuerpo y
+    // pie con ambiente. Cada novedad es una tarjeta separada, no una fila.
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .superficieVidrio(cornerRadius = RadioVidrio)
+            .clip(RoundedCornerShape(RadioSena.lg))
             .combinedClickable(
                 onClick = { if (modoSeleccion) onToggleSeleccion?.invoke() },
                 onLongClick = { if (!modoSeleccion) onToggleSeleccion?.invoke() }
             )
             .background(
-                if (seleccionada) verdeMarca().copy(alpha = 0.12f) else Color.Transparent,
-                RoundedCornerShape(RadioVidrio)
+                if (seleccionada) verdeMarca().copy(alpha = 0.12f) else colors.surface,
+                RoundedCornerShape(RadioSena.lg)
             )
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(16.dp)
     ) {
-        if (modoSeleccion) {
-            Checkbox(
-                checked = seleccionada,
-                onCheckedChange = { onToggleSeleccion?.invoke() },
-                colors = CheckboxDefaults.colors(checkedColor = VerdeSena, checkmarkColor = Color.Black)
-            )
-        } else {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            if (modoSeleccion) {
+                Checkbox(
+                    checked = seleccionada,
+                    onCheckedChange = { onToggleSeleccion?.invoke() },
+                    colors = CheckboxDefaults.colors(checkedColor = VerdeSena, checkmarkColor = Color.Black)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+            // Fecha editorial: día grande + mes corto.
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                Text(
+                    text = fecha?.first ?: "—",
+                    color = colors.textPrimary,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 22.sp
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Column {
+                    Text(
+                        text = (fecha?.second ?: "").uppercase(),
+                        color = colors.textSecondary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 10.sp,
+                        letterSpacing = 1.2.sp
+                    )
+                    Text(fechaRelativa(n.novedad_datetime), color = colors.textSecondary, fontSize = 11.sp)
+                }
+            }
             Box(
                 modifier = Modifier
-                    .size(46.dp)
-                    .clip(CircleShape)
-                    .background(colorAcento.copy(alpha = 0.18f)),
-                contentAlignment = Alignment.Center
+                    .clip(RoundedCornerShape(100.dp))
+                    .background(colorAcento.copy(alpha = 0.15f))
+                    .padding(horizontal = 10.dp, vertical = 5.dp)
             ) {
-                Icon(Icons.Default.ReportProblem, contentDescription = null, tint = colorAcento, modifier = Modifier.size(24.dp))
+                Text(if (leida) "LEÍDA" else "NUEVA", color = colorAcento, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp)
             }
         }
-        Spacer(modifier = Modifier.width(14.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(n.novedad_title ?: "Novedad", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-            Text(fechaRelativa(n.novedad_datetime), color = colors.textSecondary, fontSize = 12.sp)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(n.novedad_body ?: "—", color = colors.textSecondary, fontSize = 12.sp, lineHeight = 16.sp)
-            Spacer(modifier = Modifier.height(6.dp))
-            Box(
-                modifier = Modifier
-                    .border(1.dp, colorAcento.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-            ) {
-                Text(if (leida) "LEÍDA" else "NUEVA", color = colorAcento, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(10.dp))
+        Text(n.novedad_title ?: "Novedad", color = colors.textPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, lineHeight = 22.sp, maxLines = 2)
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(n.novedad_body ?: "—", color = colors.textSecondary, fontSize = 13.sp, lineHeight = 18.sp, maxLines = 4)
+        Spacer(modifier = Modifier.height(12.dp))
+        HorizontalDivider(color = colors.divider)
+        Spacer(modifier = Modifier.height(10.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            if (!n.novedad_ambiente.isNullOrBlank()) {
+                Icon(Icons.Default.MeetingRoom, null, tint = verdeMarca(), modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(n.novedad_ambiente!!, color = colors.textSecondary, fontSize = 12.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f), maxLines = 1)
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
             }
-        }
-        Spacer(modifier = Modifier.width(6.dp))
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             if (!leida && onMarcarLeida != null) {
-                IconButton(onClick = onMarcarLeida, modifier = Modifier.size(48.dp)) {
-                    Icon(Icons.Default.CheckCircle, contentDescription = "Marcar como leída", tint = verdeMarca(), modifier = Modifier.size(24.dp))
+                IconButton(onClick = onMarcarLeida, modifier = Modifier.size(44.dp)) {
+                    Icon(Icons.Default.CheckCircle, contentDescription = "Marcar como leída", tint = verdeMarca(), modifier = Modifier.size(22.dp))
                 }
             }
             if (onEliminar != null) {
-                IconButton(onClick = onEliminar, modifier = Modifier.size(48.dp)) {
+                IconButton(onClick = onEliminar, modifier = Modifier.size(44.dp)) {
                     Icon(Icons.Default.Delete, contentDescription = "Eliminar novedad", tint = RojoError, modifier = Modifier.size(20.dp))
                 }
             }
@@ -425,30 +470,52 @@ private fun FormularioNovedad(
     titulo: String,
     detalle: String,
     ambiente: String,
+    ambientes: List<com.example.sennaccess.datos.modelos.Ambiente> = emptyList(),
     onTituloChange: (String) -> Unit,
     onDetalleChange: (String) -> Unit,
-    onAmbienteChange: (String) -> Unit,
+    onAmbienteChange: (String, Int?) -> Unit,
     enviando: Boolean,
     errorMensaje: String?,
     onEnviar: () -> Unit,
     onCancelar: () -> Unit
 ) {
     val colors = ColoresAppLocal.current
+    // Ficha del reporte en plana con secciones: ambiente, contenido y envío.
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .superficieVidrio(cornerRadius = RadioVidrio)
-            .padding(18.dp)
+            .superficiePlana(cornerRadius = RadioVidrio)
+            .padding(horizontal = 18.dp, vertical = 14.dp)
     ) {
+        Text(
+            text = "NUEVO REPORTE",
+            color = verdeMarca(),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.6.sp
+        )
+        Spacer(modifier = Modifier.height(4.dp))
         Text("Reportar Novedad", color = colors.textPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(14.dp))
-        OutlinedTextField(
-            value = ambiente,
-            onValueChange = onAmbienteChange,
-            label = { Text("Ambiente") },
-            modifier = Modifier.fillMaxWidth(),
-            colors = novedadCamposColors()
-        )
+        if (ambientes.isNotEmpty()) {
+            com.example.sennaccess.comun.diseno.DesplegableSena(
+                valor = ambiente.ifBlank { "Elige el ambiente…" },
+                opciones = ambientes.mapNotNull { it.ambiente_nombre },
+                onElegir = { nombre ->
+                    val id = ambientes.firstOrNull { it.ambiente_nombre == nombre }?.id_ambiente
+                    onAmbienteChange(nombre, id)
+                },
+                label = "Ambiente *"
+            )
+        } else {
+            OutlinedTextField(
+                value = ambiente,
+                onValueChange = { onAmbienteChange(it, null) },
+                label = { Text("Ambiente") },
+                modifier = Modifier.fillMaxWidth(),
+                colors = novedadCamposColors()
+            )
+        }
         Spacer(modifier = Modifier.height(12.dp))
         OutlinedTextField(
             value = titulo,
@@ -473,14 +540,14 @@ private fun FormularioNovedad(
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
             Button(
                 onClick = onEnviar,
-                modifier = Modifier.weight(1f).height(48.dp).escalaPresion(pressedScale = 0.97f),
-                shape = RoundedCornerShape(28.dp),
+                modifier = Modifier.weight(1f).height(52.dp).escalaPresion(pressedScale = 0.97f),
+                shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = VerdeSena, contentColor = Color.Black)
             ) { Text(if (enviando) "ENVIANDO..." else "ENVIAR", fontWeight = FontWeight.Bold) }
             OutlinedButton(
                 onClick = onCancelar,
-                modifier = Modifier.weight(1f).height(48.dp),
-                shape = RoundedCornerShape(28.dp),
+                modifier = Modifier.weight(1f).height(52.dp),
+                shape = RoundedCornerShape(16.dp),
                 border = BorderStroke(1.dp, colors.textSecondary)
             ) { Text("CANCELAR", color = colors.textPrimary) }
         }
@@ -493,7 +560,7 @@ private fun TarjetaNovedadEnviada(onAceptar: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .superficieVidrio(cornerRadius = RadioVidrio)
+            .superficiePlana(cornerRadius = RadioVidrio)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

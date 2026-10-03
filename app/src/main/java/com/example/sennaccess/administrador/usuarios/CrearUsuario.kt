@@ -6,6 +6,7 @@ package com.example.sennaccess.administrador.usuarios
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,11 +40,11 @@ import com.example.sennaccess.comun.tema.ColoresAppLocal
 import com.example.sennaccess.comun.tema.VerdeSena
 import com.example.sennaccess.comun.tema.verdeMarca
 import com.example.sennaccess.comun.diseno.RadioVidrio
-import com.example.sennaccess.comun.diseno.CabeceraPlegable
+import com.example.sennaccess.comun.diseno.RadioSena
 import com.example.sennaccess.comun.diseno.superficieVidrio
+import com.example.sennaccess.comun.diseno.superficiePlana
 import com.example.sennaccess.comun.diseno.escalaPresion
 import kotlinx.coroutines.launch
-import com.example.sennaccess.administrador.panel.ContenedorVidrioAdmin
 import com.example.sennaccess.administrador.panel.PantallaAdmin
 
 // El dropdown de roles consume GET /admin/roles a traves del PanelAdministradorViewModel.
@@ -60,7 +61,8 @@ fun ContenidoCrearUsuario(
     var identificacion by remember { mutableStateOf("") }
     var programa by remember { mutableStateOf("") }
     var ficha by remember { mutableStateOf("") }
-    var jornada by remember { mutableStateOf("") }
+    var jornada by remember { mutableStateOf("Tarde") }
+    var jornadaSabado by remember { mutableStateOf("Mañana") }
     var contrasena by remember { mutableStateOf("") }
     var documentoTipo by remember { mutableStateOf("CC") }
     var telefono by remember { mutableStateOf("") }
@@ -78,7 +80,6 @@ fun ContenidoCrearUsuario(
     fun crearUsuario() {
         if (guardando) return
         val rol = rolSeleccionado ?: run { errorMsj = "Seleccione un rol"; return }
-        val rolId = rol.id_rol ?: run { errorMsj = "Rol inválido"; return }
         if (contrasena.length < 8) { errorMsj = "La contraseña debe tener mínimo 8 caracteres"; return }
         if (correo.trim().isBlank()) { errorMsj = "El correo es obligatorio"; return }
         if (identificacion.trim().isBlank()) { errorMsj = "La identificación es obligatoria"; return }
@@ -90,6 +91,20 @@ fun ContenidoCrearUsuario(
             try {
                 val token = GestorSesion.token
                 if (token == null) { guardando = false; errorMsj = "Sesión expirada. Inicia sesión de nuevo."; return@launch }
+                // Portero local (id 0): se resuelve contra el servidor para usar
+                // su id real; si el WEB aún no lo tiene, se avisa sin enviar nada.
+                var rolId = rol.id_rol
+                if (rolId == null || rolId == 0) {
+                    rolId = try {
+                        RepositorioUsuarios().getRoles(token)
+                            .firstOrNull { it.rol_name.equals("portero", ignoreCase = true) }?.id_rol
+                    } catch (_: Exception) { null }
+                    if (rolId == null) {
+                        guardando = false
+                        errorMsj = "El servidor aún no tiene el rol Portero: publica el proyecto WEB (migrate --seed) e inténtalo de nuevo."
+                        return@launch
+                    }
+                }
                 RepositorioUsuarios().crearUsuario(
                     token = token,
                     body = PeticionUsuario(
@@ -102,6 +117,8 @@ fun ContenidoCrearUsuario(
                         user_program = programa.trim(),
                         user_documento_tipo = documentoTipo,
                         user_telefono = telefono.trim().ifBlank { null },
+                        user_jornada = jornada.ifBlank { null },
+                        user_jornada_sabado = jornadaSabado.ifBlank { null },
                         fk_id_rol = rolId
                     )
                 )
@@ -125,15 +142,20 @@ fun ContenidoCrearUsuario(
                 .imePadding(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            CabeceraPlegable(
-                title = "Nuevo Usuario",
-                subtitle = "Registrar un usuario en el sistema",
-                scrollOffset = scrollState.value.toFloat()
-            )
+            // Cabecera editorial del formulario.
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text("NUEVO USUARIO", color = verdeMarca(), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp)
+                Text("Registrar usuario", color = colors.textPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp)
+                Text("Completa la ficha de la persona y su acceso al sistema.", color = colors.textSecondary, fontSize = 12.sp)
+            }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            ContenedorVidrioAdmin {
+            Column(
+                modifier = Modifier.fillMaxWidth().superficiePlana(cornerRadius = RadioSena.lg).padding(16.dp)
+            ) {
+                EtiquetaSeccionUsuario("Datos personales")
+                Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedTextField(value = nombres, onValueChange = { nombres = it }, label = { Text("Nombres") }, modifier = Modifier.weight(1f).campoVisible(), colors = campoCrearColors(), shape = RoundedCornerShape(16.dp))
                     OutlinedTextField(value = apellidos, onValueChange = { apellidos = it }, label = { Text("Apellidos") }, modifier = Modifier.weight(1f).campoVisible(), colors = campoCrearColors(), shape = RoundedCornerShape(16.dp))
@@ -144,48 +166,19 @@ fun ContenidoCrearUsuario(
                     OutlinedTextField(value = identificacion, onValueChange = { identificacion = it }, label = { Text("Numero de Identificacion") }, modifier = Modifier.weight(1f).campoVisible(), colors = campoCrearColors(), shape = RoundedCornerShape(16.dp))
                 }
                 Spacer(modifier = Modifier.height(12.dp))
-                var docDropdownAbierto by remember { mutableStateOf(false) }
                 val tiposDoc = listOf(
-                    "CC" to "Cédula de Ciudadanía",
-                    "CE" to "Cédula de Extranjería",
-                    "TI" to "Tarjeta de Identidad",
-                    "PAS" to "Pasaporte"
+                    "CC: Cédula de Ciudadanía",
+                    "CE: Cédula de Extranjería",
+                    "TI: Tarjeta de Identidad",
+                    "PAS: Pasaporte"
                 )
-                val docSeleccionado = tiposDoc.firstOrNull { it.first == documentoTipo } ?: tiposDoc.first()
-                @OptIn(ExperimentalMaterial3Api::class)
-                ExposedDropdownMenuBox(
-                    expanded = docDropdownAbierto,
-                    onExpandedChange = { docDropdownAbierto = it },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    OutlinedTextField(
-                        value = "${docSeleccionado.first}: ${docSeleccionado.second}",
-                        onValueChange = {},
-                        readOnly = true,
-                        singleLine = true,
-                        label = { Text("Tipo de Documento - toca para elegir") },
-                        modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
-                        colors = campoCrearColors(),
-                        shape = RoundedCornerShape(16.dp),
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = docDropdownAbierto) }
-                    )
-                    ExposedDropdownMenu(
-                        expanded = docDropdownAbierto,
-                        onDismissRequest = { docDropdownAbierto = false },
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        tiposDoc.forEach { (codigo, significado) ->
-                            DropdownMenuItem(
-                                text = { Text("$codigo: $significado", color = colors.textPrimary) },
-                                onClick = {
-                                    documentoTipo = codigo
-                                    docDropdownAbierto = false
-                                },
-                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                            )
-                        }
-                    }
-                }
+                val docActual = tiposDoc.firstOrNull { it.startsWith(documentoTipo) } ?: tiposDoc.first()
+                com.example.sennaccess.comun.diseno.DesplegableSena(
+                    valor = docActual,
+                    opciones = tiposDoc,
+                    onElegir = { documentoTipo = it.substringBefore(":").trim() },
+                    label = "Tipo de Documento"
+                )
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(value = telefono, onValueChange = { telefono = it }, label = { Text("Telefono de contacto (opcional)") }, modifier = Modifier.fillMaxWidth().campoVisible(), colors = campoCrearColors(), shape = RoundedCornerShape(16.dp))
                 Spacer(modifier = Modifier.height(12.dp))
@@ -193,9 +186,33 @@ fun ContenidoCrearUsuario(
                     OutlinedTextField(value = programa, onValueChange = { programa = it }, label = { Text("Programa de Formacion") }, modifier = Modifier.weight(1f).campoVisible(), colors = campoCrearColors(), shape = RoundedCornerShape(16.dp))
                     OutlinedTextField(value = ficha, onValueChange = { ficha = it }, label = { Text("Ficha") }, modifier = Modifier.weight(1f).campoVisible(), colors = campoCrearColors(), shape = RoundedCornerShape(16.dp))
                 }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Column(
+                modifier = Modifier.fillMaxWidth().superficiePlana(cornerRadius = RadioSena.lg).padding(16.dp)
+            ) {
+                EtiquetaSeccionUsuario("Jornada")
+                Spacer(modifier = Modifier.height(8.dp))
+                com.example.sennaccess.comun.diseno.DesplegableSena(
+                    valor = jornada,
+                    opciones = com.example.sennaccess.comun.Jornadas.TODAS,
+                    onElegir = { jornada = it },
+                    label = "Jornada (lunes a viernes)"
+                )
                 Spacer(modifier = Modifier.height(12.dp))
-                OutlinedTextField(value = jornada, onValueChange = { jornada = it }, label = { Text("Jornada") }, modifier = Modifier.fillMaxWidth().campoVisible(), colors = campoCrearColors(), shape = RoundedCornerShape(16.dp))
-                Spacer(modifier = Modifier.height(12.dp))
+                com.example.sennaccess.comun.diseno.DesplegableSena(
+                    valor = jornadaSabado,
+                    opciones = com.example.sennaccess.comun.Jornadas.TODAS,
+                    onElegir = { jornadaSabado = it },
+                    label = "Jornada de los sábados"
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Column(
+                modifier = Modifier.fillMaxWidth().superficiePlana(cornerRadius = RadioSena.lg).padding(16.dp)
+            ) {
+                EtiquetaSeccionUsuario("Acceso y rol")
+                Spacer(modifier = Modifier.height(8.dp))
                 var mostrarClave by remember { mutableStateOf(false) }
                 OutlinedTextField(
                     value = contrasena,
@@ -218,30 +235,37 @@ fun ContenidoCrearUsuario(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Dropdown de roles alimentado por GET /admin/roles.
+                // Dropdown de roles alimentado por GET /admin/roles. Se abre tocando
+                // cualquier parte del campo. Portero siempre visible: si el backend
+                // aún no lo expone se ofrece local y su id se resuelve al guardar.
                 EstadoContenido(estado = roles, onReintentar = onReintentarRoles) { listaRoles ->
+                    val rolesVisibles = remember(listaRoles) {
+                        if (listaRoles.none { it.rol_name.equals("portero", ignoreCase = true) })
+                            listaRoles + Rol(id_rol = 0, rol_name = "Portero")
+                        else listaRoles
+                    }
                     Box(modifier = Modifier.fillMaxWidth()) {
                         OutlinedTextField(
                             value = rolSeleccionado?.rol_name ?: "Seleccionar rol",
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("Rol") },
+                            label = { Text("Rol - toca para elegir") },
                             modifier = Modifier.fillMaxWidth(),
                             colors = campoCrearColors(),
                             shape = RoundedCornerShape(16.dp),
+                            enabled = false,
                             trailingIcon = {
-                                IconButton(onClick = { dropdownAbierto = true }) {
-                                    Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = verdeMarca())
-                                }
+                                Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = verdeMarca())
                             }
                         )
+                        Box(modifier = Modifier.matchParentSize().clickable { dropdownAbierto = true })
                         DropdownMenu(
                             expanded = dropdownAbierto,
                             onDismissRequest = { dropdownAbierto = false },
                             shape = RoundedCornerShape(16.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            listaRoles.forEach { rol ->
+                            rolesVisibles.forEach { rol ->
                                 DropdownMenuItem(
                                     text = { Text(rol.rol_name ?: "Rol", color = colors.textPrimary) },
                                     onClick = {
@@ -251,6 +275,15 @@ fun ContenidoCrearUsuario(
                                 )
                             }
                         }
+                    }
+                    // Aviso cuando el servidor aún no tiene el rol Portero: sin él,
+                    // asignar portería es imposible (el id 4 del servidor es Invitado).
+                    if (listaRoles.none { it.rol_name.equals("portero", ignoreCase = true) }) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            "El servidor aún no tiene el rol Portero: créalo en el proyecto WEB (tabla roles + permisos de portería) y aparecerá aquí.",
+                            color = colors.textSecondary, fontSize = 12.sp, modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
 
@@ -263,14 +296,14 @@ fun ContenidoCrearUsuario(
                     onClick = { crearUsuario() },
                     enabled = !guardando,
                     modifier = Modifier.fillMaxWidth().height(52.dp).escalaPresion(pressedScale = 0.97f),
-                    shape = RoundedCornerShape(28.dp),
+                    shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = VerdeSena, contentColor = Color.Black)
                 ) { Text(if (guardando) "Guardando..." else "Crear", fontWeight = FontWeight.Bold, fontSize = 16.sp) }
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedButton(
                     onClick = { onNavigate(PantallaAdmin.USUARIOS) },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
-                    shape = RoundedCornerShape(28.dp),
+                    shape = RoundedCornerShape(16.dp),
                     border = BorderStroke(1.dp, colors.textSecondary)
                 ) { Text("Cancelar", color = colors.textSecondary, fontWeight = FontWeight.Bold) }
             }
@@ -321,3 +354,15 @@ private fun campoCrearColors() = OutlinedTextFieldDefaults.colors(
     focusedLabelColor = verdeMarca(), unfocusedLabelColor = ColoresAppLocal.current.textSecondary,
     cursorColor = verdeMarca(), focusedTextColor = ColoresAppLocal.current.textPrimary, unfocusedTextColor = ColoresAppLocal.current.textPrimary
 )
+
+// Etiqueta de sección en formularios de usuarios: eyebrow verde + jerarquía.
+@Composable
+private fun EtiquetaSeccionUsuario(texto: String) {
+    Text(
+        text = texto.uppercase(),
+        color = verdeMarca(),
+        fontSize = 11.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 1.6.sp
+    )
+}

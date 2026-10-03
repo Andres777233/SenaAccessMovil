@@ -37,7 +37,6 @@ import com.example.sennaccess.instructor.ambientes.VistaDetalleAmbiente
 import com.example.sennaccess.instructor.ambientes.VistaMisAmbientes
 import com.example.sennaccess.datos.modelos.Ambiente
 import com.example.sennaccess.excusas.VistaCrearExcusa
-import com.example.sennaccess.autenticacion.invitado.EscanearQrInvitado
 import com.example.sennaccess.perfil.VistaEditarPerfil
 import com.example.sennaccess.comun.HistorialPorDias
 import com.example.sennaccess.aprendiz.panel.TarjetaBienvenida
@@ -51,17 +50,14 @@ import com.example.sennaccess.comun.diseno.CeldaSena
 import com.example.sennaccess.comun.EstadoCarga
 import com.example.sennaccess.comun.EstadoContenido
 import com.example.sennaccess.comun.VistaVacia
-import com.example.sennaccess.perfil.FilaDato
-import com.example.sennaccess.biometria.MiSeccionHuella
 import com.example.sennaccess.administrador.novedades.VistaNotificaciones
 import com.example.sennaccess.administrador.novedades.VistaNovedades
-import com.example.sennaccess.administrador.novedades.VistaSugerencias
 import com.example.sennaccess.perfil.FotoPerfil
 import com.example.sennaccess.comun.CajaCargando
 import com.example.sennaccess.comun.CajaError
-import com.example.sennaccess.perfil.CabeceraPerfil
 import com.example.sennaccess.comun.fechaLegible
 import com.example.sennaccess.comun.fechaRelativa
+import com.example.sennaccess.comun.esHoyBogota
 import com.example.sennaccess.comun.horaCorta
 import com.example.sennaccess.autenticacion.verificacion.VistaConfigDobleFactor
 import com.example.sennaccess.autenticacion.verificacion.VistaPendientesDobleFactor
@@ -73,12 +69,15 @@ import com.example.sennaccess.comun.diseno.BarraNavegacion
 import com.example.sennaccess.comun.diseno.ElementoNavegacion
 import com.example.sennaccess.comun.diseno.BotonBordeBrillante
 import com.example.sennaccess.comun.diseno.EsferasBrillo
+import com.example.sennaccess.comun.diseno.MenuPerfilSena
 import com.example.sennaccess.comun.diseno.CabeceraPlegable
 import com.example.sennaccess.comun.diseno.MenuDesplegableVidrio
 import com.example.sennaccess.comun.diseno.BarraSuperiorVidrio
 import com.example.sennaccess.comun.diseno.BotonPrimarioNeon
 import com.example.sennaccess.comun.diseno.BotonCambiarTema
+import com.example.sennaccess.comun.diseno.EntradaSuave
 import com.example.sennaccess.comun.diseno.superficieVidrio
+import com.example.sennaccess.comun.diseno.superficiePlana
 import com.example.sennaccess.comun.diseno.RadioVidrio
 import com.example.sennaccess.comun.diseno.EspaciadoSena
 import com.example.sennaccess.comun.diseno.claveNavegacion
@@ -115,6 +114,13 @@ fun PanelInstructor(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggle
     LaunchedEffect(currentView) { cargarActual() }
     // Recarga el perfil al entrar al panel: corrige sesión anterior en el mismo proceso.
     LaunchedEffect(Unit) { viewModel.cargarPerfil() }
+    // Polling silencioso: notificaciones en tiempo real para el instructor.
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(20000)
+            try { viewModel.cargarNotificacionesSilencioso() } catch (_: Exception) { }
+        }
+    }
 
     // El botón atrás del sistema retrocede dentro del panel en vez de no hacer nada.
     BackHandler(enabled = currentView != "DASHBOARD" || ambienteSeleccionado != null || mostrarAutorizar) {
@@ -149,12 +155,10 @@ fun PanelInstructor(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggle
                 onLogout = onCerrarSesion,
                 onPerfil = { currentView = "PERFIL" },
                 onEditarPerfil = { currentView = "EDITAR_PERFIL" },
-
                 onNotificaciones = { currentView = "NOTIFICACIONES" },
                 noLeidas = noLeidas,
                 isDark = isDark,
-                onToggleTheme = onToggleTheme,
-                onEscanearQr = { currentView = "ESCANEAR_QR" }
+                onToggleTheme = onToggleTheme
             )
 
             PullToRefreshBox(
@@ -197,7 +201,6 @@ fun PanelInstructor(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggle
                         }
                     }
                     "NOVEDADES" -> VistaNovedades(estado = novedades, onReintentar = viewModel::cargarNovedades)
-                    "SUGERENCIAS" -> VistaSugerencias()
                     "HISTORIAL" -> VistaHistorialIngresos(historial, onReintentar = viewModel::cargarHistorial)
                     "MIS_EQUIPOS" -> VistaMisEquipos(equipos, onReintentar = viewModel::cargarEquipos)
                     "PERFIL" -> VistaPerfilInstructor(
@@ -225,7 +228,6 @@ fun PanelInstructor(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggle
                         onMarcarTodasLeidas = viewModel::marcarTodasLeidas,
                         onBack = { currentView = "DASHBOARD" }
                     )
-                    "ESCANEAR_QR" -> EscanearQrInvitado(onVolver = { currentView = "DASHBOARD" })
 
                 }
             }
@@ -236,7 +238,6 @@ fun PanelInstructor(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggle
                 ElementoNavegacion("DASHBOARD", Icons.Default.Home, "Inicio"),
                 ElementoNavegacion("AMBIENTES", Icons.Default.MeetingRoom, "Ambientes"),
                 ElementoNavegacion("NOVEDADES", Icons.Default.ReportProblem, "Novedades"),
-                ElementoNavegacion("SUGERENCIAS", Icons.Default.Lightbulb, "Sugerencias"),
                 ElementoNavegacion("HISTORIAL", Icons.Default.History, "Historial"),
                 ElementoNavegacion("MIS_EQUIPOS", Icons.Default.Devices, "Equipos")
             ),
@@ -254,122 +255,30 @@ fun BarraInstructor(
     onLogout: () -> Unit,
     onPerfil: (() -> Unit)? = null,
     onEditarPerfil: (() -> Unit)? = null,
-
     onNotificaciones: (() -> Unit)? = null,
     noLeidas: Int = 0,
     isDark: Boolean,
-    onToggleTheme: () -> Unit,
-    onEscanearQr: (() -> Unit)? = null
+    onToggleTheme: () -> Unit
 ) {
-    var showMenu by remember { mutableStateOf(false) }
-    val colors = ColoresAppLocal.current
-    val nombre = GestorSesion.userName ?: "Usuario"
-    val email = GestorSesion.userEmail ?: ""
-
-    BarraSuperiorVidrio {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("SENA ", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                Text("ACCESS", color = verdeMarca(), fontWeight = FontWeight.Bold, fontSize = 18.sp)
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Box(
-                    modifier = Modifier
-                        .border(1.dp, VerdeSena.copy(0.6f), RoundedCornerShape(4.dp))
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = "INSTRUCTOR",
-                        color = verdeMarca(),
-                        fontSize = 8.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.5.sp
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (onNotificaciones != null) {
-                    Box {
-                        IconButton(onClick = onNotificaciones) {
-                            Icon(
-                                Icons.Default.Notifications,
-                                contentDescription = "Notificaciones",
-                                tint = colors.textPrimary
-                            )
-                        }
-                        if (noLeidas > 0) {
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .size(18.dp)
-                                    .clip(CircleShape)
-                                    .background(RojoError),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = if (noLeidas > 99) "99+" else noLeidas.toString(),
-                                    color = Color.White,
-                                    fontSize = 9.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
-                }
-                BotonCambiarTema(isDark = isDark, onToggleTheme = onToggleTheme)
-                Box {
-                    IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Default.Menu, null, tint = colors.textPrimary)
-                    }
-                    MenuDesplegableVidrio(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false }
-                    ) {
-                        Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp).fillMaxWidth()) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier.clip(CircleShape).clickable {
-                                        showMenu = false
-                                        (onEditarPerfil ?: onPerfil)?.invoke()
-                                    }
-                                ) {
-                                    FotoPerfil(fotoPath = GestorSesion.userPhoto, nombre = nombre, tamano = 48.dp)
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(nombre, color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                                    Text(email, color = colors.textSecondary, fontSize = 12.sp)
-                                }
-                            }
-                        }
-                        HorizontalDivider(color = colors.border)
-                        if (onPerfil != null) {
-                            DropdownMenuItem(
-                                text = { Text("Perfil", color = colors.textPrimary) },
-                                leadingIcon = { Icon(Icons.Default.Person, null, tint = verdeMarca()) },
-                                onClick = { showMenu = false; onPerfil() }
-                            )
-                        }
-                        if (onEscanearQr != null) {
-                            DropdownMenuItem(
-                                text = { Text("Escanear QR de invitado", color = colors.textPrimary) },
-                                leadingIcon = { Icon(Icons.Default.QrCodeScanner, null, tint = verdeMarca()) },
-                                onClick = { showMenu = false; onEscanearQr() }
-                            )
-                        }
-
-                        DropdownMenuItem(
-                            text = { Text("Cerrar sesion", color = Color.Red) },
-                            leadingIcon = { Icon(Icons.Default.Logout, null, tint = Color.Red) },
-                            onClick = { showMenu = false; onLogout() }
-                        )
-                    }
-                }
-            }
-    }
+    // Barra unificada de los 4 roles: marca + chip de rol + notis + menú perfil.
+    com.example.sennaccess.comun.diseno.BarraSuperiorSena(
+        rol = "Instructor",
+        noLeidas = noLeidas,
+        isDark = isDark,
+        onToggleTheme = onToggleTheme,
+        onNotificaciones = onNotificaciones,
+        menu = { cerrar ->
+            MenuPerfilSena(
+                cerrar = cerrar,
+                nombre = com.example.sennaccess.datos.sesion.GestorSesion.userName ?: "Usuario",
+                email = com.example.sennaccess.datos.sesion.GestorSesion.userEmail ?: "",
+                fotoPath = com.example.sennaccess.datos.sesion.GestorSesion.userPhoto,
+                onPerfil = onPerfil,
+                onEditarPerfil = onEditarPerfil
+            )
+        },
+        onLogout = onLogout
+    )
 }
 
 @Composable
@@ -394,70 +303,97 @@ fun VistaResumenInstructor(
             .fillMaxSize()
             .verticalScroll(scrollState)
     ) {
-        CabeceraPlegable(
-            title = "Panel de Instructor",
-            subtitle = "Bienvenido, $nombreBienvenida",
-            scrollOffset = scrollState.value.toFloat()
+        com.example.sennaccess.comun.diseno.CabeceraPantalla(
+            eyebrow = "Instructor",
+            titulo = nombreBienvenida,
+            subtitulo = "Tus ambientes y movimiento de hoy"
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        EntradaSuave(indice = 0) {
+            Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                TarjetaBienvenida(
+                    fotoPath = fotoPath,
+                    nombre = nombreBienvenida,
+                    rol = "INSTRUCTOR",
+                    ficha = ficha,
+                    programa = programa
+                )
+            }
+        }
 
-        TarjetaBienvenida(
-            fotoPath = fotoPath,
-            nombre = nombreBienvenida,
-            rol = "INSTRUCTOR",
-            ficha = ficha,
-            programa = programa
-        )
+        Spacer(modifier = Modifier.height(14.dp))
 
-        Spacer(modifier = Modifier.height(12.dp))
-
+        com.example.sennaccess.aprendiz.panel.TituloSeccion(titulo = "TU ESTADO ACTUAL")
         Spacer(modifier = Modifier.height(8.dp))
-
-        TituloSeccion(titulo = "TU ESTADO ACTUAL")
-        Spacer(modifier = Modifier.height(8.dp))
-        when (historialEstado) {
-            is EstadoCarga.Loading -> CajaCargando()
-            is EstadoCarga.Error -> CajaError(historialEstado.mensaje, onReintentar)
-            is EstadoCarga.Success -> {
-                val lista = historialEstado.datos
-                if (lista.isEmpty()) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().superficieVidrio(cornerRadius = RadioVidrio).padding(20.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.Info, null, tint = colors.textSecondary, modifier = Modifier.size(28.dp))
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("Sin movimientos recientes", color = colors.textSecondary, fontSize = 13.sp)
+        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+            // Solo el día actual en el inicio: el historial completo vive en su pestaña.
+            val historialHoy = when (historialEstado) {
+                is EstadoCarga.Success -> EstadoCarga.Success(historialEstado.datos.filter { esHoyBogota(it.ingreso_datetime) })
+                else -> historialEstado
+            }
+            when (historialHoy) {
+                is EstadoCarga.Loading -> CajaCargando()
+                is EstadoCarga.Error -> CajaError(historialHoy.mensaje, onReintentar)
+                is EstadoCarga.Success -> {
+                    val lista = historialHoy.datos
+                    if (lista.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().superficiePlana(cornerRadius = RadioVidrio).padding(20.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(Icons.Default.Info, null, tint = colors.textSecondary, modifier = Modifier.size(26.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("Sin movimientos hoy", color = colors.textSecondary, fontSize = 13.sp)
+                            }
+                        }
+                    } else {
+                        EntradaSuave(indice = 1) {
+                            TarjetaEstadoAcceso(ingreso = lista.first())
                         }
                     }
-                } else {
-                    TarjetaEstadoAcceso(ingreso = lista.first())
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(18.dp))
 
-        TituloSeccion(titulo = "ACTIVIDAD RECIENTE", accionTexto = "Ver todo", onAccion = onVerHistorial)
+        com.example.sennaccess.aprendiz.panel.TituloSeccion(titulo = "ACTIVIDAD DE HOY", accionTexto = "Ver todo", onAccion = onVerHistorial)
         Spacer(modifier = Modifier.height(8.dp))
-        when (historialEstado) {
-            is EstadoCarga.Loading -> CajaCargando()
-            is EstadoCarga.Error -> CajaError(historialEstado.mensaje, onReintentar)
-            is EstadoCarga.Success -> {
-                val lista = historialEstado.datos
-                if (lista.isEmpty()) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().superficieVidrio(cornerRadius = RadioVidrio).padding(24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("No hay ingresos registrados", color = colors.textSecondary, fontSize = 13.sp)
-                    }
-                } else {
-                    lista.take(3).forEach { item ->
-                        TarjetaActividad(item)
-                        Spacer(modifier = Modifier.height(8.dp))
+        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+            val historialHoy = when (historialEstado) {
+                is EstadoCarga.Success -> EstadoCarga.Success(historialEstado.datos.filter { esHoyBogota(it.ingreso_datetime) })
+                else -> historialEstado
+            }
+            when (historialHoy) {
+                is EstadoCarga.Loading -> CajaCargando()
+                is EstadoCarga.Error -> CajaError(historialHoy.mensaje, onReintentar)
+                is EstadoCarga.Success -> {
+                    val lista = historialHoy.datos
+                    if (lista.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().superficiePlana(cornerRadius = RadioVidrio).padding(24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("Sin movimientos hoy: tu historial completo está en Control de ingresos", color = colors.textSecondary, fontSize = 13.sp)
+                        }
+                    } else {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .superficiePlana(cornerRadius = RadioVidrio)
+                                .padding(vertical = 4.dp)
+                        ) {
+                            lista.take(3).forEachIndexed { i, item ->
+                                if (i > 0) HorizontalDivider(
+                                    color = colors.divider,
+                                    modifier = Modifier.padding(horizontal = 14.dp)
+                                )
+                                EntradaSuave(indice = 2 + i) {
+                                    TarjetaActividad(item)
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -499,14 +435,7 @@ fun VistaMisEquipos(estado: EstadoCarga<List<EquipoIngreso>>, onReintentar: () -
             scrollOffset = scrollState.value.toFloat()
         )
         Spacer(modifier = Modifier.height(12.dp))
-        ContenedorTabla(title = "Mis Comprobantes", subtitle = "Dispositivos del instructor") {
-            Row(modifier = Modifier.fillMaxWidth().padding(bottom = EspaciadoSena.xs)) {
-                CeldaSena(texto = "EQUIPO", peso = 1f, encabezado = true)
-                CeldaSena(texto = "MARCA/MODELO", peso = 1.5f, encabezado = true)
-                CeldaSena(texto = "SERIAL", peso = 1.2f, encabezado = true)
-            }
-            HorizontalDivider(color = colors.border)
-
+        ContenedorTabla(title = "Mis Comprobantes", subtitle = "Detalle completo de tus dispositivos") {
             EstadoContenido(estado = estado, onReintentar = onReintentar) { items ->
                 if (items.isEmpty()) {
                     VistaVacia(
@@ -515,12 +444,9 @@ fun VistaMisEquipos(estado: EstadoCarga<List<EquipoIngreso>>, onReintentar: () -
                         mensaje = "Los equipos registrados a tu nombre aparecerán aquí."
                     )
                 } else {
-                    items.forEach { eq ->
-                        HorizontalDivider(color = colors.border)
-                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = EspaciadoSena.sm), verticalAlignment = Alignment.CenterVertically) {
-                            CeldaSena(texto = eq.equipo_type ?: "Equipo", peso = 1f)
-                            CeldaSena(texto = eq.marcaModelo, peso = 1.5f)
-                            CeldaSena(texto = eq.equipo_serial ?: "—", peso = 1.2f)
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items.forEach { eq ->
+                            com.example.sennaccess.administrador.equipos.TarjetaEquipoDetallada(eq)
                         }
                     }
                 }
@@ -540,49 +466,30 @@ fun VistaPerfilInstructor(estado: EstadoCarga<UsuarioApi>, onBack: () -> Unit, o
             .verticalScroll(scrollState)
             .imePadding()
     ) {
-        IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null, tint = colors.textPrimary) }
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null, tint = colors.textPrimary) }
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Perfil", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text("Información personal y seguridad", color = colors.textSecondary, fontSize = 12.sp)
+            }
+        }
         Spacer(modifier = Modifier.height(8.dp))
 
         EstadoContenido(estado = estado, onReintentar = onReintentar) { usuario ->
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .superficieVidrio(cornerRadius = RadioVidrio)
-                    .padding(20.dp)
-            ) {
-                CabeceraPerfil(
-                    fotoPath = usuario.profile_photo_path,
-                    nombre = usuario.nombreCompleto,
-                    rol = "Instructor"
-                )
-                Spacer(modifier = Modifier.height(20.dp))
-                HorizontalDivider(color = colors.border)
-                Spacer(modifier = Modifier.height(4.dp))
-                FilaDato(Icons.Default.Email, "Correo", usuario.user_email ?: "—")
-                FilaDato(Icons.Default.Badge, "Documento", usuario.user_identification ?: "—")
-                if (!usuario.user_program.isNullOrBlank()) {
-                    FilaDato(Icons.Default.School, "Programa", usuario.user_program!!)
-                }
-                if (usuario.user_coursenumber != null && usuario.user_coursenumber > 0) {
-                    FilaDato(Icons.Default.Numbers, "Ficha", usuario.user_coursenumber.toString())
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                BotonPrimarioNeon(
-                    text = "EDITAR PERFIL",
-                    icon = Icons.Default.Edit,
-                    onClick = onEditar,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                BotonBordeBrillante(
-                    text = "VERIFICACIÓN EN DOS PASOS",
-                    icon = Icons.Default.Shield,
-                    onClick = onConfigurar2Fa,
-                    modifier = Modifier.fillMaxWidth()
-                )
+            val filas = buildList {
+                add(Triple(Icons.Default.Badge, "Documento", usuario.user_identification ?: "—"))
+                if (!usuario.user_program.isNullOrBlank()) add(Triple(Icons.Default.School, "Programa", usuario.user_program!!))
+                if (usuario.user_coursenumber != null && usuario.user_coursenumber > 0) add(Triple(Icons.Default.Numbers, "Ficha", usuario.user_coursenumber.toString()))
             }
-            Spacer(modifier = Modifier.height(16.dp))
-            MiSeccionHuella()
+            com.example.sennaccess.perfil.PerfilSenior(
+                fotoPath = usuario.profile_photo_path,
+                nombre = usuario.nombreCompleto,
+                rol = "Instructor",
+                correo = usuario.user_email,
+                filas = filas,
+                onEditar = onEditar,
+                onConfigurar2Fa = onConfigurar2Fa
+            )
             Spacer(modifier = Modifier.imePadding().height(96.dp))
         }
     }

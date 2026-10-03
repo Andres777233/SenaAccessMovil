@@ -104,6 +104,8 @@ object AlmacenHuella {
         prefs(context).getString(KEY_DUENO, null)?.takeIf { it.isNotBlank() }
 
     // Cipher para descifrar, o null si no hay nada guardado.
+    // Solo borra ante llave invalidada permanentemente; un error transitorio
+    // (p.ej. sin huella del sistema) NO borra las credenciales guardadas.
     fun prepararDescifrado(context: Context): Cipher? {
         if (!hayGuardada(context)) return null
         return try {
@@ -116,8 +118,6 @@ object AlmacenHuella {
             borrarLlave()
             null
         } catch (e: Exception) {
-            borrar(context)
-            borrarLlave()
             null
         }
     }

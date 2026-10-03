@@ -114,6 +114,16 @@ class PanelInstructorViewModel : ViewModel() {
         }
     }
 
+    // Polling silencioso cada 20 s: notificaciones en tiempo real sin parpadeo.
+    fun cargarNotificacionesSilencioso() {
+        val token = GestorSesion.token ?: return
+        viewModelScope.launch {
+            try {
+                _notificaciones.value = EstadoCarga.Success(notificacionRepo.getNotificaciones(token))
+            } catch (_: Exception) { }
+        }
+    }
+
     // Marca una notificación como leída.
     fun marcarLeida(id: Int) {
         val token = GestorSesion.token ?: return

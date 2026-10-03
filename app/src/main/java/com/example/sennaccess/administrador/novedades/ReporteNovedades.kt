@@ -30,6 +30,7 @@ import com.example.sennaccess.comun.tema.verdeMarca
 import com.example.sennaccess.comun.diseno.RadioVidrio
 import com.example.sennaccess.comun.diseno.CabeceraPlegable
 import com.example.sennaccess.comun.diseno.superficieVidrio
+import com.example.sennaccess.comun.diseno.superficiePlana
 import com.example.sennaccess.comun.diseno.escalaPresion
 import com.example.sennaccess.administrador.panel.PantallaAdmin
 
@@ -58,53 +59,36 @@ fun ContenidoReporteNovedades(onNavigate: (PantallaAdmin) -> Unit) {
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        Box(
+        // Ficha única en plana: 5 campos con divisor, un aviso y un Enviar.
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 6.dp)
-                .superficieVidrio(cornerRadius = RadioVidrio)
-                .padding(16.dp)
-        ) { CampoReporte("Elemento", elemento, { elemento = it }) }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 6.dp)
-                .superficieVidrio(cornerRadius = RadioVidrio)
-                .padding(16.dp)
+                .superficiePlana(cornerRadius = RadioVidrio)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
+            EtiquetaReporte("Elemento")
+            CampoReporte("Elemento", elemento, { elemento = it })
+            DividerReporte()
+            EtiquetaReporte("Fecha y hora")
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(value = fecha, onValueChange = { fecha = it }, label = { Text("Fecha") }, modifier = Modifier.weight(1f).campoVisible(), colors = campoRepColors())
                 OutlinedTextField(value = hora, onValueChange = { hora = it }, label = { Text("Hora") }, modifier = Modifier.weight(1f).campoVisible(), colors = campoRepColors())
             }
+            DividerReporte()
+            EtiquetaReporte("Accesorio y propietario")
+            CampoReporte("Accesorio Adicional", accesorio, { accesorio = it })
+            Spacer(modifier = Modifier.height(12.dp))
+            CampoReporte("Propietario", propietario, { propietario = it })
+            DividerReporte()
+            EtiquetaReporte("Registra")
+            CampoReporte("Administrador que Registra", admin, { admin = it })
         }
+        Spacer(modifier = Modifier.height(12.dp))
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 6.dp)
-                .superficieVidrio(cornerRadius = RadioVidrio)
-                .padding(16.dp)
-        ) { CampoReporte("Accesorio Adicional", accesorio, { accesorio = it }) }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 6.dp)
-                .superficieVidrio(cornerRadius = RadioVidrio)
-                .padding(16.dp)
-        ) { CampoReporte("Propietario", propietario, { propietario = it }) }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 6.dp)
-                .superficieVidrio(cornerRadius = RadioVidrio)
-                .padding(16.dp)
-        ) { CampoReporte("Administrador que Registra", admin, { admin = it }) }
-        Spacer(modifier = Modifier.height(6.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .shadow(10.dp, RoundedCornerShape(28.dp))
-                .background(colors.errorBackground, RoundedCornerShape(28.dp))
-                .border(1.dp, RojoError.copy(alpha = 0.3f), RoundedCornerShape(28.dp))
+                .background(colors.errorBackground, RoundedCornerShape(16.dp))
+                .border(1.dp, RojoError.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
                 .padding(12.dp)
         ) {
             Text(
@@ -115,12 +99,32 @@ fun ContenidoReporteNovedades(onNavigate: (PantallaAdmin) -> Unit) {
         Spacer(modifier = Modifier.height(12.dp))
         Button(
             onClick = { onNavigate(PantallaAdmin.PANEL) },
-            modifier = Modifier.fillMaxWidth().height(50.dp).escalaPresion(pressedScale = 0.97f),
-            shape = RoundedCornerShape(28.dp),
+            modifier = Modifier.fillMaxWidth().height(52.dp).escalaPresion(pressedScale = 0.97f),
+            shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = VerdeSena, contentColor = Color.Black)
         ) { Text("Enviar", fontWeight = FontWeight.Bold, fontSize = 16.sp) }
         Spacer(modifier = Modifier.height(20.dp))
     }
+}
+
+@Composable
+private fun EtiquetaReporte(texto: String) {
+    Text(
+        text = texto.uppercase(),
+        color = verdeMarca(),
+        fontSize = 11.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 1.6.sp,
+        modifier = Modifier.padding(top = 10.dp, bottom = 6.dp)
+    )
+}
+
+@Composable
+private fun DividerReporte() {
+    HorizontalDivider(
+        color = ColoresAppLocal.current.divider,
+        modifier = Modifier.padding(vertical = 4.dp)
+    )
 }
 
 @Composable

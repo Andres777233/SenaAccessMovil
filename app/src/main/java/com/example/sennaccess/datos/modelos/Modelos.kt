@@ -126,12 +126,28 @@ data class UsuarioApi(
     @SerializedName("user_program") val user_program: String? = null,
     @SerializedName("user_documento_tipo") val user_documento_tipo: String? = null,
     @SerializedName("user_telefono") val user_telefono: String? = null,
+    @SerializedName("user_jornada") val user_jornada: String? = null,
+    @SerializedName("user_jornada_sabado") val user_jornada_sabado: String? = null,
     @SerializedName("fk_id_rol") val fk_id_rol: Int? = null,
     @SerializedName("profile_photo_path") val profile_photo_path: String? = null,
     val role: Rol? = null
 ) {
     val nombreCompleto: String get() = listOfNotNull(user_name, user_lastname).joinToString(" ").ifBlank { "Sin nombre" }
     fun esRol(rol: String): Boolean = role?.rol_name.equals(rol, ignoreCase = true)
+    // Invitado temporal (QR): nunca va a ambientes ni a dueños de equipos.
+    fun esInvitado(): Boolean {
+        val r = role?.rol_name?.trim()?.lowercase()
+        return r == "invitado" || r == "visitante" || r == "guest"
+    }
+    // Jornada efectiva hoy (sábado especial si aplica).
+    fun jornadaHoy(): String? {
+        val base = user_jornada
+        val sab = user_jornada_sabado
+        if (sab.isNullOrBlank()) return base
+        return try {
+            com.example.sennaccess.comun.JornadaEfectiva.paraHoy(base, sab)
+        } catch (_: Exception) { base }
+    }
 }
 
 // (POST/PUT /admin/users). El password es opcional al actualizar.
@@ -145,6 +161,8 @@ data class PeticionUsuario(
     @SerializedName("user_program") val user_program: String? = null,
     @SerializedName("user_documento_tipo") val user_documento_tipo: String? = null,
     @SerializedName("user_telefono") val user_telefono: String? = null,
+    @SerializedName("user_jornada") val user_jornada: String? = null,
+    @SerializedName("user_jornada_sabado") val user_jornada_sabado: String? = null,
     @SerializedName("fk_id_rol") val fk_id_rol: Int
 )
 
@@ -250,7 +268,9 @@ data class PeticionRegistro(
     @SerializedName("user_coursenumber") val user_coursenumber: Int,
     @SerializedName("user_program") val user_program: String,
     @SerializedName("user_documento_tipo") val user_documento_tipo: String,
-    @SerializedName("user_telefono") val user_telefono: String? = null
+    @SerializedName("user_telefono") val user_telefono: String? = null,
+    @SerializedName("user_jornada") val user_jornada: String? = null,
+    @SerializedName("user_jornada_sabado") val user_jornada_sabado: String? = null
 )
 
 // Respuesta del registro de cuenta.

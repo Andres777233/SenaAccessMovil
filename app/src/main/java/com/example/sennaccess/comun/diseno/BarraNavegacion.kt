@@ -59,54 +59,34 @@ fun BarraNavegacion(
     modifier: Modifier = Modifier
 ) {
     val colors = ColoresAppLocal.current
-    val shape = RoundedCornerShape(35.dp)
+    val shape = RoundedCornerShape(28.dp)
     val isLight = colors.background.luminance() > 0.5f
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .shadow(
-                    elevation = if (isLight) 18.dp else 28.dp,
+                    elevation = if (isLight) 10.dp else 18.dp,
                     shape = shape,
                     clip = false,
-                    ambientColor = if (isLight) {
-                        Color.Black.copy(alpha = 0.15f)
-                    } else {
-                        Color.Black.copy(alpha = 0.4f)
-                    },
-                    spotColor = if (isLight) {
-                        Color.Black.copy(alpha = 0.19f)
-                    } else {
-                        Color.Black.copy(alpha = 0.5f)
-                    }
+                    ambientColor = Color.Black.copy(alpha = if (isLight) 0.12f else 0.4f),
+                    spotColor = Color.Black.copy(alpha = if (isLight) 0.14f else 0.45f)
                 )
                 .clip(shape)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            colors.surface.copy(alpha = if (isLight) 0.96f else 0.8f),
-                            colors.surface.copy(alpha = if (isLight) 0.9f else 0.65f)
-                        )
-                    )
-                )
-                .background(Color.White.copy(alpha = if (isLight) 0.05f else 0.08f))
+                .background(colors.surface.copy(alpha = if (isLight) 0.98f else 0.88f))
                 .border(
-                    1.2.dp,
-                    if (isLight) {
-                        colors.border.copy(alpha = 0.95f)
-                    } else {
-                        colors.borderLight.copy(alpha = 0.25f)
-                    },
+                    1.dp,
+                    if (isLight) colors.border.copy(alpha = 0.9f) else colors.borderLight.copy(alpha = 0.22f),
                     shape
                 )
-                .padding(horizontal = 8.dp, vertical = 8.dp),
+                .padding(horizontal = 6.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -153,29 +133,29 @@ private fun DockItem(
     Column(
         modifier = modifier
             .escalaPresion(pressedScale = 0.92f, interactionSource = interactionSource)
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(20.dp))
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
-            .padding(vertical = 6.dp),
+            .padding(vertical = 5.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
-                .size(width = 52.dp, height = 34.dp)
+                .size(width = 50.dp, height = 32.dp)
         ) {
             Box(
                 Modifier
                     .fillMaxSize()
                     .scale(iconScale)
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(acento.copy(alpha = 0.22f * pillAlpha))
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(acento.copy(alpha = 0.18f * pillAlpha))
             )
             Icon(
                 imageVector = item.icon,
                 contentDescription = item.contentDescription,
                 tint = if (selected) acento else colors.textSecondary,
                 modifier = Modifier
-                    .size(26.dp)
+                    .size(23.dp)
                     .graphicsLayer {
                         this.alpha = iconAlpha
                         scaleX = iconScale
@@ -186,8 +166,8 @@ private fun DockItem(
         Text(
             text = item.label,
             color = if (selected) acento else colors.textSecondary,
-            fontSize = 11.sp,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+            fontSize = 10.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
             maxLines = 1,
             softWrap = false,
             overflow = TextOverflow.Ellipsis,
