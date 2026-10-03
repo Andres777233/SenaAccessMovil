@@ -29,40 +29,11 @@ import com.example.sennaccess.datos.modelos.RespuestaQrInvitado
 import com.example.sennaccess.comun.diseno.CajaError
 import com.example.sennaccess.comun.diseno.BotonBordeBrillante
 import com.example.sennaccess.comun.diseno.TarjetaVidrio
+import com.example.sennaccess.comun.milisDeIso
 import com.example.sennaccess.comun.tema.ColoresAppLocal
 import com.example.sennaccess.comun.tema.verdeMarca
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import java.util.Calendar
-import java.util.TimeZone
-
-private val patronQrIso = Regex(
-    """(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|[+-]\d{2}:?\d{2})?"""
-)
-
-private fun epochMillisIso(iso: String?): Long? {
-    if (iso.isNullOrBlank()) return null
-    val m = patronQrIso.find(iso) ?: return null
-    val (anio, mes, dia, hora, min, seg, _, zona) = m.destructured
-    val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
-        clear()
-        set(Calendar.YEAR, anio.toInt())
-        set(Calendar.MONTH, mes.toInt() - 1)
-        set(Calendar.DAY_OF_MONTH, dia.toInt())
-        set(Calendar.HOUR_OF_DAY, hora.toInt())
-        set(Calendar.MINUTE, min.toInt())
-        set(Calendar.SECOND, seg.toInt())
-    }
-    if (zona.isNotEmpty() && zona != "Z" && zona != "z") {
-        val signo = if (zona.startsWith("-")) -1 else 1
-        val numeros = zona.replace(":", "").drop(1)
-        val hh = numeros.take(2).toIntOrNull() ?: 0
-        val mm = numeros.drop(2).take(2).toIntOrNull() ?: 0
-        cal.add(Calendar.MINUTE, signo * (hh * 60 + mm))
-    }
-    cal.timeZone = TimeZone.getDefault()
-    return cal.timeInMillis
-}
 
 @Composable
 fun CodigoQrInvitado(
@@ -72,7 +43,7 @@ fun CodigoQrInvitado(
     val colors = ColoresAppLocal.current
 
     var restanteMs by remember(invitado.qr_expires_at) { mutableStateOf(0L) }
-    val expiraMillis = remember(invitado.qr_expires_at) { epochMillisIso(invitado.qr_expires_at) }
+    val expiraMillis = remember(invitado.qr_expires_at) { milisDeIso(invitado.qr_expires_at) }
     LaunchedEffect(expiraMillis) {
         val target = expiraMillis ?: return@LaunchedEffect
         while (isActive) {

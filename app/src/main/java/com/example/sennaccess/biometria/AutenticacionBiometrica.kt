@@ -39,9 +39,10 @@ object AutenticacionBiometrica {
         subtitle: String,
         onSuccess: () -> Unit,
         onError: (String) -> Unit,
-        onFailed: ((String) -> Unit)? = null
+        onFailed: ((String) -> Unit)? = null,
+        onCancel: (() -> Unit)? = null
     ) {
-        authenticate(activity, title, subtitle, null, { onSuccess() }, onError, onFailed)
+        authenticate(activity, title, subtitle, null, { onSuccess() }, onError, onFailed, onCancel)
     }
 
     fun activityDe(context: Context): FragmentActivity? {
@@ -76,7 +77,8 @@ object AutenticacionBiometrica {
         cryptoObject: BiometricPrompt.CryptoObject?,
         onSuccess: (BiometricPrompt.AuthenticationResult) -> Unit,
         onError: (String) -> Unit,
-        onFailed: ((String) -> Unit)? = null
+        onFailed: ((String) -> Unit)? = null,
+        onCancel: (() -> Unit)? = null
     ) {
         val executor = ContextCompat.getMainExecutor(activity)
         val prompt = BiometricPrompt(activity, executor, object : BiometricPrompt.AuthenticationCallback() {
@@ -89,7 +91,8 @@ object AutenticacionBiometrica {
             }
 
             override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                mensajeError(errorCode, errString)?.let { onError(it) }
+                val msg = mensajeError(errorCode, errString)
+                if (msg == null) onCancel?.invoke() else onError(msg)
             }
         })
 

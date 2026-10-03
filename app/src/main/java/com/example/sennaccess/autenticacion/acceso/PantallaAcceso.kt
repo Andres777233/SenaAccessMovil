@@ -302,7 +302,8 @@ fun PantallaAcceso(
                                                 },
                                                 onFailed = { aviso ->
                                                     huellaError = aviso
-                                                }
+                                                },
+                                                onCancel = { huellaOcupado = false }
                                             )
                                             } catch (e: Exception) {
                                                 huellaOcupado = false
@@ -418,6 +419,11 @@ fun PantallaAcceso(
                                                 },
                                                 onFailed = { aviso ->
                                                     huellaError = aviso
+                                                },
+                                                onCancel = {
+                                                    huellaOcupado = false
+                                                    viewModel.reset()
+                                                    onLoginSuccess(res.role ?: "")
                                                 }
                                             )
                                         } catch (e: Throwable) {

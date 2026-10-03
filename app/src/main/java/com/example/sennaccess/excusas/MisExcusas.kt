@@ -51,7 +51,7 @@ fun VistaMisExcusas(onBack: (() -> Unit)? = null) {
     var recargando by remember { mutableStateOf(false) }
     var idsVistos by remember { mutableStateOf<Set<Int>>(emptySet()) }
     var hayNueva by remember { mutableStateOf(false) }
-    val ahora = recordarAhoraCada30s()
+    val ahora = recordarAhoraCadaSegundo()
 
     suspend fun cargar(silencioso: Boolean = false) {
         if (token == null) { estado = EstadoCarga.Error("Sin sesión"); return }
@@ -92,7 +92,7 @@ fun VistaMisExcusas(onBack: (() -> Unit)? = null) {
             IconButton(onClick = { scope.launch { cargar() } }) { Icon(Icons.Default.Refresh, null, tint = colors.textSecondary) }
             if (recargando) CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
         }
-        Text("Tu instructor genera el permiso; muestra el PIN en portería para salir.", color = colors.textSecondary, fontSize = 12.sp)
+        Text("Tu instructor genera el permiso; muestra el QR o el PIN en portería para salir.", color = colors.textSecondary, fontSize = 12.sp)
         if (hayNueva) {
             Spacer(modifier = Modifier.height(8.dp))
             Text("● Nueva excusa pendiente", color = colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
@@ -135,7 +135,7 @@ fun VistaMisExcusas(onBack: (() -> Unit)? = null) {
                                         InsigniaExcusa(ex.estado)
                                     }
                                     Spacer(modifier = Modifier.height(12.dp))
-                                    // Hero del PIN: número protagonista centrado en plana.
+                                    // Hero del PIN + QR: número protagonista y QR para portería.
                                     Box(
                                         modifier = Modifier.fillMaxWidth().clickable { clipboard.setText(AnnotatedString(ex.pin ?: "")) }.padding(vertical = 4.dp),
                                         contentAlignment = Alignment.Center
@@ -146,6 +146,11 @@ fun VistaMisExcusas(onBack: (() -> Unit)? = null) {
                                             Icon(Icons.Default.ContentCopy, null, tint = verdeMarca(), modifier = Modifier.size(20.dp))
                                         }
                                     }
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                        CodigoQrExcusa(excusa = ex, lado = 170.dp, mostrarPin = false)
+                                    }
+                                    Spacer(modifier = Modifier.height(4.dp))
                                     Text(textoVigencia(ex.expira_en, ahora), color = colors.textSecondary, fontSize = 11.sp, modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                                     Spacer(modifier = Modifier.height(8.dp))
                                     HorizontalDivider(color = colors.divider)

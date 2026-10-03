@@ -209,7 +209,8 @@ fun MiSeccionHuella() {
                                         },
                                         onFailed = { aviso ->
                                             errorMensaje = aviso
-                                        }
+                                        },
+                                        onCancel = { ocupado = false }
                                     )
                                 } catch (e: Throwable) {
                                     ocupado = false

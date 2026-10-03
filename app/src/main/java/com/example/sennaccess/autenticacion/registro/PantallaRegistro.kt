@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -58,21 +59,22 @@ fun PantallaRegistro(onBackToLogin: () -> Unit, isDark: Boolean = true, onToggle
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    var documentoTipo by remember { mutableStateOf("CC") }
-    var identification by remember { mutableStateOf("") }
-    var name by remember { mutableStateOf("") }
-    var lastname by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var courseNumber by remember { mutableStateOf("") }
-    var program by remember { mutableStateOf("") }
-    var telefono by remember { mutableStateOf("") }
-    var jornada by remember { mutableStateOf(Jornadas.TARDE) }
-    var jornadaSabado by remember { mutableStateOf(Jornadas.MANANA) }
-    var password by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
+    var documentoTipo by rememberSaveable { mutableStateOf("CC") }
+    var identification by rememberSaveable { mutableStateOf("") }
+    var name by rememberSaveable { mutableStateOf("") }
+    var lastname by rememberSaveable { mutableStateOf("") }
+    var email by rememberSaveable { mutableStateOf("") }
+    var courseNumber by rememberSaveable { mutableStateOf("") }
+    var program by rememberSaveable { mutableStateOf("") }
+    var telefono by rememberSaveable { mutableStateOf("") }
+    var jornada by rememberSaveable { mutableStateOf(Jornadas.TARDE) }
+    var jornadaSabado by rememberSaveable { mutableStateOf(Jornadas.MANANA) }
+    var password by rememberSaveable { mutableStateOf("") }
+    var confirmPassword by rememberSaveable { mutableStateOf("") }
 
     var enviando by remember { mutableStateOf(false) }
     var errorMensaje by remember { mutableStateOf<String?>(null) }
+    var avisoSuave by remember { mutableStateOf<String?>(null) }
     var showConfirm by remember { mutableStateOf(false) }
     var promptBiometrico by remember { mutableStateOf(false) }
 
@@ -244,6 +246,15 @@ fun PantallaRegistro(onBackToLogin: () -> Unit, isDark: Boolean = true, onToggle
                         Spacer(modifier = Modifier.height(12.dp))
                         CajaError(texto = errorMensaje!!)
                     }
+                    if (avisoSuave != null) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = avisoSuave!!,
+                            color = colors.textSecondary,
+                            fontSize = 13.sp,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(32.dp))
 
@@ -298,6 +309,7 @@ fun PantallaRegistro(onBackToLogin: () -> Unit, isDark: Boolean = true, onToggle
                                 return@BotonPrimarioNeon
                             }
                             errorMensaje = null
+                            avisoSuave = null
                             promptBiometrico = true
                             AutenticacionBiometrica.authenticate(
                                 activity,
@@ -352,7 +364,13 @@ fun PantallaRegistro(onBackToLogin: () -> Unit, isDark: Boolean = true, onToggle
                                 },
                                 onError = { msg ->
                                     promptBiometrico = false
+                                    avisoSuave = null
                                     errorMensaje = msg
+                                },
+                                onCancel = {
+                                    promptBiometrico = false
+                                    errorMensaje = null
+                                    avisoSuave = "Verificación cancelada. Tus datos siguen aquí, pulsa REGISTRARSE de nuevo cuando quieras."
                                 }
                             )
                         },

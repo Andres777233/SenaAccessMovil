@@ -1,8 +1,9 @@
 package com.example.sennaccess.excusas
 
-// Validación unificada de portería: PIN manual y QR de invitado en una sola
-// sesión con pestañas. El operario decide si escribe el PIN a mano o escanea
-// con la cámara, sin salir de la pantalla.
+// Validación unificada de portería: PIN manual, QR de excusa y QR de invitado
+// en una sola sesión con pestañas. El operario decide si escribe el PIN a mano,
+// escanea el QR del permiso del aprendiz o escanea un invitado, sin salir de
+// la pantalla.
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -44,31 +45,41 @@ fun VistaValidarUnificada(onBack: () -> Unit) {
                 Text("Validar accesos", color = colors.textPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp)
             }
         }
-        Text("Salidas por PIN de excusa o entradas de invitado por QR.", color = colors.textSecondary, fontSize = 12.sp)
+        Text("Salidas por PIN o QR de excusa, o entradas de invitado por QR.", color = colors.textSecondary, fontSize = 12.sp)
         Spacer(modifier = Modifier.height(14.dp))
-        // Segmentado profesional en plana: dos opciones grandes de 52dp.
-        Row(
+        // Segmentado profesional en plana: tres opciones grandes de 52dp.
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .superficiePlana(cornerRadius = RadioSena.lg)
                 .padding(6.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                SegmentoValidar(
+                    seleccionado = tab == 0,
+                    icono = Icons.Default.Keyboard,
+                    titulo = "PIN A MANO",
+                    subtitulo = "Excusas",
+                    onClick = { tab = 0 },
+                    modifier = Modifier.weight(1f)
+                )
+                SegmentoValidar(
+                    seleccionado = tab == 1,
+                    icono = Icons.Default.QrCodeScanner,
+                    titulo = "QR EXCUSA",
+                    subtitulo = "Permisos",
+                    onClick = { tab = 1 },
+                    modifier = Modifier.weight(1f)
+                )
+            }
             SegmentoValidar(
-                seleccionado = tab == 0,
-                icono = Icons.Default.Keyboard,
-                titulo = "PIN A MANO",
-                subtitulo = "Excusas",
-                onClick = { tab = 0 },
-                modifier = Modifier.weight(1f)
-            )
-            SegmentoValidar(
-                seleccionado = tab == 1,
+                seleccionado = tab == 2,
                 icono = Icons.Default.QrCodeScanner,
-                titulo = "ESCANEAR QR",
-                subtitulo = "Invitados",
-                onClick = { tab = 1 },
-                modifier = Modifier.weight(1f)
+                titulo = "QR INVITADO",
+                subtitulo = "Visitantes",
+                onClick = { tab = 2 },
+                modifier = Modifier.fillMaxWidth()
             )
         }
         Spacer(modifier = Modifier.height(12.dp))
@@ -76,6 +87,7 @@ fun VistaValidarUnificada(onBack: () -> Unit) {
             ContenidoPestana(objetivo = tab) { pestana ->
                 when (pestana) {
                     0 -> VistaValidarExcusa(onBack = onBack, mostrarCabecera = false)
+                    1 -> EscanearQrExcusa(mostrarCabecera = false)
                     else -> EscanearQrInvitado(onVolver = onBack, mostrarCabecera = false)
                 }
             }

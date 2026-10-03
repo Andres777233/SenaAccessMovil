@@ -75,7 +75,7 @@ fun VistaCrearExcusa(
     var error by remember { mutableStateOf<String?>(null) }
     var errorCarga by remember { mutableStateOf<String?>(null) }
     var excusaCreada by remember { mutableStateOf<Excusa?>(null) }
-    val ahora = recordarAhoraCada30s()
+    val ahora = recordarAhoraCadaSegundo()
 
     val ambRepo = remember { RepositorioAmbientes() }
     val excRepo = remember { RepositorioExcusas() }
@@ -158,9 +158,21 @@ fun VistaCrearExcusa(
                     Text(
                         creada.pin ?: "—",
                         color = colors.textPrimary,
-                        fontSize = 52.sp,
+                        fontSize = 48.sp,
                         fontWeight = FontWeight.Bold,
-                        letterSpacing = 10.sp,
+                        letterSpacing = 8.sp,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    // QR para portería: el portero lo escanea y valida el mismo PIN.
+                    CodigoQrExcusa(excusa = creada, mostrarPin = false)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "Muestra el QR o dicta el PIN en portería",
+                        color = colors.textSecondary,
+                        fontSize = 12.sp,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -211,9 +223,9 @@ fun VistaCrearExcusa(
             Box(modifier = Modifier.fillMaxWidth().superficiePlana(cornerRadius = RadioSena.lg).padding(16.dp)) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("¿QUÉ SIGUE?", color = colors.textSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
-                    PasoPermiso(numero = "1", texto = "Dicta o comparte el PIN al aprendiz antes de que venza.")
-                    PasoPermiso(numero = "2", texto = "El aprendiz lo presenta en portería con su documento.")
-                    PasoPermiso(numero = "3", texto = "El admin lo valida y la salida queda en el historial.")
+                    PasoPermiso(numero = "1", texto = "Dicta el PIN o muestra el QR al aprendiz antes de que venza (15 min).")
+                    PasoPermiso(numero = "2", texto = "El aprendiz presenta el QR o el PIN en portería con su documento.")
+                    PasoPermiso(numero = "3", texto = "El portero escanea o valida y la salida queda en el historial.")
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))

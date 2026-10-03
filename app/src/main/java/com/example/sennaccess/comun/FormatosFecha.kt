@@ -8,27 +8,55 @@ import java.util.Calendar
 import java.util.TimeZone
 
 // Patrón que cubre el ISO del backend con o sin microsegundos y con zona (Z o ±HH:MM).
+// Todas las horas de la app se MUESTRAN en America/Bogota (Popayán, UTC-5 sin
+// horario de verano): el instante se parsea en UTC y se pinta en Bogotá para
+// que el celular muestre lo mismo esté en la zona que esté.
 private val patronIso = Regex(
     """(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|[+-]\d{2}:?\d{2})?"""
 )
 
 private val meses = listOf("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
 
+// Zona única de presentación: Popayán, Colombia.
+val zonaBogota: TimeZone get() = TimeZone.getTimeZone("America/Bogota")
+
+// Instante UTC en milis del ISO del backend (nil si no parsea).
+fun milisDeIso(iso: String?): Long? = parsearIso(iso)?.timeInMillis
+
+// Calendario del instante ya movido a Bogotá para pintar día/hora locales.
+fun calBogota(iso: String?): Calendar? {
+    val d = parsearIso(iso) ?: return null
+    return Calendar.getInstance(zonaBogota).apply { timeInMillis = d.timeInMillis }
+}
+
+// Hora corta en Bogotá: "14:35".
+fun horaBogota(iso: String?): String {
+    val d = calBogota(iso) ?: return "—"
+    return "${dosDigitos(d.get(Calendar.HOUR_OF_DAY))}:${dosDigitos(d.get(Calendar.MINUTE))}"
+}
+
+// Día + hora en Bogotá: "25 ago, 14:35".
+fun fechaHoraBogota(iso: String?): String {
+    val d = calBogota(iso) ?: return "—"
+    return "${d.get(Calendar.DAY_OF_MONTH)} ${meses[d.get(Calendar.MONTH)]}, " +
+        "${dosDigitos(d.get(Calendar.HOUR_OF_DAY))}:${dosDigitos(d.get(Calendar.MINUTE))}"
+}
+
 fun fechaLegible(iso: String?): String {
-    val d = parsearIso(iso) ?: return "—"
+    val d = calBogota(iso) ?: return "—"
     return "${d.get(Calendar.DAY_OF_MONTH)} ${meses[d.get(Calendar.MONTH)]} ${d.get(Calendar.YEAR)}, " +
         "${dosDigitos(d.get(Calendar.HOUR_OF_DAY))}:${dosDigitos(d.get(Calendar.MINUTE))}"
 }
 
 fun fechaHoraCorta(iso: String?): String {
-    val d = parsearIso(iso) ?: return "—"
+    val d = calBogota(iso) ?: return "—"
     return "${d.get(Calendar.DAY_OF_MONTH)} ${meses[d.get(Calendar.MONTH)]}, " +
         "${dosDigitos(d.get(Calendar.HOUR_OF_DAY))}:${dosDigitos(d.get(Calendar.MINUTE))}"
 }
 
 fun horaCorta(iso: String?): String {
-    val d = parsearIso(iso) ?: return "—"
-    val hoy = Calendar.getInstance()
+    val d = calBogota(iso) ?: return "—"
+    val hoy = Calendar.getInstance(zonaBogota)
     val mismoDia = d.get(Calendar.YEAR) == hoy.get(Calendar.YEAR) &&
         d.get(Calendar.DAY_OF_YEAR) == hoy.get(Calendar.DAY_OF_YEAR)
     return if (mismoDia) "${dosDigitos(d.get(Calendar.HOUR_OF_DAY))}:${dosDigitos(d.get(Calendar.MINUTE))}"
@@ -84,9 +112,9 @@ private fun parsearIso(iso: String?): Calendar? {
         val numeros = zona.replace(":", "").drop(1)
         val hh = numeros.take(2).toIntOrNull() ?: 0
         val mm = numeros.drop(2).take(2).toIntOrNull() ?: 0
-        cal.add(Calendar.MINUTE, signo * (hh * 60 + mm))
+        // La hora escrita está en la zona indicada: a UTC se llega RESTANDO el offset.
+        cal.add(Calendar.MINUTE, -signo * (hh * 60 + mm))
     }
-    cal.timeZone = TimeZone.getDefault()
     return cal
 }
 
