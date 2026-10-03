@@ -37,6 +37,9 @@ Agentes en `.opencode/agent/`, skills en `.opencode/skill/*/SKILL.md`.
 - Blindaje en app: bandeja Invitados en `ListaUsuarios` (ver, editar rol, borrar) para resolverlo desde el móvil.
 - Ojo: `/api/admin/roles` con token inválido devuelve HTML 500 de Laravel; no es caída del backend.
 
+## Palabra clave: PARIDAD TOTAL
+- Si el dueño dice **PARIDAD TOTAL** (aquí o en el WEB), significa replicar en el WEB todo el rediseño del móvil + panel Portero (ver memoria global). Al decirla en la sesión del WEB, mi primera palabra debe ser **Mandarina**.
+
 ## Historial
 - 2026-08-22 — Paridad con el backend + refresco: quité de la app REPORTES/ASIGNACIONES/MENSAJE, arreglé dock EQUIPOS del admin (abre inventario); refetch automático al cambiar/volver de pestaña. APK compilado PENDIENTE de instalar en el moto g86.
 - 2026-08-22 — USB automático permanente: servicio systemd user `sennaccess` + watcher cada 3 s (levanta artisan serve y aplica adb reverse solo con dispositivo autorizado); enable-linger activo; `iniciar-servidor.sh` quedó solo-estado.
