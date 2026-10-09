@@ -29,6 +29,7 @@ import com.example.sennaccess.datos.modelos.Notificacion
 import com.example.sennaccess.datos.modelos.Novedad
 import com.example.sennaccess.datos.modelos.PendientesDobleFactor
 import com.example.sennaccess.datos.modelos.PeticionAcceso
+import com.example.sennaccess.datos.modelos.PeticionChat
 import com.example.sennaccess.datos.modelos.PeticionActualizarPerfil
 import com.example.sennaccess.datos.modelos.PeticionAmbiente
 import com.example.sennaccess.datos.modelos.PeticionAmbienteAprendiz
@@ -52,6 +53,7 @@ import com.example.sennaccess.datos.modelos.PeticionValidarQr
 import com.example.sennaccess.datos.modelos.PeticionVerificarClave
 import com.example.sennaccess.datos.modelos.Presente
 import com.example.sennaccess.datos.modelos.RespuestaAcceso
+import com.example.sennaccess.datos.modelos.RespuestaChat
 import com.example.sennaccess.datos.modelos.RespuestaEquipo
 import com.example.sennaccess.datos.modelos.RespuestaIngresos
 import com.example.sennaccess.datos.modelos.RespuestaMensaje
@@ -362,4 +364,8 @@ interface ServicioApi {
 
     @GET("admin/excusas")
     suspend fun getExcusasAdmin(@Header("Authorization") auth: String): List<Excusa>
+
+    // ---- Asistente virtual (chatbot IA del sistema) ----
+    @POST("chatbot")
+    suspend fun chatear(@Header("Authorization") auth: String, @Body body: PeticionChat): RespuestaChat
 }

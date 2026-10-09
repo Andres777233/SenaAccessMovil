@@ -62,6 +62,8 @@ import com.example.sennaccess.comun.diseno.ElementoNavegacion
 import com.example.sennaccess.comun.diseno.BotonBordeBrillante
 import com.example.sennaccess.comun.diseno.EsferasBrillo
 import com.example.sennaccess.comun.diseno.MenuPerfilSena
+import com.example.sennaccess.asistente.VistaAsistente
+import com.example.sennaccess.asistente.VistaCarnet
 import com.example.sennaccess.comun.diseno.CabeceraPlegable
 import com.example.sennaccess.comun.diseno.MenuDesplegableVidrio
 import com.example.sennaccess.comun.diseno.BarraSuperiorVidrio
@@ -143,7 +145,8 @@ fun PanelAprendiz(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggleTh
                 onLogout = onCerrarSesion,
                 onPerfil = { currentView = "PERFIL" },
                 onEditarPerfil = { currentView = "EDITAR_PERFIL" },
-
+                onAsistente = { currentView = "ASISTENTE" },
+                onCarnet = { currentView = "CARNET" },
                 onNotificaciones = { currentView = "NOTIFICACIONES" },
                 noLeidas = noLeidas,
                 isDark = isDark,
@@ -180,6 +183,8 @@ fun PanelAprendiz(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggleTh
                     "HISTORIAL" -> VistaHistorial(historial, onReintentar = viewModel::cargarHistorial)
                     "COMPROBANTES" -> VistaComprobantes(comprobantes, onReintentar = viewModel::cargarComprobantes)
                     "MIS_EXCUSAS" -> VistaMisExcusas(onBack = { currentView = "DASHBOARD" })
+                    "ASISTENTE" -> VistaAsistente(onBack = { currentView = "DASHBOARD" })
+                    "CARNET" -> VistaCarnet(perfilEstado = perfil, onBack = { currentView = "DASHBOARD" })
                     "PERFIL" -> PerfilAprendizView(
                         perfil,
                         onBack = { currentView = "DASHBOARD" },
@@ -231,7 +236,8 @@ fun BarraAprendiz(
     onLogout: () -> Unit,
     onPerfil: (() -> Unit)? = null,
     onEditarPerfil: (() -> Unit)? = null,
-
+    onAsistente: (() -> Unit)? = null,
+    onCarnet: (() -> Unit)? = null,
     onNotificaciones: (() -> Unit)? = null,
     noLeidas: Int = 0,
     isDark: Boolean = true,
@@ -251,7 +257,9 @@ fun BarraAprendiz(
                 email = GestorSesion.userEmail ?: "",
                 fotoPath = GestorSesion.userPhoto,
                 onPerfil = onPerfil,
-                onEditarPerfil = onEditarPerfil
+                onEditarPerfil = onEditarPerfil,
+                onAsistente = onAsistente,
+                onCarnet = onCarnet
             )
         },
         onLogout = onLogout

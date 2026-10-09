@@ -43,6 +43,8 @@ import com.example.sennaccess.comun.diseno.BotonCambiarTema
 import com.example.sennaccess.comun.diseno.ElementoNavegacion
 import com.example.sennaccess.comun.diseno.EsferasBrillo
 import com.example.sennaccess.comun.diseno.MenuPerfilSena
+import com.example.sennaccess.asistente.VistaAsistente
+import com.example.sennaccess.asistente.VistaCarnet
 import com.example.sennaccess.comun.diseno.EspaciadoSena
 import com.example.sennaccess.comun.diseno.MenuDesplegableVidrio
 import com.example.sennaccess.comun.diseno.claveNavegacion
@@ -85,7 +87,7 @@ fun PanelPortero(
     fun cargarActual() {
         when (subScreen) {
             "NOTIFICACIONES" -> viewModel.cargarNotificaciones()
-            "PERFIL" -> viewModel.cargarPerfil()
+            "PERFIL", "CARNET" -> viewModel.cargarPerfil()
             else -> when (currentTab) {
                 "INICIO" -> { viewModel.cargarResumen(); viewModel.cargarHistorial() }
                 "VALIDAR" -> { }
@@ -119,6 +121,8 @@ fun PanelPortero(
             BarraPortero(
                 onLogout = onCerrarSesion,
                 onPerfil = { subScreen = "PERFIL"; editandoPerfil = false },
+                onAsistente = { subScreen = "ASISTENTE" },
+                onCarnet = { subScreen = "CARNET" },
                 onNotificaciones = { subScreen = "NOTIFICACIONES" },
                 noLeidas = noLeidas,
                 isDark = isDark,
@@ -160,6 +164,8 @@ fun PanelPortero(
                         )
                     }
                     "VERIFICACION_2FA" -> VistaConfigDobleFactor(onBack = { subScreen = "PERFIL" })
+                    "ASISTENTE" -> VistaAsistente(onBack = { subScreen = null })
+                    "CARNET" -> VistaCarnet(perfilEstado = perfil, onBack = { subScreen = null })
                     "NOTIFICACIONES" -> VistaNotificaciones(
                         estado = notificaciones,
                         onReintentar = viewModel::cargarNotificaciones,
@@ -335,6 +341,8 @@ private fun ContadorPortero(titulo: String, valor: String, modifier: Modifier = 
 private fun BarraPortero(
     onLogout: () -> Unit,
     onPerfil: () -> Unit,
+    onAsistente: () -> Unit = {},
+    onCarnet: () -> Unit = {},
     onNotificaciones: () -> Unit,
     noLeidas: Int,
     isDark: Boolean,
@@ -342,7 +350,7 @@ private fun BarraPortero(
 ) {
     // Barra unificada de los 4 roles: marca + chip de rol + notis + menú perfil.
     com.example.sennaccess.comun.diseno.BarraSuperiorSena(
-        rol = "Portero",
+        rol = "Admin",
         noLeidas = noLeidas,
         isDark = isDark,
         onToggleTheme = onToggleTheme,
@@ -353,7 +361,9 @@ private fun BarraPortero(
                 nombre = com.example.sennaccess.datos.sesion.GestorSesion.userName ?: "Usuario",
                 email = com.example.sennaccess.datos.sesion.GestorSesion.userEmail ?: "",
                 fotoPath = com.example.sennaccess.datos.sesion.GestorSesion.userPhoto,
-                onPerfil = onPerfil
+                onPerfil = onPerfil,
+                onAsistente = onAsistente,
+                onCarnet = onCarnet
             )
         },
         onLogout = onLogout

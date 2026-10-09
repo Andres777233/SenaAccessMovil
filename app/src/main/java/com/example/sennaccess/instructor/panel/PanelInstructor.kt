@@ -70,6 +70,8 @@ import com.example.sennaccess.comun.diseno.ElementoNavegacion
 import com.example.sennaccess.comun.diseno.BotonBordeBrillante
 import com.example.sennaccess.comun.diseno.EsferasBrillo
 import com.example.sennaccess.comun.diseno.MenuPerfilSena
+import com.example.sennaccess.asistente.VistaAsistente
+import com.example.sennaccess.asistente.VistaCarnet
 import com.example.sennaccess.comun.diseno.CabeceraPlegable
 import com.example.sennaccess.comun.diseno.MenuDesplegableVidrio
 import com.example.sennaccess.comun.diseno.BarraSuperiorVidrio
@@ -107,6 +109,7 @@ fun PanelInstructor(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggle
             "MIS_EQUIPOS" -> viewModel.cargarEquipos()
             "PERFIL", "EDITAR_PERFIL" -> viewModel.cargarPerfil()
             "NOTIFICACIONES" -> viewModel.cargarNotificaciones()
+            "CARNET" -> viewModel.cargarPerfil()
             "AMBIENTES" -> {}
         }
     }
@@ -155,6 +158,8 @@ fun PanelInstructor(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggle
                 onLogout = onCerrarSesion,
                 onPerfil = { currentView = "PERFIL" },
                 onEditarPerfil = { currentView = "EDITAR_PERFIL" },
+                onAsistente = { currentView = "ASISTENTE" },
+                onCarnet = { currentView = "CARNET" },
                 onNotificaciones = { currentView = "NOTIFICACIONES" },
                 noLeidas = noLeidas,
                 isDark = isDark,
@@ -203,6 +208,8 @@ fun PanelInstructor(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggle
                     "NOVEDADES" -> VistaNovedades(estado = novedades, onReintentar = viewModel::cargarNovedades)
                     "HISTORIAL" -> VistaHistorialIngresos(historial, onReintentar = viewModel::cargarHistorial)
                     "MIS_EQUIPOS" -> VistaMisEquipos(equipos, onReintentar = viewModel::cargarEquipos)
+                    "ASISTENTE" -> VistaAsistente(onBack = { currentView = "DASHBOARD" })
+                    "CARNET" -> VistaCarnet(perfilEstado = perfil, onBack = { currentView = "DASHBOARD" })
                     "PERFIL" -> VistaPerfilInstructor(
                         perfil,
                         onBack = { currentView = "DASHBOARD" },
@@ -255,6 +262,8 @@ fun BarraInstructor(
     onLogout: () -> Unit,
     onPerfil: (() -> Unit)? = null,
     onEditarPerfil: (() -> Unit)? = null,
+    onAsistente: (() -> Unit)? = null,
+    onCarnet: (() -> Unit)? = null,
     onNotificaciones: (() -> Unit)? = null,
     noLeidas: Int = 0,
     isDark: Boolean,
@@ -274,7 +283,9 @@ fun BarraInstructor(
                 email = com.example.sennaccess.datos.sesion.GestorSesion.userEmail ?: "",
                 fotoPath = com.example.sennaccess.datos.sesion.GestorSesion.userPhoto,
                 onPerfil = onPerfil,
-                onEditarPerfil = onEditarPerfil
+                onEditarPerfil = onEditarPerfil,
+                onAsistente = onAsistente,
+                onCarnet = onCarnet
             )
         },
         onLogout = onLogout

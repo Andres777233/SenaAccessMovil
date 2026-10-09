@@ -1,7 +1,8 @@
 package com.example.sennaccess.datos.sesion
 
 // Normaliza el rol del backend a un valor cerrado.
-// Roles válidos: aprendiz, instructor, admin y portero. Invitado es temporal
+// Roles válidos: aprendiz, instructor, admin (operativo de portería) y
+// superadmin (superusuario total). Invitado es temporal
 // (QR de un solo uso) y nunca navega a un dashboard.
 object RolSeguro {
     // Convierte " Administrador " en "admin" y deja nulo lo desconocido.
@@ -9,8 +10,9 @@ object RolSeguro {
         return when (role?.trim()?.lowercase()) {
             "aprendiz" -> "aprendiz"
             "instructor" -> "instructor"
-            "admin", "administrador" -> "admin"
-            "portero", "portería", "porteria", "celador" -> "portero"
+            "superadmin", "superadministrador", "super admin" -> "superadmin"
+            "admin", "administrador", "administradora" -> "admin"
+            "portero", "portería", "porteria", "celador" -> "admin"
             "invitado", "visitante", "guest" -> "invitado"
             else -> null
         }
@@ -20,7 +22,7 @@ object RolSeguro {
     // Invitado temporal no es válido para dashboard.
     fun esValido(role: String?): Boolean {
         val n = normalizar(role)
-        return n == "aprendiz" || n == "instructor" || n == "admin" || n == "portero"
+        return n == "aprendiz" || n == "instructor" || n == "admin" || n == "superadmin"
     }
 
     // True si el usuario es temporal y no debe listarse en ambientes/equipos.

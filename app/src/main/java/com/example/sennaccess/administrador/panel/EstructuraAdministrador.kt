@@ -92,7 +92,9 @@ fun BarraSuperiorAdmin(
                 nombre = com.example.sennaccess.datos.sesion.GestorSesion.userName ?: "Administrador",
                 email = com.example.sennaccess.datos.sesion.GestorSesion.userEmail ?: "",
                 fotoPath = com.example.sennaccess.datos.sesion.GestorSesion.userPhoto,
-                onPerfil = onNavigate?.let { nav -> { nav(PantallaAdmin.PERFIL) } }
+                onPerfil = onNavigate?.let { nav -> { nav(PantallaAdmin.PERFIL) } },
+                onAsistente = onNavigate?.let { nav -> { nav(PantallaAdmin.ASISTENTE) } },
+                onCarnet = onNavigate?.let { nav -> { nav(PantallaAdmin.CARNET) } }
             )
         },
         onLogout = onLogout

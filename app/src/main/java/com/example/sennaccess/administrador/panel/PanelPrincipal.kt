@@ -34,7 +34,7 @@ import com.example.sennaccess.comun.tema.verdeMarca
 enum class PantallaAdmin { PANEL, USUARIOS, CREAR_USUARIO, ACTUALIZAR_USUARIO,
     ACCESO_APRENDICES, ACCESO_INSTRUCTORES, REPORTE_NOVEDADES, PERFIL,
     EQUIPOS, NOTIFICACIONES, AMBIENTES, VALIDAR_EXCUSA, VERIFICACION_2FA,
-    ESCANEAR_QR }
+    ESCANEAR_QR, ASISTENTE, CARNET }
 
 @Composable
 fun ResumenPanelAdmin(resumen: EstadoCarga<List<Ingreso>>, onReintentar: () -> Unit) {

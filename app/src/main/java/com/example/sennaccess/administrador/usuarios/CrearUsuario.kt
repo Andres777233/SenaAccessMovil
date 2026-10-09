@@ -97,11 +97,11 @@ fun ContenidoCrearUsuario(
                 if (rolId == null || rolId == 0) {
                     rolId = try {
                         RepositorioUsuarios().getRoles(token)
-                            .firstOrNull { it.rol_name.equals("portero", ignoreCase = true) }?.id_rol
+                            .firstOrNull { it.rol_name.equals("admin", ignoreCase = true) }?.id_rol
                     } catch (_: Exception) { null }
                     if (rolId == null) {
                         guardando = false
-                        errorMsj = "El servidor aún no tiene el rol Portero: publica el proyecto WEB (migrate --seed) e inténtalo de nuevo."
+                        errorMsj = "El servidor aún no tiene el rol Admin: publica el proyecto WEB (migrate --seed) e inténtalo de nuevo."
                         return@launch
                     }
                 }
@@ -240,8 +240,8 @@ fun ContenidoCrearUsuario(
                 // aún no lo expone se ofrece local y su id se resuelve al guardar.
                 EstadoContenido(estado = roles, onReintentar = onReintentarRoles) { listaRoles ->
                     val rolesVisibles = remember(listaRoles) {
-                        if (listaRoles.none { it.rol_name.equals("portero", ignoreCase = true) })
-                            listaRoles + Rol(id_rol = 0, rol_name = "Portero")
+                        if (listaRoles.none { it.rol_name.equals("admin", ignoreCase = true) })
+                            listaRoles + Rol(id_rol = 0, rol_name = "Admin")
                         else listaRoles
                     }
                     Box(modifier = Modifier.fillMaxWidth()) {
@@ -276,12 +276,12 @@ fun ContenidoCrearUsuario(
                             }
                         }
                     }
-                    // Aviso cuando el servidor aún no tiene el rol Portero: sin él,
+                    // Aviso cuando el servidor aún no tiene el rol Admin: sin él,
                     // asignar portería es imposible (el id 4 del servidor es Invitado).
-                    if (listaRoles.none { it.rol_name.equals("portero", ignoreCase = true) }) {
+                    if (listaRoles.none { it.rol_name.equals("admin", ignoreCase = true) }) {
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            "El servidor aún no tiene el rol Portero: créalo en el proyecto WEB (tabla roles + permisos de portería) y aparecerá aquí.",
+                            "El servidor aún no tiene el rol Admin: créalo en el proyecto WEB (tabla roles + permisos de portería) y aparecerá aquí.",
                             color = colors.textSecondary, fontSize = 12.sp, modifier = Modifier.fillMaxWidth()
                         )
                     }

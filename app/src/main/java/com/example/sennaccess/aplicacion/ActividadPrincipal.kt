@@ -127,8 +127,8 @@ class ActividadPrincipal : AppCompatActivity() {
                             when (RolSeguro.normalizar(GestorSesion.userRole)) {
                                 "aprendiz" -> irA("aprendiz_dashboard")
                                 "instructor" -> irA("instructor_dashboard")
-                                "admin" -> irA("admin")
-                                "portero" -> irA("portero_dashboard")
+                                "superadmin" -> irA("admin")
+                                "admin" -> irA("portero_dashboard")
                                 else -> irA("login")
                             }
                         } else {
@@ -181,8 +181,8 @@ class ActividadPrincipal : AppCompatActivity() {
                                     when (RolSeguro.normalizar(role)) {
                                         "aprendiz" -> irA("aprendiz_dashboard")
                                         "instructor" -> irA("instructor_dashboard")
-                                        "admin" -> irA("admin")
-                                        "portero" -> irA("portero_dashboard")
+                                        "superadmin" -> irA("admin")
+                                        "admin" -> irA("portero_dashboard")
                                         else -> Unit
                                     }
                                 },

@@ -95,11 +95,11 @@ fun ContenidoUsuarios(
                 onEditar = { onEditarUsuario(it) },
                 onBorrar = { usuarioAEliminar = it; errorEliminar = null }
             )
-            "PORTEROS" -> VistaListaUsuarios(
-                titulo = "Porteros",
+            "ADMINS" -> VistaListaUsuarios(
+                titulo = "Admins",
                 icono = Icons.Default.Shield,
                 estado = uiState,
-                rol = "Portero",
+                rol = "Admin",
                 busqueda = busqueda,
                 onBusqueda = { busqueda = it },
                 onBack = { vista = ""; busqueda = "" },
@@ -125,7 +125,7 @@ fun ContenidoUsuarios(
                 estado = uiState,
                 onInstructores = { vista = "INSTRUCTORES"; busqueda = "" },
                 onAprendices = { vista = "APRENDICES"; busqueda = "" },
-                onPorteros = { vista = "PORTEROS"; busqueda = "" },
+                onPorteros = { vista = "ADMINS"; busqueda = "" },
                 onInvitados = { vista = "INVITADOS"; busqueda = "" }
             )
         }
@@ -174,7 +174,7 @@ private fun MenuUsuarios(
     val datos = (estado as? EstadoCarga.Success)?.datos.orEmpty()
     val nIns = datos.count { it.role?.rol_name.equals("Instructor", ignoreCase = true) }
     val nApr = datos.count { it.role?.rol_name.equals("Aprendiz", ignoreCase = true) }
-    val nPor = datos.count { it.role?.rol_name.equals("Portero", ignoreCase = true) }
+    val nPor = datos.count { it.role?.rol_name.equals("Admin", ignoreCase = true) }
     val nInv = datos.count { it.esInvitado() }
     Column(
         modifier = Modifier
@@ -187,7 +187,7 @@ private fun MenuUsuarios(
         Spacer(modifier = Modifier.height(4.dp))
         Text("Usuarios", color = colors.textPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp)
         Text(
-            if (estado is EstadoCarga.Loading) "Cargando personal..." else "${datos.size} registrados • $nIns instructores • $nApr aprendices • $nPor porteros • $nInv invitados",
+            if (estado is EstadoCarga.Loading) "Cargando personal..." else "${datos.size} registrados • $nIns instructores • $nApr aprendices • $nPor admins • $nInv invitados",
             color = colors.textSecondary, fontSize = 12.sp
         )
         Spacer(modifier = Modifier.height(14.dp))
@@ -208,8 +208,8 @@ private fun MenuUsuarios(
         )
         Spacer(modifier = Modifier.height(12.dp))
         CategoriaUsuarioCard(
-            titulo = "Porteros",
-            descripcion = "Control de accesos y recepción",
+            titulo = "Admins",
+            descripcion = "Operativos de portería",
             conteo = if (estado is EstadoCarga.Loading) "…" else "$nPor registrados",
             icono = Icons.Default.Shield,
             onClick = onPorteros

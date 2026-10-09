@@ -27,6 +27,8 @@ import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
@@ -394,7 +396,9 @@ fun ColumnScope.MenuPerfilSena(
     email: String,
     fotoPath: String?,
     onPerfil: (() -> Unit)? = null,
-    onEditarPerfil: (() -> Unit)? = null
+    onEditarPerfil: (() -> Unit)? = null,
+    onAsistente: (() -> Unit)? = null,
+    onCarnet: (() -> Unit)? = null
 ) {
     val colors = ColoresAppLocal.current
     // Hero de cuenta: solo informa quién está dentro, no navega.
@@ -467,6 +471,68 @@ fun ColumnScope.MenuPerfilSena(
                 Icon(Icons.Default.ChevronRight, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(18.dp))
             },
             onClick = { cerrar(); irPerfil() },
+            modifier = Modifier.heightIn(min = 60.dp)
+        )
+    }
+    if (onAsistente != null) {
+        DropdownMenuItem(
+            text = {
+                Column {
+                    Text("Asistente", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    Text("Pregunta sobre el sistema", color = colors.textSecondary, fontSize = 12.sp)
+                }
+            },
+            leadingIcon = {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(VerdeSena.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Chat,
+                        contentDescription = null,
+                        tint = verdeMarca(),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            },
+            trailingIcon = {
+                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(18.dp))
+            },
+            onClick = { cerrar(); onAsistente() },
+            modifier = Modifier.heightIn(min = 60.dp)
+        )
+    }
+    if (onCarnet != null) {
+        DropdownMenuItem(
+            text = {
+                Column {
+                    Text("Mi carnet", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    Text("Tu QR de identificación", color = colors.textSecondary, fontSize = 12.sp)
+                }
+            },
+            leadingIcon = {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(VerdeSena.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Badge,
+                        contentDescription = null,
+                        tint = verdeMarca(),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            },
+            trailingIcon = {
+                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(18.dp))
+            },
+            onClick = { cerrar(); onCarnet() },
             modifier = Modifier.heightIn(min = 60.dp)
         )
     }

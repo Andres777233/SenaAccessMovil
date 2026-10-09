@@ -404,3 +404,20 @@ data class ConteoNoLeidas(
 data class RespuestaMensaje(
     val message: String? = null
 )
+
+// Mensaje enviado al asistente virtual (POST /api/chatbot).
+data class PeticionChat(
+    @SerializedName("message") val message: String
+)
+
+// Respuesta del asistente: texto o error del servidor.
+data class RespuestaChat(
+    @SerializedName("reply") val reply: String? = null,
+    @SerializedName("error") val error: String? = null
+)
+
+// Mensaje del chat en memoria.
+data class MensajeChat(
+    val texto: String,
+    val esUsuario: Boolean
+)

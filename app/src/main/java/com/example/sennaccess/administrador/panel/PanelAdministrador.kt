@@ -18,6 +18,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.sennaccess.perfil.VistaEditarPerfil
+import com.example.sennaccess.asistente.VistaAsistente
+import com.example.sennaccess.asistente.VistaCarnet
 import com.example.sennaccess.autenticacion.invitado.EscanearQrInvitado
 import com.example.sennaccess.datos.modelos.Notificacion
 import com.example.sennaccess.datos.modelos.Novedad
@@ -75,7 +77,7 @@ fun PanelAdministrador(
     fun cargarActual() {
         when (subScreen) {
             PantallaAdmin.NOTIFICACIONES -> viewModel.cargarNotificaciones()
-            PantallaAdmin.PERFIL -> viewModel.cargarPerfil()
+            PantallaAdmin.PERFIL, PantallaAdmin.CARNET -> viewModel.cargarPerfil()
             else -> when (currentTab) {
                 "INICIO" -> viewModel.cargarResumen()
                 "NOVEDADES" -> viewModel.cargarNovedades()
@@ -124,6 +126,8 @@ fun PanelAdministrador(
             PantallaAdmin.NOTIFICACIONES -> subScreen = PantallaAdmin.NOTIFICACIONES
             PantallaAdmin.AMBIENTES -> { currentTab = "AMBIENTES"; subScreen = null }
             PantallaAdmin.ESCANEAR_QR -> subScreen = PantallaAdmin.ESCANEAR_QR
+            PantallaAdmin.ASISTENTE -> subScreen = PantallaAdmin.ASISTENTE
+            PantallaAdmin.CARNET -> subScreen = PantallaAdmin.CARNET
             PantallaAdmin.VERIFICACION_2FA -> subScreen = PantallaAdmin.VERIFICACION_2FA
             // EQUIPOS, HISTORIAL y VALIDAR_EXCUSA ahora son del rol PORTERO.
             PantallaAdmin.EQUIPOS -> { currentTab = "INICIO"; subScreen = null }
@@ -228,6 +232,8 @@ fun PanelAdministrador(
                         onBack = { subScreen = null }
                     )
                     PantallaAdmin.ESCANEAR_QR -> EscanearQrInvitado(onVolver = { subScreen = null })
+                    PantallaAdmin.ASISTENTE -> VistaAsistente(onBack = { subScreen = null })
+                    PantallaAdmin.CARNET -> VistaCarnet(perfilEstado = perfil, onBack = { subScreen = null })
                     // AMBIENTES/EQUIPOS/VALIDAR como subScreen legacy: redirigen a su tab real.
                     PantallaAdmin.AMBIENTES, PantallaAdmin.EQUIPOS, PantallaAdmin.VALIDAR_EXCUSA -> {
                         LaunchedEffect(Unit) { currentTab = "AMBIENTES"; subScreen = null }

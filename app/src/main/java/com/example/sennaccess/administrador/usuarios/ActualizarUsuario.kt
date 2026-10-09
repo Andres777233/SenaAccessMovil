@@ -101,11 +101,11 @@ fun ContenidoActualizarUsuario(
                 if (rolId == null || rolId == 0) {
                     rolId = try {
                         RepositorioUsuarios().getRoles(token)
-                            .firstOrNull { it.rol_name.equals("portero", ignoreCase = true) }?.id_rol
+                            .firstOrNull { it.rol_name.equals("admin", ignoreCase = true) }?.id_rol
                     } catch (_: Exception) { null }
                     if (rolId == null) {
                         guardando = false
-                        errorMsj = "El servidor aún no tiene el rol Portero: publica el proyecto WEB (migrate --seed) e inténtalo de nuevo."
+                        errorMsj = "El servidor aún no tiene el rol Admin: publica el proyecto WEB (migrate --seed) e inténtalo de nuevo."
                         return@launch
                     }
                 }
@@ -236,8 +236,8 @@ fun ContenidoActualizarUsuario(
                 Spacer(modifier = Modifier.height(8.dp))
                 EstadoContenido(estado = roles, onReintentar = onReintentarRoles) { listaRoles ->
                     val rolesVisibles = remember(listaRoles, usuario.role) {
-                        val base = if (listaRoles.none { it.rol_name.equals("portero", ignoreCase = true) })
-                            listaRoles + Rol(id_rol = 0, rol_name = "Portero")
+                        val base = if (listaRoles.none { it.rol_name.equals("admin", ignoreCase = true) })
+                            listaRoles + Rol(id_rol = 0, rol_name = "Admin")
                         else listaRoles
                         // El rol actual del usuario siempre visible aunque el
                         // servidor ya no lo liste (evita dropdown vacío).

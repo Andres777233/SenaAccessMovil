@@ -17,7 +17,7 @@ object DatosSimulados {
     val rolAprendiz = Rol(id_rol = 3, rol_name = "Aprendiz")
     // Rol operativo de recepción. Si el backend aún no lo expone en GET
     // /admin/roles, la app lo añade como opción (requiere crearlo en el WEB).
-    val rolPortero = Rol(id_rol = 4, rol_name = "Portero")
+    val rolPortero = Rol(id_rol = 4, rol_name = "Admin")
 
     val usuarios = listOf(
         UsuarioApi(id_usuario = 1, user_identification = "1000000000", user_name = "admin", user_lastname = "System", user_email = "admin@sena.edu.co", user_coursenumber = 0, user_program = "Administration", user_documento_tipo = "CC", user_telefono = null, fk_id_rol = 1, profile_photo_path = null, role = rolAdmin),
