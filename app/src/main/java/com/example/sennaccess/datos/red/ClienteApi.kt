@@ -14,7 +14,7 @@ import com.example.sennaccess.datos.sesion.GestorSesion
 
 object ClienteApi {
 
-    private const val BASE_URL_REMOTE = "https://senaaccessweb-production-4c6e.up.railway.app/api/"
+    private const val BASE_URL_REMOTE = "https://senaaccessweb-production-05d4.up.railway.app/api/"
 
     // Sin cuerpos en el log: BASIC registra URL y código sin exponer
     // contraseñas, tokens ni códigos 2FA aunque el APK sea debug.
