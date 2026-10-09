@@ -57,6 +57,8 @@ import com.example.sennaccess.datos.modelos.RespuestaChat
 import com.example.sennaccess.datos.modelos.RespuestaEquipo
 import com.example.sennaccess.datos.modelos.RespuestaIngresos
 import com.example.sennaccess.datos.modelos.RespuestaMensaje
+import com.example.sennaccess.datos.modelos.PeticionValidarAcceso
+import com.example.sennaccess.datos.modelos.RespuestaValidarAcceso
 import com.example.sennaccess.datos.modelos.RespuestaPaginaSugerencias
 import com.example.sennaccess.datos.modelos.RespuestaQrInvitado
 import com.example.sennaccess.datos.modelos.RespuestaRegistro
@@ -368,4 +370,8 @@ interface ServicioApi {
     // ---- Asistente virtual (chatbot IA del sistema) ----
     @POST("chatbot")
     suspend fun chatear(@Header("Authorization") auth: String, @Body body: PeticionChat): RespuestaChat
+
+    // ---- QR de acceso de portería (entrada/salida al historial) ----
+    @POST("acceso/validar")
+    suspend fun validarAcceso(@Header("Authorization") auth: String, @Body body: PeticionValidarAcceso): RespuestaValidarAcceso
 }

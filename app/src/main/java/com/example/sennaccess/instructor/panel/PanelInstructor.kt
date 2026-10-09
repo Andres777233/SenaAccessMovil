@@ -72,6 +72,7 @@ import com.example.sennaccess.comun.diseno.EsferasBrillo
 import com.example.sennaccess.comun.diseno.MenuPerfilSena
 import com.example.sennaccess.asistente.VistaAsistente
 import com.example.sennaccess.asistente.VistaCarnet
+import com.example.sennaccess.excusas.MarcarAcceso
 import com.example.sennaccess.comun.diseno.CabeceraPlegable
 import com.example.sennaccess.comun.diseno.MenuDesplegableVidrio
 import com.example.sennaccess.comun.diseno.BarraSuperiorVidrio
@@ -208,6 +209,7 @@ fun PanelInstructor(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggle
                     "NOVEDADES" -> VistaNovedades(estado = novedades, onReintentar = viewModel::cargarNovedades)
                     "HISTORIAL" -> VistaHistorialIngresos(historial, onReintentar = viewModel::cargarHistorial)
                     "MIS_EQUIPOS" -> VistaMisEquipos(equipos, onReintentar = viewModel::cargarEquipos)
+                    "MARCAR_ACCESO" -> MarcarAcceso(onBack = { currentView = "DASHBOARD" })
                     "ASISTENTE" -> VistaAsistente(onBack = { currentView = "DASHBOARD" })
                     "CARNET" -> VistaCarnet(perfilEstado = perfil, onBack = { currentView = "DASHBOARD" })
                     "PERFIL" -> VistaPerfilInstructor(
@@ -245,6 +247,7 @@ fun PanelInstructor(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggle
                 ElementoNavegacion("DASHBOARD", Icons.Default.Home, "Inicio"),
                 ElementoNavegacion("AMBIENTES", Icons.Default.MeetingRoom, "Ambientes"),
                 ElementoNavegacion("NOVEDADES", Icons.Default.ReportProblem, "Novedades"),
+                ElementoNavegacion("MARCAR_ACCESO", Icons.Default.QrCode2, "Marcar"),
                 ElementoNavegacion("HISTORIAL", Icons.Default.History, "Historial"),
                 ElementoNavegacion("MIS_EQUIPOS", Icons.Default.Devices, "Equipos")
             ),

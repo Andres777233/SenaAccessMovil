@@ -64,6 +64,7 @@ import com.example.sennaccess.comun.diseno.EsferasBrillo
 import com.example.sennaccess.comun.diseno.MenuPerfilSena
 import com.example.sennaccess.asistente.VistaAsistente
 import com.example.sennaccess.asistente.VistaCarnet
+import com.example.sennaccess.excusas.MarcarAcceso
 import com.example.sennaccess.comun.diseno.CabeceraPlegable
 import com.example.sennaccess.comun.diseno.MenuDesplegableVidrio
 import com.example.sennaccess.comun.diseno.BarraSuperiorVidrio
@@ -182,6 +183,7 @@ fun PanelAprendiz(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggleTh
                     )
                     "HISTORIAL" -> VistaHistorial(historial, onReintentar = viewModel::cargarHistorial)
                     "COMPROBANTES" -> VistaComprobantes(comprobantes, onReintentar = viewModel::cargarComprobantes)
+                    "MARCAR_ACCESO" -> MarcarAcceso(onBack = { currentView = "DASHBOARD" })
                     "MIS_EXCUSAS" -> VistaMisExcusas(onBack = { currentView = "DASHBOARD" })
                     "ASISTENTE" -> VistaAsistente(onBack = { currentView = "DASHBOARD" })
                     "CARNET" -> VistaCarnet(perfilEstado = perfil, onBack = { currentView = "DASHBOARD" })
@@ -219,6 +221,7 @@ fun PanelAprendiz(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggleTh
             items = listOf(
                 ElementoNavegacion("DASHBOARD", Icons.Default.Home, "Inicio"),
                 ElementoNavegacion("MIS_EXCUSAS", Icons.Default.Assignment, "Excusas"),
+                ElementoNavegacion("MARCAR_ACCESO", Icons.Default.QrCode2, "Marcar"),
                 ElementoNavegacion("HISTORIAL", Icons.Default.History, "Historial"),
                 ElementoNavegacion("COMPROBANTES", Icons.Default.Devices, "Equipos")
             ),

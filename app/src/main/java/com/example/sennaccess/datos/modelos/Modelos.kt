@@ -405,6 +405,17 @@ data class RespuestaMensaje(
     val message: String? = null
 )
 
+// QR de acceso de portería: payload firmado que se valida en el servidor.
+data class PeticionValidarAcceso(
+    @SerializedName("qr_payload") val qr_payload: String
+)
+
+// Respuesta al marcar entrada/salida con el QR de portería.
+data class RespuestaValidarAcceso(
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("duplicado") val duplicado: Boolean? = null
+)
+
 // Mensaje enviado al asistente virtual (POST /api/chatbot).
 data class PeticionChat(
     @SerializedName("message") val message: String

@@ -3,8 +3,8 @@ package com.example.sennaccess.autenticacion.registro
 // Pantalla de registro de nuevas cuentas: captura datos personales, académicos y
 // de seguridad organizados en secciones. Al pulsar REGISTRARSE exige primero una
 // verificación biométrica (huella) y luego envía los datos al backend
-// (POST /api/register); en caso de éxito muestra el aviso de solicitud enviada y
-// regresa al login.
+// (POST /api/register); en caso de éxito muestra el aviso de cuenta en espera
+// (el superadmin debe aprobarla) y regresa al login.
 // Desde aquí se regresa al login con onBackToLogin.
 
 import androidx.compose.foundation.layout.*
@@ -395,11 +395,11 @@ fun PantallaRegistro(onBackToLogin: () -> Unit, isDark: Boolean = true, onToggle
             shape = RoundedCornerShape(28.dp),
             icon = { Icon(Icons.Default.CheckCircle, contentDescription = "Cuenta creada", tint = VerdeSena, modifier = Modifier.size(40.dp)) },
             title = {
-                Text("Cuenta creada", color = colors.textPrimary, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                Text("Solicitud enviada", color = colors.textPrimary, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
             },
             text = {
                 Text(
-                    "¡Cuenta creada correctamente! Ya puedes iniciar sesión con tu correo y contraseña. Te llegó un correo con un enlace para verificar tu cuenta (revisa la bandeja de entrada y de correo no deseado).",
+                    "Tu cuenta está en espera por el superadmin. Te avisaremos al correo cuando sea aprobada y puedas iniciar sesión.",
                     color = colors.textSecondary
                 )
             },
