@@ -399,7 +399,7 @@ fun PantallaRegistro(onBackToLogin: () -> Unit, isDark: Boolean = true, onToggle
             },
             text = {
                 Text(
-                    "Tu cuenta está en espera por el superadmin. Te avisaremos al correo cuando sea aprobada y puedas iniciar sesión.",
+                    "Tu cuenta está en espera. El sistema se encargará de aprobar tu solicitud y te avisaremos al correo cuando puedas iniciar sesión.",
                     color = colors.textSecondary
                 )
             },

@@ -221,7 +221,7 @@ fun PanelAprendiz(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggleTh
             items = listOf(
                 ElementoNavegacion("DASHBOARD", Icons.Default.Home, "Inicio"),
                 ElementoNavegacion("MIS_EXCUSAS", Icons.Default.Assignment, "Excusas"),
-                ElementoNavegacion("MARCAR_ACCESO", Icons.Default.QrCode2, "Marcar"),
+                ElementoNavegacion("MARCAR_ACCESO", Icons.Default.QrCode2, "Ingreso"),
                 ElementoNavegacion("HISTORIAL", Icons.Default.History, "Historial"),
                 ElementoNavegacion("COMPROBANTES", Icons.Default.Devices, "Equipos")
             ),

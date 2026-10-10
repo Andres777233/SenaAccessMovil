@@ -80,7 +80,7 @@ class ActividadPrincipal : AppCompatActivity() {
                     val pilaRetroceso = remember { ArrayDeque<String>() }
                     fun irA(destino: String) {
                         if (currentScreen == destino) return
-                        if (destino == "aprendiz_dashboard" || destino == "instructor_dashboard" || destino == "admin" || destino == "portero_dashboard") {
+                        if (destino == "aprendiz_dashboard" || destino == "instructor_dashboard" || destino == "admin" || destino == "portero_dashboard" || destino == "puerta_acceso") {
                             pilaRetroceso.clear()
                         } else {
                             pilaRetroceso.addLast(currentScreen)
@@ -114,7 +114,7 @@ class ActividadPrincipal : AppCompatActivity() {
                     // Guardia de autenticación: un dashboard sin token nunca se pinta.
                     // Cubre proceso restaurado y sesión expirada por 401.
                     LaunchedEffect(currentScreen) {
-                        if (GestorSesion.token == null && (currentScreen == "aprendiz_dashboard" || currentScreen == "instructor_dashboard" || currentScreen == "admin" || currentScreen == "portero_dashboard")) {
+                        if (GestorSesion.token == null && (currentScreen == "aprendiz_dashboard" || currentScreen == "instructor_dashboard" || currentScreen == "admin" || currentScreen == "portero_dashboard" || currentScreen == "puerta_acceso")) {
                             pilaRetroceso.clear()
                             currentScreen = "landing"
                         }
@@ -179,8 +179,7 @@ class ActividadPrincipal : AppCompatActivity() {
                                 onNavigateToRecovery = { irA("recovery") },
                                 onLoginSuccess = { role ->
                                     when (RolSeguro.normalizar(role)) {
-                                        "aprendiz" -> irA("aprendiz_dashboard")
-                                        "instructor" -> irA("instructor_dashboard")
+                                        "aprendiz", "instructor" -> irA("puerta_acceso")
                                         "superadmin" -> irA("admin")
                                         "admin" -> irA("portero_dashboard")
                                         else -> Unit
@@ -209,6 +208,18 @@ class ActividadPrincipal : AppCompatActivity() {
                                 onBackToLogin = { irA("login") },
                                 isDark = isDark,
                                 onToggleTheme = { isDark = !isDark }
+                            )
+                            "puerta_acceso" -> com.example.sennaccess.excusas.PuertaAcceso(
+                                onEntrar = {
+                                    when (RolSeguro.normalizar(GestorSesion.userRole)) {
+                                        "aprendiz" -> irA("aprendiz_dashboard")
+                                        "instructor" -> irA("instructor_dashboard")
+                                        "superadmin" -> irA("admin")
+                                        "admin" -> irA("portero_dashboard")
+                                        else -> irA("login")
+                                    }
+                                },
+                                onSalir = cerrarSesion
                             )
                             "aprendiz_dashboard" -> PanelAprendiz(
                                 onCerrarSesion = cerrarSesion,

@@ -118,7 +118,7 @@ fun VistaDetalleAmbiente(
             IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) { Icon(Icons.Default.ArrowBack, null, tint = colors.textPrimary) }
             Column(modifier = Modifier.weight(1f)) {
                 Text(ambiente.ambiente_nombre ?: "Ambiente", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 20.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text("Detalle del salón", color = colors.textSecondary, fontSize = 12.sp)
+                Text("Detalle del ambiente", color = colors.textSecondary, fontSize = 12.sp)
             }
             IconButton(onClick = { scope.launch { cargarAprendices() } }, modifier = Modifier.size(48.dp)) { Icon(Icons.Default.Refresh, null, tint = colors.textSecondary) }
         }
@@ -283,6 +283,8 @@ fun VistaDetalleAmbiente(
     if (mostrarAgregar) {
         var busquedaAgregar by remember { mutableStateOf("") }
         var filtroNuevo by remember { mutableStateOf(0) }
+        var criterioBusq by remember { mutableStateOf(0) }
+        val criteriosBusq = listOf("Nombre", "Documento", "Ficha", "Teléfono", "Correo")
         AlertDialog(
             onDismissRequest = { mostrarAgregar = false; errorAgregar = null; seleccionado = null },
             containerColor = colors.cardBackground.copy(alpha = 0.98f),
@@ -297,16 +299,28 @@ fun VistaDetalleAmbiente(
                         color = colors.textSecondary, fontSize = 12.sp
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FiltroSena(texto = "Todos", seleccionado = filtroNuevo == 0, onClick = { filtroNuevo = 0 })
-                        FiltroSena(texto = "Nuevos (sin ficha)", seleccionado = filtroNuevo == 1, onClick = { filtroNuevo = 1 })
-                        FiltroSena(texto = "Con ficha", seleccionado = filtroNuevo == 2, onClick = { filtroNuevo = 2 })
+                    androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        item {
+                            FiltroSena(texto = "Todos", seleccionado = filtroNuevo == 0, onClick = { filtroNuevo = 0 })
+                        }
+                        item {
+                            FiltroSena(texto = "Sin ficha", seleccionado = filtroNuevo == 1, onClick = { filtroNuevo = 1 })
+                        }
+                        item {
+                            FiltroSena(texto = "Con ficha", seleccionado = filtroNuevo == 2, onClick = { filtroNuevo = 2 })
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(criteriosBusq.size) { i ->
+                            FiltroSena(texto = criteriosBusq[i], seleccionado = criterioBusq == i, onClick = { criterioBusq = i; seleccionado = null })
+                        }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = busquedaAgregar,
                         onValueChange = { busquedaAgregar = it; seleccionado = null },
-                        label = { Text("Buscar por nombre o cédula") },
+                        label = { Text("Buscar por ${criteriosBusq[criterioBusq].lowercase()}") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp)
@@ -319,9 +333,13 @@ fun VistaDetalleAmbiente(
                             else -> true
                         }
                         val q = busquedaAgregar.trim()
-                        porFiltro && (q.isBlank() ||
-                            ap.nombreCompleto.contains(q, ignoreCase = true) ||
-                            (ap.user_identification ?: "").contains(q))
+                        porFiltro && (q.isBlank() || when (criterioBusq) {
+                            1 -> (ap.user_identification ?: "").contains(q, ignoreCase = true)
+                            2 -> (ap.user_coursenumber?.toString() ?: "").contains(q)
+                            3 -> (ap.user_telefono ?: "").contains(q)
+                            4 -> (ap.user_email ?: "").contains(q, ignoreCase = true)
+                            else -> ap.nombreCompleto.contains(q, ignoreCase = true)
+                        })
                     }
                     if (listaFiltrada.isEmpty()) {
                         Text(
@@ -391,7 +409,7 @@ fun VistaDetalleAmbiente(
             title = { Text("¿Quitar aprendiz?", color = colors.textPrimary, fontWeight = FontWeight.Bold) },
             text = {
                 Column {
-                    Text("Se quitará a ${ap.nombreCompleto} de \"${ambiente.ambiente_nombre}\". No se elimina su cuenta, solo la matrícula en este salón.", color = colors.textSecondary)
+                    Text("Se quitará a ${ap.nombreCompleto} de \"${ambiente.ambiente_nombre}\". No se elimina su cuenta, solo la matrícula en este ambiente.", color = colors.textSecondary)
                     if (errorQuitar != null) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(errorQuitar!!, color = RojoError, fontSize = 12.sp)

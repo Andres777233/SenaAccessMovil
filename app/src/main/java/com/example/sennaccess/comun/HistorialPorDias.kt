@@ -39,7 +39,9 @@ private val patronFecha = Regex("""(\d{4})-(\d{2})-(\d{2})""")
 
 fun diaClaveHistorial(iso: String?): String {
     if (iso.isNullOrBlank()) return "sin-fecha"
-    return patronFecha.find(iso)?.value ?: "sin-fecha"
+    // Clave por día Bogotá (no substring): un ISO con Z u offset cae en su día real.
+    val d = com.example.sennaccess.comun.calBogota(iso) ?: return patronFecha.find(iso)?.value ?: "sin-fecha"
+    return String.format(Locale.US, "%04d-%02d-%02d", d.get(Calendar.YEAR), d.get(Calendar.MONTH) + 1, d.get(Calendar.DAY_OF_MONTH))
 }
 
 fun tituloDiaHistorial(clave: String): String {
@@ -126,7 +128,9 @@ fun HistorialPorDias(
                 confirmButton = {
                     TextButton(onClick = {
                         pickerState.selectedDateMillis?.let { ms ->
-                            val cal = Calendar.getInstance(TimeZone.getTimeZone("America/Bogota")).apply { timeInMillis = ms }
+                            // El picker entrega medianoche UTC del día elegido: se lee
+                            // en UTC para no retroceder un día (era Bogotá -5h).
+                            val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = ms }
                             fechaElegida = String.format(Locale.US, "%04d-%02d-%02d", cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH))
                         }
                         mostrarCalendario = false

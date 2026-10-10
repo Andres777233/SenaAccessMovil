@@ -247,7 +247,7 @@ fun PanelInstructor(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggle
                 ElementoNavegacion("DASHBOARD", Icons.Default.Home, "Inicio"),
                 ElementoNavegacion("AMBIENTES", Icons.Default.MeetingRoom, "Ambientes"),
                 ElementoNavegacion("NOVEDADES", Icons.Default.ReportProblem, "Novedades"),
-                ElementoNavegacion("MARCAR_ACCESO", Icons.Default.QrCode2, "Marcar"),
+                ElementoNavegacion("MARCAR_ACCESO", Icons.Default.QrCode2, "Ingreso"),
                 ElementoNavegacion("HISTORIAL", Icons.Default.History, "Historial"),
                 ElementoNavegacion("MIS_EQUIPOS", Icons.Default.Devices, "Equipos")
             ),

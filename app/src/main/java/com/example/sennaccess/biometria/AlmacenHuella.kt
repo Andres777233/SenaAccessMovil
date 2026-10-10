@@ -22,12 +22,29 @@ object AlmacenHuella {
 
     private const val ALIAS = "sennaccess_huella_key"
     private const val PREFS = "huella_store"
+    private const val PREFS_AJUSTES = "huella_ajustes"
     private const val KEY_CIFRADO = "cred_cifrado"
     private const val KEY_IV = "cred_iv"
     private const val KEY_DUENO = "cred_dueno_email"
 
     private fun prefs(context: Context) =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+
+    private fun prefsAjustes(context: Context) =
+        context.getSharedPreferences(PREFS_AJUSTES, Context.MODE_PRIVATE)
+
+    private fun claveDecision(email: String) =
+        "no_preguntar_" + email.trim().lowercase()
+
+    // "Ahora no" persistido por cuenta: no volver a ofrecer la huella en este
+    // teléfono salvo cuenta nueva, reinstalación o borrado de la huella.
+    fun noPreguntarMas(context: Context, email: String) {
+        prefsAjustes(context).edit().putBoolean(claveDecision(email), true).apply()
+    }
+
+    // True si se puede ofrecer registrar la huella a esta cuenta.
+    fun preguntarHuella(context: Context, email: String): Boolean =
+        !prefsAjustes(context).getBoolean(claveDecision(email), false)
 
     private fun nuevoCipher(): Cipher = Cipher.getInstance(
         KeyProperties.KEY_ALGORITHM_AES + "/" +
@@ -97,6 +114,8 @@ object AlmacenHuella {
             .putString(KEY_IV, Base64.encodeToString(cipher.iv, Base64.NO_WRAP))
             .putString(KEY_DUENO, email.trim().lowercase())
             .apply()
+        // Al registrar se olvida el "ahora no" previo de esta cuenta.
+        prefsAjustes(context).edit().remove(claveDecision(email)).apply()
     }
 
     // Correo dueño de la huella guardada, o null si no hay.

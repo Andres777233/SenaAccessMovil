@@ -346,7 +346,7 @@ fun PantallaAcceso(
                                 onLoginSuccess(res.role ?: "")
                             }
                         }
-                    } else if (!askSaveBiometric) {
+                    } else if (!askSaveBiometric && AlmacenHuella.preguntarHuella(context, correoSesion)) {
                         LaunchedEffect(res) {
                             if (yaTieneHuella && !huellaEsDeEstaCuenta) {
                                 AlmacenHuella.borrar(context)
@@ -356,10 +356,20 @@ fun PantallaAcceso(
                             }
                             askSaveBiometric = true
                         }
+                    } else if (!askSaveBiometric) {
+                        // "Ahora no" persistido: entra directo sin re-preguntar.
+                        LaunchedEffect(res) {
+                            if (!navegando) {
+                                navegando = true
+                                viewModel.reset()
+                                onLoginSuccess(res.role ?: "")
+                            }
+                        }
                     } else {
                         AlertDialog(
                             onDismissRequest = {
                                 askSaveBiometric = false
+                                AlmacenHuella.noPreguntarMas(context, correoSesion)
                                 viewModel.reset()
                                 onLoginSuccess(res.role ?: "")
                             },
@@ -434,7 +444,7 @@ fun PantallaAcceso(
                                         }
                                     },
                                     colors = ButtonDefaults.buttonColors(containerColor = VerdeSena, contentColor = Color.Black),
-                                    shape = RoundedCornerShape(28.dp),
+                                    shape = RoundedCornerShape(16.dp),
                                     contentPadding = PaddingValues(horizontal = 24.dp, vertical = 10.dp)
                                 ) {
                                     Text("SÍ, REGISTRAR", fontWeight = FontWeight.ExtraBold)
@@ -444,11 +454,12 @@ fun PantallaAcceso(
                                 TextButton(
                                     onClick = {
                                         askSaveBiometric = false
+                                        AlmacenHuella.noPreguntarMas(context, correoSesion)
                                         viewModel.reset()
                                         onLoginSuccess(res.role ?: "")
                                     }
                                 ) {
-                                    Text("NO", color = colors.textSecondary, fontWeight = FontWeight.Bold)
+                                    Text("AHORA NO", color = colors.textSecondary, fontWeight = FontWeight.Bold)
                                 }
                             }
                         )

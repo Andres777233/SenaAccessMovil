@@ -250,7 +250,9 @@ fun ContenidoHistorial(
                 confirmButton = {
                     TextButton(onClick = {
                         pickerState.selectedDateMillis?.let { ms ->
-                            val cal = Calendar.getInstance(TimeZone.getTimeZone("America/Bogota")).apply { timeInMillis = ms }
+                            // Medianoche UTC del día elegido: se lee en UTC para
+                            // no retroceder un día (era Bogotá -5h).
+                            val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = ms }
                             fechaElegida = String.format(
                                 Locale.US, "%04d-%02d-%02d",
                                 cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH)

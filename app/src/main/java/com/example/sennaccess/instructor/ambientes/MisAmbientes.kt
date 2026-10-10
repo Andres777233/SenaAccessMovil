@@ -66,7 +66,7 @@ fun VistaMisAmbientes(
         val total = (estado as? EstadoCarga.Success)?.datos?.size ?: 0
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = "AULAS ASIGNADAS${if (total > 0) " • $total" else ""}",
+                text = "AMBIENTES ASIGNADOS${if (total > 0) " • $total" else ""}",
                 color = verdeMarca(),
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
@@ -77,7 +77,7 @@ fun VistaMisAmbientes(
                 Text("Mis Ambientes", color = colors.textPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp, modifier = Modifier.weight(1f))
                 IconButton(onClick = { scope.launch { cargar() } }, modifier = Modifier.size(44.dp)) { Icon(Icons.Default.Refresh, null, tint = colors.textSecondary) }
             }
-            Text("Toca un salón para gestionar sus estudiantes y permisos.", color = colors.textSecondary, fontSize = 12.sp)
+            Text("Toca un ambiente para gestionar sus estudiantes y permisos.", color = colors.textSecondary, fontSize = 12.sp)
         }
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -89,7 +89,7 @@ fun VistaMisAmbientes(
                     VistaVacia(
                         icono = Icons.Default.MeetingRoom,
                         titulo = "Aún no tienes ambientes asignados",
-                        mensaje = "El admin debe asignarte a un ambiente (CCyS, Ciudad Jardín, etc.). Una vez asignado, podrás gestionar los aprendices de ese salón y proyectar su QR."
+                        mensaje = "El admin debe asignarte a un ambiente (CCyS, Ciudad Jardín, etc.). Una vez asignado, podrás gestionar los aprendices de ese ambiente y proyectar su QR."
                     )
                 } else {
                     // Tarjetas separadas con aire: cada ambiente respira solo.

@@ -56,7 +56,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -374,7 +377,7 @@ fun FiltroSena(
     FilterChip(
         selected = seleccionado,
         onClick = onClick,
-        label = { Text(texto, style = MaterialTheme.typography.labelMedium, fontWeight = if (seleccionado) FontWeight.Bold else FontWeight.Medium) },
+        label = { Text(texto, style = MaterialTheme.typography.labelMedium, fontWeight = if (seleccionado) FontWeight.Bold else FontWeight.Medium, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis) },
         modifier = modifier.heightIn(min = 38.dp),
         shape = RoundedCornerShape(100.dp),
         border = if (seleccionado) null else androidx.compose.foundation.BorderStroke(1.dp, ColoresAppLocal.current.divider),
@@ -552,20 +555,14 @@ fun BarraSuperiorSena(
     var showMenu by remember { mutableStateOf(false) }
     BarraSuperiorVidrio {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-            Box(
+            Image(
+                painter = painterResource(id = com.example.sennaccess.R.drawable.logo_sena),
+                contentDescription = "SENA",
                 modifier = Modifier
                     .size(36.dp)
-                    .clip(RoundedCornerShape(11.dp))
-                    .background(VerdeSena),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "S",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.Black,
-                    fontWeight = FontWeight.ExtraBold
-                )
-            }
+                    .clip(RoundedCornerShape(11.dp)),
+                contentScale = ContentScale.Fit
+            )
             Spacer(modifier = Modifier.width(10.dp))
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
