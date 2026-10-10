@@ -68,7 +68,7 @@ fun PantallaRestablecerClave(
             horizontalAlignment = Alignment.Start
         ) {
             Text(
-                text = "NUEVA CLAVE",
+                text = "PASO 2 DE 2",
                 style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.8.sp),
                 color = verdeMarca(),
                 fontWeight = FontWeight.Bold
@@ -81,7 +81,7 @@ fun PantallaRestablecerClave(
                 fontWeight = FontWeight.ExtraBold
             )
             Text(
-                text = "Usa el código de 6 dígitos que llegó a tu correo.",
+                text = "Usa el código que llegó a tu correo.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.textSecondary
             )
@@ -214,10 +214,10 @@ fun PantallaRestablecerClave(
                 Button(
                     onClick = { completado = false; onBackToLogin() },
                     colors = ButtonDefaults.buttonColors(containerColor = VerdeSena, contentColor = androidx.compose.ui.graphics.Color.Black),
-                    shape = RoundedCornerShape(28.dp),
+                    shape = RoundedCornerShape(16.dp),
                     contentPadding = PaddingValues(horizontal = 24.dp, vertical = 10.dp)
                 ) {
-                    Text("Okey", fontWeight = FontWeight.ExtraBold)
+                    Text("Entendido", fontWeight = FontWeight.ExtraBold)
                 }
             }
         )

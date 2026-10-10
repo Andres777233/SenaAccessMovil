@@ -22,6 +22,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -165,23 +167,23 @@ fun VistaPendientesDobleFactor() {
                     },
                     enabled = !respondiendo,
                     colors = ButtonDefaults.buttonColors(containerColor = VerdeSena, contentColor = Color.Black),
-                    shape = RoundedCornerShape(28.dp)
+                    shape = RoundedCornerShape(16.dp)
                 ) {
                     Text("SÍ, SOY YO", fontWeight = FontWeight.ExtraBold, fontSize = 13.sp)
                 }
             },
             dismissButton = {
-                TextButton(
+                OutlinedButton(
                     onClick = {
-                        if (respondiendo) return@TextButton
+                        if (respondiendo) return@OutlinedButton
                         val id = reto.challenge_id ?: run {
                             retoVisible = null
-                            return@TextButton
+                            return@OutlinedButton
                         }
                         val token = GestorSesion.token
                         if (token == null) {
                             retoVisible = null
-                            return@TextButton
+                            return@OutlinedButton
                         }
                         respondiendo = true
                         scope.launch {
@@ -195,9 +197,12 @@ fun VistaPendientesDobleFactor() {
                             respondiendo = false
                         }
                     },
-                    enabled = !respondiendo
+                    enabled = !respondiendo,
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, Color(0xFFFF6B6B)),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFF6B6B))
                 ) {
-                    Text("NO SOY YO", color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
+                    Text("NO SOY YO", fontWeight = FontWeight.Bold)
                 }
             }
         )

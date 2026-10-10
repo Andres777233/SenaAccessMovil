@@ -67,7 +67,7 @@ fun PantallaRecuperacionClave(
             horizontalAlignment = Alignment.Start
         ) {
             Text(
-                text = "RECUPERAR CLAVE",
+                text = "PASO 1 DE 2",
                 style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.8.sp),
                 color = verdeMarca(),
                 fontWeight = FontWeight.Bold
@@ -80,7 +80,7 @@ fun PantallaRecuperacionClave(
                 fontWeight = FontWeight.ExtraBold
             )
             Text(
-                text = "Te enviamos un código de 6 dígitos a tu correo.",
+                text = "Te enviamos un código a tu correo.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.textSecondary
             )
@@ -178,7 +178,7 @@ fun PantallaRecuperacionClave(
                 Button(
                     onClick = { enviado = false; onNavigateToReset() },
                     colors = ButtonDefaults.buttonColors(containerColor = VerdeSena, contentColor = androidx.compose.ui.graphics.Color.Black),
-                    shape = RoundedCornerShape(28.dp),
+                    shape = RoundedCornerShape(16.dp),
                     contentPadding = PaddingValues(horizontal = 24.dp, vertical = 10.dp)
                 ) {
                     Text("Continuar", fontWeight = FontWeight.ExtraBold)

@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -32,6 +34,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -44,6 +47,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -192,16 +197,30 @@ fun PantallaVerificacion(
                 Box(
                     Modifier
                         .size(64.dp)
-                        .align(Alignment.CenterHorizontally),
+                        .align(Alignment.CenterHorizontally)
+                        .clip(CircleShape)
+                        .background(VerdeSena.copy(alpha = 0.14f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Lock,
                         contentDescription = null,
                         tint = verdeMarca(),
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier.size(30.dp)
                     )
                 }
+
+                Spacer(Modifier.height(10.dp))
+
+                Text(
+                    "SEGUNDO PASO",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 3.sp,
+                    color = verdeMarca()
+                )
+
+                Spacer(Modifier.height(4.dp))
 
                 Text(
                     "Verificación en dos pasos",
@@ -213,7 +232,7 @@ fun PantallaVerificacion(
                 Spacer(Modifier.height(8.dp))
 
                 Text(
-                    "Revisa tu correo con el código de 6 dígitos, o aprueba este intento desde tu otro dispositivo.",
+                    "Te enviamos un código de 6 dígitos a tu correo.",
                     fontSize = 14.sp,
                     color = colors.textSecondary,
                     textAlign = TextAlign.Center
@@ -221,27 +240,29 @@ fun PantallaVerificacion(
 
                 Spacer(Modifier.height(20.dp))
 
-                // ---- Opción 1: código del correo (fallback) ----
-                androidx.compose.foundation.layout.Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.MarkEmailRead, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.size(6.dp))
-                    Text("Código del correo", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
-                }
-
-                Spacer(Modifier.height(8.dp))
-
                 OutlinedTextField(
                     value = codigo,
                     onValueChange = { new ->
                         if (new.length <= 6 && new.all { it.isDigit() }) codigo = new
                     },
                     modifier = Modifier.fillMaxWidth().campoVisible(),
-                    label = { Text("Código de 6 dígitos") },
+                    placeholder = { Text("······", fontSize = 30.sp, color = colors.textSecondary.copy(alpha = 0.4f)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(16.dp),
+                    textStyle = androidx.compose.ui.text.TextStyle(
+                        fontSize = 30.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        letterSpacing = 8.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = verdeMarca()
+                    ),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = verdeMarca(),
+                        unfocusedBorderColor = verdeMarca().copy(alpha = 0.5f),
+                        cursorColor = verdeMarca()
+                    )
                 )
 
                 errorCodigo?.let {
@@ -292,30 +313,26 @@ fun PantallaVerificacion(
                     },
                     enabled = !enviandoCodigo,
                     colors = ButtonDefaults.buttonColors(containerColor = VerdeSena, contentColor = Color.Black),
-                    shape = RoundedCornerShape(28.dp),
+                    shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)
                 ) {
                     if (enviandoCodigo) {
                         CircularProgressIndicator(Modifier.size(18.dp), color = Color.Black, strokeWidth = 2.dp)
                         Spacer(Modifier.size(8.dp))
                     }
-                    Text("VERIFICAR CÓDIGO", fontWeight = FontWeight.ExtraBold)
+                    Text("VERIFICAR", fontWeight = FontWeight.ExtraBold)
                 }
 
                 Spacer(Modifier.height(16.dp))
-                HorizontalDivider(color = colors.borderLight)
-                Spacer(Modifier.height(16.dp))
-
-                // ---- Opción 2: aprobar desde otro dispositivo ----
-                androidx.compose.foundation.layout.Row(
-                    verticalAlignment = Alignment.CenterVertically
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(Icons.Default.Smartphone, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.size(6.dp))
-                    Text("Aprobar desde otro dispositivo", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
+                    HorizontalDivider(color = colors.borderLight, modifier = Modifier.weight(1f))
+                    Text("O ENTRA SIN CÓDIGO", fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp, color = colors.textSecondary, modifier = Modifier.padding(horizontal = 12.dp))
+                    HorizontalDivider(color = colors.borderLight, modifier = Modifier.weight(1f))
                 }
-
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(12.dp))
 
                 if (resuelto && estadoMensaje == null) {
                     Text("Acceso aprobado. Entrando...", color = verdeMarca(), fontWeight = FontWeight.Bold)

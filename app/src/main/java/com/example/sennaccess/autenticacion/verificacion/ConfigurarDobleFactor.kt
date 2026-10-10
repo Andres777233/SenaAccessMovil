@@ -3,6 +3,7 @@
 // y permite activar o desactivar. Desactivar exige la contraseña actual.
 package com.example.sennaccess.autenticacion.verificacion
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -41,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -137,18 +140,30 @@ fun VistaConfigDobleFactor(
         ) {
             Box(
                 Modifier
-                    .size(64.dp),
+                    .size(64.dp)
+                    .clip(CircleShape)
+                    .background(VerdeSena.copy(alpha = 0.14f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Shield,
                     contentDescription = null,
                     tint = if (activo == true) verdeMarca() else colors.textSecondary,
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(30.dp)
                 )
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(10.dp))
+
+            Text(
+                "SEGURIDAD DE LA CUENTA",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 3.sp,
+                color = verdeMarca()
+            )
+
+            Spacer(Modifier.height(4.dp))
 
             when (activo) {
                 null -> {
@@ -169,7 +184,7 @@ fun VistaConfigDobleFactor(
                     OutlinedButton(
                         onClick = { pedirPass = true },
                         enabled = !trabajando,
-                        shape = RoundedCornerShape(28.dp)
+                        shape = RoundedCornerShape(16.dp)
                     ) {
                         Icon(Icons.Default.Lock, null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(8.dp))
@@ -207,7 +222,7 @@ fun VistaConfigDobleFactor(
                         enabled = !trabajando,
                         modifier = Modifier.fillMaxWidth().height(48.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = VerdeSena, contentColor = Color.Black),
-                        shape = RoundedCornerShape(28.dp)
+                        shape = RoundedCornerShape(16.dp)
                     ) {
                         if (trabajando) {
                             CircularProgressIndicator(Modifier.size(18.dp), color = Color.Black, strokeWidth = 2.dp)
@@ -250,7 +265,7 @@ fun VistaConfigDobleFactor(
                         modifier = Modifier.fillMaxWidth().campoVisible(),
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Password),
-                        shape = RoundedCornerShape(28.dp)
+                        shape = RoundedCornerShape(16.dp)
                     )
                     errorPass?.let {
                         Spacer(Modifier.height(6.dp))
