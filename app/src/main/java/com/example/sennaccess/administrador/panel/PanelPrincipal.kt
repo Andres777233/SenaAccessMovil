@@ -34,10 +34,14 @@ import com.example.sennaccess.comun.tema.verdeMarca
 enum class PantallaAdmin { PANEL, USUARIOS, CREAR_USUARIO, ACTUALIZAR_USUARIO,
     ACCESO_APRENDICES, ACCESO_INSTRUCTORES, REPORTE_NOVEDADES, PERFIL,
     EQUIPOS, NOTIFICACIONES, AMBIENTES, VALIDAR_EXCUSA, VERIFICACION_2FA,
-    ESCANEAR_QR, ASISTENTE, CARNET }
+    ESCANEAR_QR, ASISTENTE, CARNET, PREDICCION }
 
 @Composable
-fun ResumenPanelAdmin(resumen: EstadoCarga<List<Ingreso>>, onReintentar: () -> Unit) {
+fun ResumenPanelAdmin(
+    resumen: EstadoCarga<List<Ingreso>>,
+    onReintentar: () -> Unit,
+    onVerPrediccion: () -> Unit = {}
+) {
     val colors = ColoresAppLocal.current
     val scrollState = rememberScrollState()
 
@@ -102,6 +106,17 @@ fun ResumenPanelAdmin(resumen: EstadoCarga<List<Ingreso>>, onReintentar: () -> U
                 Spacer(modifier = Modifier.height(20.dp))
             }
         }
+
+        Spacer(modifier = Modifier.height(6.dp))
+        // Pronóstico de accesos diarios del modelo predictivo.
+        com.example.sennaccess.comun.diseno.FilaNavegacionSena(
+            titulo = "Predicción de accesos",
+            subtitulo = "Cuánta gente entrará los próximos días",
+            icono = Icons.Default.TrendingUp,
+            onClick = onVerPrediccion,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+        Spacer(modifier = Modifier.height(12.dp))
     }
 }
 

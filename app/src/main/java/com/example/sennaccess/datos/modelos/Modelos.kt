@@ -416,9 +416,16 @@ data class RespuestaValidarAcceso(
     @SerializedName("duplicado") val duplicado: Boolean? = null
 )
 
+// Turno del historial enviado al asistente (el servidor ya acepta history).
+data class TurnoChat(
+    @SerializedName("role") val role: String,
+    @SerializedName("text") val text: String
+)
+
 // Mensaje enviado al asistente virtual (POST /api/chatbot).
 data class PeticionChat(
-    @SerializedName("message") val message: String
+    @SerializedName("message") val message: String,
+    @SerializedName("history") val history: List<TurnoChat>? = null
 )
 
 // Respuesta del asistente: texto o error del servidor.

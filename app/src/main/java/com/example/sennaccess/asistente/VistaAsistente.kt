@@ -28,6 +28,7 @@ import com.example.sennaccess.comun.tema.RojoError
 import com.example.sennaccess.comun.tema.VerdeSena
 import com.example.sennaccess.comun.tema.verdeMarca
 import com.example.sennaccess.datos.modelos.MensajeChat
+import com.example.sennaccess.datos.modelos.TurnoChat
 import com.example.sennaccess.datos.repositorios.RepositorioChatbot
 import com.example.sennaccess.datos.sesion.GestorSesion
 import kotlinx.coroutines.launch
@@ -53,11 +54,15 @@ fun VistaAsistente(onBack: () -> Unit) {
         }
         error = null
         enviando = true
+        // Historial previo (sin la pregunta actual): el servidor recuerda la conversación.
+        val historial = mensajes.takeLast(8).map {
+            TurnoChat(if (it.esUsuario) "user" else "model", it.texto)
+        }
         mensajes = mensajes + MensajeChat(pregunta, true)
         texto = ""
         scope.launch {
             try {
-                val res = RepositorioChatbot().preguntar(token, pregunta)
+                val res = RepositorioChatbot().preguntar(token, pregunta, historial)
                 enviando = false
                 val respuesta = res.reply?.ifBlank { null } ?: res.error ?: "No pude generar una respuesta. Intenta de nuevo."
                 mensajes = mensajes + MensajeChat(respuesta, false)

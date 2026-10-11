@@ -126,6 +126,7 @@ fun PanelAdministrador(
             PantallaAdmin.NOTIFICACIONES -> subScreen = PantallaAdmin.NOTIFICACIONES
             PantallaAdmin.AMBIENTES -> { currentTab = "AMBIENTES"; subScreen = null }
             PantallaAdmin.ESCANEAR_QR -> subScreen = PantallaAdmin.ESCANEAR_QR
+            PantallaAdmin.PREDICCION -> subScreen = PantallaAdmin.PREDICCION
             PantallaAdmin.ASISTENTE -> subScreen = PantallaAdmin.ASISTENTE
             PantallaAdmin.CARNET -> subScreen = PantallaAdmin.CARNET
             PantallaAdmin.VERIFICACION_2FA -> subScreen = PantallaAdmin.VERIFICACION_2FA
@@ -232,6 +233,7 @@ fun PanelAdministrador(
                         onBack = { subScreen = null }
                     )
                     PantallaAdmin.ESCANEAR_QR -> EscanearQrInvitado(onVolver = { subScreen = null })
+                    PantallaAdmin.PREDICCION -> com.example.sennaccess.administrador.prediccion.VistaPrediccion(onBack = { subScreen = null })
                     PantallaAdmin.ASISTENTE -> VistaAsistente(onBack = { subScreen = null })
                     PantallaAdmin.CARNET -> VistaCarnet(perfilEstado = perfil, onBack = { subScreen = null })
                     // AMBIENTES/EQUIPOS/VALIDAR como subScreen legacy: redirigen a su tab real.
@@ -239,7 +241,11 @@ fun PanelAdministrador(
                         LaunchedEffect(Unit) { currentTab = "AMBIENTES"; subScreen = null }
                     }
                     else -> when (currentTab) {
-                        "INICIO" -> ResumenPanelAdmin(resumen = resumen, onReintentar = viewModel::cargarResumen)
+                        "INICIO" -> ResumenPanelAdmin(
+                            resumen = resumen,
+                            onReintentar = viewModel::cargarResumen,
+                            onVerPrediccion = { subScreen = PantallaAdmin.PREDICCION }
+                        )
                         "NOVEDADES" -> VistaNovedades(
                             estado = novedades,
                             onReintentar = viewModel::cargarNovedades
@@ -253,7 +259,11 @@ fun PanelAdministrador(
                             }
                         )
                         "AMBIENTES" -> VistaAdministrarAmbientes(onBack = { currentTab = "INICIO" })
-                        else -> ResumenPanelAdmin(resumen = resumen, onReintentar = viewModel::cargarResumen)
+                        else -> ResumenPanelAdmin(
+                            resumen = resumen,
+                            onReintentar = viewModel::cargarResumen,
+                            onVerPrediccion = { subScreen = PantallaAdmin.PREDICCION }
+                        )
                     }
                 }
             }

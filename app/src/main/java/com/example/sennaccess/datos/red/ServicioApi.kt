@@ -54,6 +54,7 @@ import com.example.sennaccess.datos.modelos.PeticionVerificarClave
 import com.example.sennaccess.datos.modelos.Presente
 import com.example.sennaccess.datos.modelos.RespuestaAcceso
 import com.example.sennaccess.datos.modelos.RespuestaChat
+import com.example.sennaccess.datos.modelos.RespuestaPrediccion
 import com.example.sennaccess.datos.modelos.RespuestaEquipo
 import com.example.sennaccess.datos.modelos.RespuestaIngresos
 import com.example.sennaccess.datos.modelos.RespuestaMensaje
@@ -370,6 +371,10 @@ interface ServicioApi {
     // ---- Asistente virtual (chatbot IA del sistema) ----
     @POST("chatbot")
     suspend fun chatear(@Header("Authorization") auth: String, @Body body: PeticionChat): RespuestaChat
+
+    // ---- Pronóstico de accesos diarios (solo superadmin) ----
+    @GET("admin/prediccion")
+    suspend fun getPrediccion(@Header("Authorization") auth: String, @Query("dias") dias: Int): RespuestaPrediccion
 
     // ---- QR de acceso de portería (entrada/salida al historial) ----
     @POST("acceso/validar")

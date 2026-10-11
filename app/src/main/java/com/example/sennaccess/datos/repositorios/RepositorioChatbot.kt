@@ -2,11 +2,12 @@ package com.example.sennaccess.datos.repositorios
 
 import com.example.sennaccess.datos.modelos.PeticionChat
 import com.example.sennaccess.datos.modelos.RespuestaChat
+import com.example.sennaccess.datos.modelos.TurnoChat
 import com.example.sennaccess.datos.red.ClienteApi
 
 // Repositorio del asistente virtual: envía mensajes a POST /api/chatbot.
 class RepositorioChatbot {
 
-    suspend fun preguntar(token: String, mensaje: String): RespuestaChat =
-        ClienteApi.conServicio { it.chatear("Bearer $token", PeticionChat(mensaje)) }
+    suspend fun preguntar(token: String, mensaje: String, historial: List<TurnoChat> = emptyList()): RespuestaChat =
+        ClienteApi.conServicio { it.chatear("Bearer $token", PeticionChat(mensaje, historial.ifEmpty { null })) }
 }
