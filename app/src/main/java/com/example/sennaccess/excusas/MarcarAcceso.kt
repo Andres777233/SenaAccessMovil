@@ -50,7 +50,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun MarcarAcceso(onBack: () -> Unit) {
+fun MarcarAcceso(
+    onBack: () -> Unit,
+    mostrarCabecera: Boolean = true,
+    onExito: ((String) -> Unit)? = null
+) {
     val colors = ColoresAppLocal.current
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -78,6 +82,14 @@ fun MarcarAcceso(onBack: () -> Unit) {
             BarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE).build()
         )
     }
+    val proveedorCamara = remember { mutableStateOf<ProcessCameraProvider?>(null) }
+
+    // Libera la cámara al salir: sin esto el Preview sigue vivo y corrompe la siguiente pantalla.
+    DisposableEffect(lifecycleOwner) {
+        onDispose {
+            try { proveedorCamara.value?.unbindAll() } catch (_: Exception) { }
+        }
+    }
 
     fun validar(payload: String) {
         val token = GestorSesion.token
@@ -92,8 +104,13 @@ fun MarcarAcceso(onBack: () -> Unit) {
             exito = null
             try {
                 val resp = repo.validar(token, payload.trim())
-                exito = resp.message ?: "Movimiento registrado."
+                val msg = resp.message ?: "Movimiento registrado."
                 codigoManual = ""
+                if (onExito != null) {
+                    onExito(msg)
+                } else {
+                    exito = msg
+                }
             } catch (e: retrofit2.HttpException) {
                 error = detalleHttp(e)
             } catch (e: Exception) {
@@ -101,22 +118,27 @@ fun MarcarAcceso(onBack: () -> Unit) {
             } finally {
                 cargando = false
             }
-            delay(2_500)
-            detenerAnalisis.value = false
+            if (onExito == null) {
+                delay(2_500)
+                detenerAnalisis.value = false
+            }
         }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = colors.textPrimary)
+        // En la puerta de acceso la cabecera la pone PuertaAcceso: aquí se oculta para no duplicar.
+        if (mostrarCabecera) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = colors.textPrimary)
+                }
+                Column {
+                    Text("Ingreso al centro", color = colors.textPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
+                    Text("QR de entrada o salida de portería", color = colors.textSecondary, fontSize = 12.sp)
+                }
             }
-            Column {
-                Text("Ingreso al centro", color = colors.textPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
-                Text("QR de entrada o salida de portería", color = colors.textSecondary, fontSize = 12.sp)
-            }
+            Spacer(modifier = Modifier.height(12.dp))
         }
-        Spacer(modifier = Modifier.height(12.dp))
 
         if (permisoCamara) {
             Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f), contentAlignment = Alignment.Center) {
@@ -126,6 +148,7 @@ fun MarcarAcceso(onBack: () -> Unit) {
                             val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
                             cameraProviderFuture.addListener({
                                 val cameraProvider = cameraProviderFuture.get()
+                                proveedorCamara.value = cameraProvider
                                 val preview = Preview.Builder().build().also { p ->
                                     p.setSurfaceProvider(this.surfaceProvider)
                                 }
@@ -219,7 +242,8 @@ fun MarcarAcceso(onBack: () -> Unit) {
             CajaErrorSena(error!!)
             Spacer(modifier = Modifier.height(8.dp))
         }
-        if (exito != null) {
+        // El éxito local solo aplica fuera de la puerta: ahí el mensaje lo muestra PuertaAcceso.
+        if (exito != null && onExito == null) {
             Box(
                 modifier = Modifier.fillMaxWidth()
                     .background(VerdeSena.copy(alpha = 0.10f), RoundedCornerShape(18.dp))

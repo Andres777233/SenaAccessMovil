@@ -5,12 +5,13 @@ package com.example.sennaccess.excusas
 // libre sin re-escanear. Solo aprendiz e instructor pasan por aquí.
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.QrCode2
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,12 +19,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.sennaccess.comun.diseno.BotonPrimarioNeon
 import com.example.sennaccess.comun.diseno.CajaError as CajaErrorSena
 import com.example.sennaccess.comun.esHoyBogota
 import com.example.sennaccess.comun.tema.ColoresAppLocal
 import com.example.sennaccess.datos.repositorios.RepositorioIngresos
 import com.example.sennaccess.datos.sesion.GestorSesion
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -36,6 +37,7 @@ fun PuertaAcceso(onEntrar: () -> Unit, onSalir: () -> Unit) {
     var tieneEntrada by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var verificando by remember { mutableStateOf(false) }
+    var mensajeExito by remember { mutableStateOf<String?>(null) }
 
     fun verificar(silenciosoAlEntrar: Boolean = false, alEntrar: (() -> Unit)? = null) {
         val token = GestorSesion.token ?: run {
@@ -68,6 +70,7 @@ fun PuertaAcceso(onEntrar: () -> Unit, onSalir: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .statusBarsPadding()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -98,20 +101,63 @@ fun PuertaAcceso(onEntrar: () -> Unit, onSalir: () -> Unit) {
             Spacer(modifier = Modifier.height(8.dp))
             Text("Verificando tu entrada de hoy...", color = colors.textSecondary, fontSize = 13.sp)
         } else if (!tieneEntrada) {
-            MarcarAcceso(onBack = {})
+            // El escáner avisa con onExito: se muestra el mensaje y se entra solo, sin botón manual.
+            MarcarAcceso(
+                onBack = {},
+                mostrarCabecera = false,
+                onExito = { msg ->
+                    mensajeExito = msg
+                    error = null
+                    verificando = true
+                    scope.launch {
+                        delay(1_200)
+                        verificar(silenciosoAlEntrar = true)
+                    }
+                }
+            )
             Spacer(modifier = Modifier.height(12.dp))
+            if (mensajeExito != null) {
+                // Confirmación breve antes de entrar al panel.
+                Box(
+                    modifier = Modifier.fillMaxWidth()
+                        .background(
+                            com.example.sennaccess.comun.tema.VerdeSena.copy(alpha = 0.10f),
+                            RoundedCornerShape(18.dp)
+                        )
+                        .padding(16.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.CheckCircle,
+                            null,
+                            tint = com.example.sennaccess.comun.tema.verdeMarca(),
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                mensajeExito!!,
+                                color = com.example.sennaccess.comun.tema.verdeMarca(),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                            if (verificando) {
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    "Entrando al panel...",
+                                    color = colors.textSecondary,
+                                    fontSize = 12.sp
+                                )
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
             if (error != null) {
                 CajaErrorSena(error!!)
                 Spacer(modifier = Modifier.height(8.dp))
             }
-            BotonPrimarioNeon(
-                text = "YA MARQUÉ, ENTRAR",
-                icon = Icons.Default.QrCode2,
-                onClick = { verificar() },
-                loading = verificando,
-                enabled = !verificando,
-                modifier = Modifier.fillMaxWidth()
-            )
         }
     }
 }
