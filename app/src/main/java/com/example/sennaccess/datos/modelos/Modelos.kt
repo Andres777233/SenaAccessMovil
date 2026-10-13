@@ -410,6 +410,11 @@ data class PeticionValidarAcceso(
     @SerializedName("qr_payload") val qr_payload: String
 )
 
+// PIN corto de acceso dictado en portería (fallback sin cámara).
+data class PeticionValidarPin(
+    @SerializedName("pin") val pin: String
+)
+
 // Respuesta al marcar entrada/salida con el QR de portería.
 data class RespuestaValidarAcceso(
     @SerializedName("message") val message: String? = null,

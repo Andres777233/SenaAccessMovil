@@ -59,6 +59,7 @@ import com.example.sennaccess.datos.modelos.RespuestaEquipo
 import com.example.sennaccess.datos.modelos.RespuestaIngresos
 import com.example.sennaccess.datos.modelos.RespuestaMensaje
 import com.example.sennaccess.datos.modelos.PeticionValidarAcceso
+import com.example.sennaccess.datos.modelos.PeticionValidarPin
 import com.example.sennaccess.datos.modelos.RespuestaValidarAcceso
 import com.example.sennaccess.datos.modelos.RespuestaPaginaSugerencias
 import com.example.sennaccess.datos.modelos.RespuestaQrInvitado
@@ -379,4 +380,8 @@ interface ServicioApi {
     // ---- QR de acceso de portería (entrada/salida al historial) ----
     @POST("acceso/validar")
     suspend fun validarAcceso(@Header("Authorization") auth: String, @Body body: PeticionValidarAcceso): RespuestaValidarAcceso
+
+    // ---- PIN corto de acceso (fallback sin cámara) ----
+    @POST("acceso/validar-pin")
+    suspend fun validarPinAcceso(@Header("Authorization") auth: String, @Body body: PeticionValidarPin): RespuestaValidarAcceso
 }

@@ -1,8 +1,8 @@
 package com.example.sennaccess.excusas
 
-// Puerta de entrada tras el login: si no hay Entrada de hoy (Bogotá), pide
-// escanear el QR de portería antes de entrar al panel. Tras marcar, acceso
-// libre sin re-escanear. Solo aprendiz e instructor pasan por aquí.
+// Puerta de entrada tras el login: entra directo si el ÚLTIMO movimiento es
+// Entrada (aunque sea de otro día); solo pide QR/PIN tras una Salida.
+// Tras marcar, muestra el mensaje y entra solo al panel.
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -19,9 +19,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import com.example.sennaccess.comun.diseno.CajaError as CajaErrorSena
-import com.example.sennaccess.comun.esHoyBogota
 import com.example.sennaccess.comun.tema.ColoresAppLocal
+import com.example.sennaccess.datos.repositorios.RepositorioAcceso
 import com.example.sennaccess.datos.repositorios.RepositorioIngresos
 import com.example.sennaccess.datos.sesion.GestorSesion
 import kotlinx.coroutines.delay
@@ -32,12 +34,15 @@ fun PuertaAcceso(onEntrar: () -> Unit, onSalir: () -> Unit) {
     val colors = ColoresAppLocal.current
     val scope = rememberCoroutineScope()
     val repo = remember { RepositorioIngresos() }
+    val repoAcceso = remember { RepositorioAcceso() }
 
     var cargando by remember { mutableStateOf(true) }
     var tieneEntrada by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var verificando by remember { mutableStateOf(false) }
     var mensajeExito by remember { mutableStateOf<String?>(null) }
+    var pinManual by remember { mutableStateOf("") }
+    var validandoPin by remember { mutableStateOf(false) }
 
     fun verificar(silenciosoAlEntrar: Boolean = false, alEntrar: (() -> Unit)? = null) {
         val token = GestorSesion.token ?: run {
@@ -49,7 +54,10 @@ fun PuertaAcceso(onEntrar: () -> Unit, onSalir: () -> Unit) {
             if (!silenciosoAlEntrar) verificando = true
             try {
                 val lista = repo.getMyIngresos(token)
-                val ok = lista.any { it.ingreso_type.equals("Entrada", ignoreCase = true) && esHoyBogota(it.ingreso_datetime) }
+                // Regla de permanencia: dentro si el ÚLTIMO movimiento es
+                // Entrada (el servidor ordena descendente). El QR solo se
+                // exige tras una Salida o sin historial.
+                val ok = lista.firstOrNull()?.ingreso_type.equals("Entrada", ignoreCase = true) == true
                 tieneEntrada = ok
                 error = null
                 if (ok) alEntrar?.invoke() ?: onEntrar()
@@ -66,6 +74,41 @@ fun PuertaAcceso(onEntrar: () -> Unit, onSalir: () -> Unit) {
 
     LaunchedEffect(Unit) { cargando = true; verificar() }
     BackHandler { onSalir() }
+
+    // QR o PIN marcados: mensaje 1,2 s y entrada sola al panel.
+    fun alMarcar(msg: String) {
+        mensajeExito = msg
+        error = null
+        verificando = true
+        scope.launch {
+            delay(1_200)
+            verificar(silenciosoAlEntrar = true)
+        }
+    }
+
+    fun validarPin() {
+        val token = GestorSesion.token
+        if (token == null || validandoPin) return
+        if (pinManual.length != 6) {
+            error = "Ingresa los 6 dígitos del PIN."
+            return
+        }
+        scope.launch {
+            validandoPin = true
+            error = null
+            try {
+                val resp = repoAcceso.validarPin(token, pinManual.trim())
+                pinManual = ""
+                alMarcar(resp.message ?: "Movimiento registrado.")
+            } catch (e: retrofit2.HttpException) {
+                error = com.example.sennaccess.comun.detalleHttp(e)
+            } catch (e: Exception) {
+                error = "No se pudo conectar al servidor."
+            } finally {
+                validandoPin = false
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -90,7 +133,7 @@ fun PuertaAcceso(onEntrar: () -> Unit, onSalir: () -> Unit) {
             fontSize = 22.sp
         )
         Text(
-            "Escanea el QR de portería para entrar hoy.",
+            "Escanea el QR de portería o usa el PIN que te dicten.",
             color = colors.textSecondary,
             fontSize = 13.sp
         )
@@ -99,23 +142,39 @@ fun PuertaAcceso(onEntrar: () -> Unit, onSalir: () -> Unit) {
         if (cargando) {
             CircularProgressIndicator(color = com.example.sennaccess.comun.tema.verdeMarca(), modifier = Modifier.size(28.dp), strokeWidth = 3.dp)
             Spacer(modifier = Modifier.height(8.dp))
-            Text("Verificando tu entrada de hoy...", color = colors.textSecondary, fontSize = 13.sp)
+            Text("Verificando tu acceso...", color = colors.textSecondary, fontSize = 13.sp)
         } else if (!tieneEntrada) {
             // El escáner avisa con onExito: se muestra el mensaje y se entra solo, sin botón manual.
             MarcarAcceso(
                 onBack = {},
                 mostrarCabecera = false,
-                onExito = { msg ->
-                    mensajeExito = msg
-                    error = null
-                    verificando = true
-                    scope.launch {
-                        delay(1_200)
-                        verificar(silenciosoAlEntrar = true)
-                    }
-                }
+                onExito = ::alMarcar
             )
             Spacer(modifier = Modifier.height(12.dp))
+            // Sin cámara: PIN de 6 dígitos dictado en portería.
+            OutlinedTextField(
+                value = pinManual,
+                onValueChange = { pinManual = it.filter(Char::isDigit).take(6) },
+                label = { Text("...o ingresa el PIN de portería") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = ::validarPin,
+                enabled = pinManual.length == 6 && !validandoPin,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                if (validandoPin) {
+                    CircularProgressIndicator(color = com.example.sennaccess.comun.tema.verdeMarca(), modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                } else {
+                    Text("VALIDAR PIN")
+                }
+            }
+            Spacer(modifier = Modifier.height(4.dp))
             if (mensajeExito != null) {
                 // Confirmación breve antes de entrar al panel.
                 Box(
