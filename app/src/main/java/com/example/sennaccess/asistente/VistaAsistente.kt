@@ -108,7 +108,8 @@ fun VistaAsistente(onBack: () -> Unit) {
                 ) {
                     Text(
                         text = m.texto,
-                        color = if (m.esUsuario) androidx.compose.ui.graphics.Color.Black else colors.textPrimary,
+                        // Adaptativo al tema: negro fijo quedaba invisible en modo oscuro.
+                        color = colors.textPrimary,
                         fontSize = 14.sp,
                         modifier = Modifier
                             .fillMaxWidth(0.85f)
