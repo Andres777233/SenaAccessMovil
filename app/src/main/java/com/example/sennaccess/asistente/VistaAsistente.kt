@@ -39,7 +39,7 @@ fun VistaAsistente(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val listaState = rememberLazyListState()
 
-    var mensajes by remember { mutableStateOf(listOf(MensajeChat("Hola, soy el asistente de SenaAccess. Pregúntame sobre el sistema.", false))) }
+    var mensajes by remember { mutableStateOf(listOf(MensajeChat("Hola, soy el asistente de SenaAccess. Pregúntame sobre el sistema o sobre cualquier tema.", false))) }
     var texto by remember { mutableStateOf("") }
     var enviando by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
