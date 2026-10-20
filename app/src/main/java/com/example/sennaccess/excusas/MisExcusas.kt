@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -35,6 +36,7 @@ import com.example.sennaccess.comun.diseno.RadioSena
 import com.example.sennaccess.comun.diseno.EntradaSuave
 import com.example.sennaccess.comun.fechaLegible
 import com.example.sennaccess.comun.tema.ColoresAppLocal
+import com.example.sennaccess.comun.tema.RojoError
 import com.example.sennaccess.comun.tema.VerdeSena
 import com.example.sennaccess.comun.tema.verdeMarca
 import kotlinx.coroutines.delay
@@ -51,6 +53,9 @@ fun VistaMisExcusas(onBack: (() -> Unit)? = null) {
     var recargando by remember { mutableStateOf(false) }
     var idsVistos by remember { mutableStateOf<Set<Int>>(emptySet()) }
     var hayNueva by remember { mutableStateOf(false) }
+    var aEliminar by remember { mutableStateOf<Excusa?>(null) }
+    var borrando by remember { mutableStateOf(false) }
+    var errorBorrado by remember { mutableStateOf<String?>(null) }
     val ahora = recordarAhoraCadaSegundo()
 
     suspend fun cargar(silencioso: Boolean = false) {
@@ -98,6 +103,56 @@ fun VistaMisExcusas(onBack: (() -> Unit)? = null) {
             Text("● Nueva excusa pendiente", color = colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         }
         Spacer(modifier = Modifier.height(12.dp))
+
+        aEliminar?.let { ex ->
+            AlertDialog(
+                onDismissRequest = { if (!borrando) aEliminar = null },
+                title = { Text("Borrar del historial", color = colors.textPrimary, fontWeight = FontWeight.Bold) },
+                text = {
+                    Column {
+                        Text(
+                            "Se eliminará la excusa de ${ex.ambiente?.ambiente_nombre ?: "Ambiente #${ex.fk_id_ambiente}"}. Esta acción no se puede deshacer.",
+                            color = colors.textSecondary
+                        )
+                        errorBorrado?.let {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(it, color = RojoError, fontSize = 12.sp)
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        enabled = !borrando,
+                        onClick = {
+                            val id = ex.id_excusa ?: return@TextButton
+                            borrando = true
+                            errorBorrado = null
+                            scope.launch {
+                                try {
+                                    val sesion = token ?: return@launch
+                                    repo.eliminarMiExcusa(sesion, id)
+                                    val actual = (estado as? EstadoCarga.Success)?.datos.orEmpty().filterNot { it.id_excusa == id }
+                                    estado = EstadoCarga.Success(actual)
+                                    aEliminar = null
+                                    cargar(silencioso = true)
+                                } catch (e: retrofit2.HttpException) {
+                                    errorBorrado = detalleHttp(e)
+                                } catch (e: Exception) {
+                                    errorBorrado = "No se pudo borrar: ${e.message ?: "error de conexión"}"
+                                } finally {
+                                    borrando = false
+                                }
+                            }
+                        }
+                    ) { Text(if (borrando) "Borrando..." else "Borrar", color = RojoError, fontWeight = FontWeight.Bold) }
+                },
+                dismissButton = {
+                    TextButton(enabled = !borrando, onClick = { aEliminar = null }) {
+                        Text("Cancelar", color = colors.textSecondary)
+                    }
+                }
+            )
+        }
 
         when (val s = estado) {
             is EstadoCarga.Loading -> CajaCargando()
@@ -174,6 +229,19 @@ fun VistaMisExcusas(onBack: (() -> Unit)? = null) {
                                             Text(textoCreacionExcusa(ex), color = colors.textSecondary, fontSize = 11.sp)
                                         }
                                         InsigniaExcusa(ex.estado)
+                                        if (ex.id_excusa != null) {
+                                            IconButton(
+                                                onClick = { errorBorrado = null; aEliminar = ex },
+                                                modifier = Modifier.size(44.dp)
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Delete,
+                                                    contentDescription = "Borrar del historial",
+                                                    tint = colors.textSecondary,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            }
+                                        }
                                     }
                                     if (ex.usado_en != null) Text("Usada: ${fechaLegible(ex.usado_en)}", color = colors.textSecondary, fontSize = 11.sp, modifier = Modifier.padding(top = 6.dp))
                                 }

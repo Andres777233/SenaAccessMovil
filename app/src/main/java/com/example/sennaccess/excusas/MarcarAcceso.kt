@@ -133,8 +133,8 @@ fun MarcarAcceso(
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = colors.textPrimary)
                 }
                 Column {
-                    Text("Ingreso al centro", color = colors.textPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
-                    Text("QR de entrada o salida de portería", color = colors.textSecondary, fontSize = 12.sp)
+                    Text("Salida del centro", color = colors.textPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
+                    Text("QR de salida de portería", color = colors.textSecondary, fontSize = 12.sp)
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))

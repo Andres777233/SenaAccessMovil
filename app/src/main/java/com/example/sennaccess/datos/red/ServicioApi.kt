@@ -363,6 +363,9 @@ interface ServicioApi {
     @GET("mis-excusas")
     suspend fun getMisExcusas(@Header("Authorization") auth: String): List<Excusa>
 
+    @DELETE("mis-excusas/{id}")
+    suspend fun eliminarMiExcusa(@Header("Authorization") auth: String, @Path("id") id: Int): RespuestaMensaje
+
     @POST("excusas/validar")
     suspend fun validarExcusa(@Header("Authorization") auth: String, @Body body: PeticionValidarExcusa): RespuestaValidarExcusa
 

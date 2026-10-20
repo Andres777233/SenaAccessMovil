@@ -444,14 +444,15 @@ fun ColumnScope.MenuPerfilSena(
     Spacer(modifier = Modifier.height(6.dp))
     HorizontalDivider(color = colors.divider)
     Spacer(modifier = Modifier.height(6.dp))
-    // Único camino al perfil: respeta el destino de edición cuando existe.
-    val irPerfil = onEditarPerfil ?: onPerfil
+    // Único camino al perfil: siempre abre la vista de perfil (la edición
+    // queda detrás del botón EDITAR PERFIL, no del menú).
+    val irPerfil = onPerfil ?: onEditarPerfil
     if (irPerfil != null) {
         DropdownMenuItem(
             text = {
                 Column {
                     Text("Perfil", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                    Text("Ver y editar tu información", color = colors.textSecondary, fontSize = 12.sp)
+                    Text("Ver tu información", color = colors.textSecondary, fontSize = 12.sp)
                 }
             },
             leadingIcon = {

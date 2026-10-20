@@ -27,6 +27,10 @@ class RepositorioExcusas {
     suspend fun misExcusas(token: String): List<Excusa> =
         ClienteApi.conServicio { it.getMisExcusas("Bearer $token") }
 
+    // Borra del historial una excusa ya cerrada (usada/expirada/anulada).
+    suspend fun eliminarMiExcusa(token: String, id: Int): RespuestaMensaje =
+        ClienteApi.conServicio { it.eliminarMiExcusa("Bearer $token", id) }
+
     // Valida el PIN en portería y registra la salida.
     suspend fun validar(token: String, pin: String): RespuestaValidarExcusa =
         ClienteApi.conServicio { it.validarExcusa("Bearer $token", PeticionValidarExcusa(pin)) }
