@@ -1,36 +1,153 @@
-# AGENTS.md — Movilvistas ("SenaAccess MÓVIL")
+# AGENTS.md — SenaAccess MÓVIL (Android)
 
-App Android (Kotlin + Jetpack Compose, estilo glass verde) de SennAccess. Ruta: `/home/andres/Escritorio/VistasAndroidDef1-main./VistasAndroidDef1-main` (la carpeta padre termina en punto; citar siempre entre comillas).
-Repo git local con remoto SSH `git@github.com:Andres777233/SenaAccessMovil.git` (rama de trabajo `v1.8-merge`, push a `main`). SSH configurado en esta máquina (llave `andres-admin-sena` agregada a GitHub): `git push origin HEAD:main` sale sin token. Regla fija: commit + push al final de cada tarea.
+App Android (Kotlin + Jetpack Compose, estilo vidrio verde) de SenaAccess: control de entrada/salida de aprendices e instructores, ambientes, equipos, excusas, novedades, chatbot (Bonzi), carnet digital y verificación en dos pasos.
+
+> **Este archivo es el contexto completo del proyecto.** No dependas de memoria global ni de archivos fuera de este repo: rutas, comandos, arquitectura, convenciones, estado y pendientes están aquí.
+> **Cómo leerlo**: todo lo que va hasta `## Historial` es el contexto operativo (léelo siempre). `## Historial` es el diario acumulado del proyecto (léelo solo si necesitas el pasado; las entradas más recientes van al final).
+
+## Cómo ubicarte en el repo (portable)
+
+- La **raíz** del proyecto es la carpeta donde vive este `AGENTS.md`. Confírmala con `git rev-parse --show-toplevel`.
+- **Todas** las rutas de este documento son relativas a la raíz (`app/src/main/java/com/example/sennaccess/...`).
+- **Nunca** asumas una ruta absoluta ni una carpeta concreta de otra máquina: este proyecto se clona y se compila en equipos distintos.
+- Si la sesión arranca en otra carpeta, `cd` a la raíz antes de leer o escribir.
+- El backend **no** está en este repo (ver "Backend y repos hermanos"); para tocarlo hay que clonar ese repo y abrir opencode allí.
+
+## Identidad del proyecto
+
+| Dato | Valor |
+|---|---|
+| applicationId / namespace | `com.example.sennaccess` |
+| Versión | `versionName 9.0` / `versionCode 19` (`app/build.gradle.kts`) |
+| SDK | minSdk 24, targetSdk 36, compileSdk 36.1 |
+| Toolchain | Gradle 9.3.1, AGP 9.1.1, Kotlin 2.2.10, Compose BOM 2026.02.01, **JDK 21** (auto-descarga con foojay: requiere red la primera vez) |
+| Red | Retrofit 2.11 + OkHttp 4.12 (logging) + Gson, Coil 2.6, CameraX 1.4.2 + MLKit 17.3, ZXing 3.5.3, Biometric 1.1.0 |
+| Tamaño | 109 archivos `.kt` en 12 paquetes, todos en español (el contrato de API conserva inglés en `@SerializedName`, endpoints y Manifest) |
+
+## Mapa del repo (`app/src/main/java/com/example/sennaccess/`)
+
+| Paquete | Qué contiene | Archivos clave |
+|---|---|---|
+| `aplicacion/` | contenedor raíz de navegación y pantallas de arranque | `ActividadPrincipal.kt`, `PantallaBienvenida.kt`, `PantallaCarga.kt` |
+| `autenticacion/` | login, registro, recuperación, 2FA, invitado | `acceso/PantallaAcceso.kt`, `acceso/AccesoViewModel.kt`, `registro/PantallaRegistro.kt`, `recuperacion/`, `verificacion/` (2FA + "Eres tú"), `invitado/` (QR) |
+| `biometria/` | huella local con Keystore | `AlmacenHuella.kt`, `AutenticacionBiometrica.kt`, `VistaHuella.kt` |
+| `perfil/` | perfil (vista y edición) compartido por roles | `DisenoPerfil.kt`, `EditarPerfil.kt`, `FotoPerfil.kt` |
+| `administrador/` | panel superadmin | `panel/` (Panel, ViewModel, resumen, perfil), `usuarios/` (lista, crear, actualizar, modelo), `accesos/` (accesos, historial, personas dentro), `equipos/`, `novedades/`, `ambientes/AdministrarAmbientes.kt`, `prediccion/VistaPrediccion.kt` |
+| `instructor/` | panel instructor | `panel/`, `ambientes/` (`MisAmbientes.kt`, `DetalleAmbiente.kt`) |
+| `aprendiz/` | panel aprendiz | `panel/PanelAprendiz.kt` + `PanelAprendizViewModel.kt` |
+| `asistente/` | chatbot Bonzi y carnet digital | `VistaAsistente.kt`, `VistaCarnet.kt` |
+| `excusas/` | excusas con PIN/QR, puerta de acceso, marcaje | `CrearExcusa.kt`, `MisExcusas.kt`, `ValidarExcusa.kt`, `ValidarUnificada.kt`, `QrExcusa.kt`, `EscanearQrExcusa.kt`, `MarcarAcceso.kt`, `PuertaAcceso.kt` |
+| `portero/` | panel de portería (rol `admin`) | `PanelPortero.kt` |
+| `datos/` | datos, sesión, red | `red/ClienteApi.kt` + `red/ServicioApi.kt`, `sesion/` (`GestorSesion`, `RolSeguro`, `AlmacenDispositivo`, `GuardianVersion`), `repositorios/` (13 repos), `modelos/` (`Modelos.kt`, `ModelosExcusa`, `ModelosPrediccion`, `ModelosSugerencia`), `simulados/DatosSimulados.kt` |
+| `comun/` | transversal | `EstadoCarga.kt` (patrón Loading/Success/Error), `FormatosFecha.kt` (America/Bogota), `AyudaTeclado.kt` (`campoVisible`), `Jornadas.kt`, `HistorialPorDias.kt`, `diseno/` (tokens, componentes, `RutasSena`, `BarraNavegacion`, `MovimientoSena`, `Desplegables`), `tema/` (`Tema`, `Colores`, `Tipografia`) |
 
 ## Comandos y entorno
-- Compilar: `./gradlew assembleDebug` → APK en `app/build/outputs/apk/debug/app-debug.apk`.
-- Instalar (moto g86): `/home/andres/android-sdk/platform-tools/adb install -r app/build/outputs/apk/debug/app-debug.apk`. El `adb reverse tcp:8000` lo aplica solo el watcher (≤3 s tras conectar USB).
-- Backend: servicio systemd de usuario `sennaccess` (`systemctl --user status|restart sennaccess`); el watcher lo relanza si muere.
-- Android Studio Flatpak: si el sync falla con "initialization script ... does not exist", ejecutar `./gradlew --stop` antes.
-- Credenciales (BD Railway + local, ver seeder del WEB): `admin@sena.edu.co` con `12345678`; instructores: `juan.pablo@sena.edu.co` (`12345678`), `alejandro/gustavo/raul@sena.edu.co` (`123456`); aprendices: `andres.vargas/laura.medina@sena.edu.co` (`12345678`), `katherin/sebastian/camilo@sena.edu.co` (`123456`). NO existen `instructor@` ni `aprendiz@sena.edu.co`.
 
-## Convenciones
-- API: `RetrofitClient.conServicio{}` habla SOLO con Railway (HTTPS, sin fallback local); timeout conexión 10 s / lectura 60 s.
-- Patrón `CargaUiState` (Loading/Success/Error); mocks SOLO en `data/mock/MockData.kt` y solo si `SessionManager.token == null`.
-- Paquetes: dashboards en `com.example.sennaccess.Aprendiz` (comparten StatCard/TableContainer), ViewModels en `ui`, repos en `data`.
-- Comentarios nuevos solo `//` en línea propia (sin asteriscos/emojis/cajas); cabecera 2-4 líneas `//` por archivo.
-- Biometría LOCAL (`data/HuellaCredentialStore.kt`, Keystore AES256-GCM); el WebAuthn del backend quedó sin uso desde el móvil.
+- **Compilar**: `./gradlew assembleDebug` → `app/build/outputs/apk/debug/app-debug.apk` (≈46 MB).
+- **Compilar sin Android Studio (portable)**: `docker compose run --rm sennaccess-movil` → APK en `artifacts/apk/`. El `Dockerfile` instala temurin 17 + SDK 36 y produce el mismo APK.
+- **Tests**: `./gradlew testDebugUnitTest`.
+- **Release**: `./gradlew assembleRelease` (R8 + shrink). Requiere `app/keystore.properties` + `release.keystore`, **no versionados**: sin ellos solo compila debug.
+- **Instalar en el dispositivo**: `adb install -r app/build/outputs/apk/debug/app-debug.apk` (moto g86 = `ZY32MFMZMX`).
+- **Git**: rama de trabajo `v1.8-merge`, remoto `git@github.com:Andres777233/SenaAccessMovil.git`. Regla fija del proyecto: **commit + push a `main` al final de cada tarea** (`git push origin HEAD:main`).
+- **Backend local (opcional)**: servicio systemd de usuario `sennaccess` (`systemctl --user status|restart sennaccess`) que levanta `artisan serve` y aplica `adb reverse tcp:8000`. La app **no** usa ese backend: habla siempre con Railway.
+
+## Convenciones (nombres reales del código)
+
+- **Red**: `ClienteApi.conServicio { }` es el único punto de acceso (`datos/red/ClienteApi.kt:17` define `BASE_URL_REMOTE`). HTTPS a Railway, **sin fallback local**. Timeout conexión 10 s / lectura 25 s. Log `BASIC` solo en DEBUG. Un 401 limpia la sesión (`GestorSesion.clear()`).
+- **Estado**: `EstadoCarga` (Loading/Success/Error) en `comun/EstadoCarga.kt`, con `cargarConRespaldo` y `detalleHttp` (muestra código + mensaje real del servidor; nunca genérico).
+- **Sin sesión NO hay mocks**: `datos/simulados/DatosSimulados.kt` es solo respaldo; sin token se devuelve `EstadoCarga.Error`, nunca datos de ejemplo.
+- **Sesión**: `GestorSesion` (token, foto, correos guardados), `AlmacenDispositivo` (UUID por teléfono → `device_id`), `GuardianVersion` (purga stores al cambiar `versionCode`), `RolSeguro` (lista cerrada de roles).
+- **Biometría local**: `biometria/AlmacenHuella.kt` (Keystore AES256-GCM). El WebAuthn del backend no se usa desde el móvil.
+- **UI**: todo pasa por el DS de `comun/diseno` (tokens, superficie plana vs vidrio, `RutasSena`, `BarraNavegacion`, `MovimientoSena`) y `comun/tema` (paleta verde de marca `0xFF02D914`).
+- **Nombres**: identificadores, paquetes y archivos en español. Solo el contrato de API queda en inglés.
+- **Comentarios**: únicamente `//` en línea propia (sin asteriscos, emojis ni cajas); cabecera de 2-4 líneas por archivo.
+- **Fechas/hora**: `America/Bogota` en `comun/FormatosFecha.kt` (`horaBogota`, `fechaHoraBogota`, `diaClave`, `esHoyBogota`).
+- **Teclado**: `comun/AyudaTeclado.kt` (`campoVisible` lleva el campo enfocado a la vista) + `imePadding()` en los formularios; si falta, el teclado tapa los campos.
+- **Nombres legacy que NO deben volver**: `RetrofitClient`, `SessionManager`, `MockData`, `HuellaCredentialStore`, paquetes `com.example.sennaccess.Aprendiz` / `ui` / `data` en inglés.
+
+## Roles (lista cerrada — `datos/sesion/RolSeguro.kt`)
+
+| Rol | Para qué | Dónde entra |
+|---|---|---|
+| `superadmin` | superusuario total | `administrador/panel/` |
+| `admin` | operativa de portería: equipos, historial, validar excusas, PIN de acceso, registrar equipos | `portero/PanelPortero.kt` |
+| `instructor` | ambientes propios, novedades, excusas | `instructor/panel/` |
+| `aprendiz` | su historial, excusas, equipos, puerta de acceso | `aprendiz/panel/` |
+| `invitado` | temporal (QR de un solo uso) | **nunca** entra a un dashboard |
+
+En el backend los `roles.rol_name` son `Superadmin`, `Admin`, `Instructor`, `Aprendiz`, `Invitado` (migración `2026_10_09_000001_rename_roles_admin_portero`).
+
+## Contrato con la API
+
+- **Base**: `https://senaaccessweb-production-4c6e.up.railway.app/api/` (`datos/red/ClienteApi.kt:17`).
+- **Endpoints**: 73 en `datos/red/ServicioApi.kt` (fuente de verdad del contrato del móvil) frente a 80 rutas en el backend (`routes/api.php`).
+- **Auth**: `Bearer` (Sanctum) + `device_id` (2FA solo reta fuera del dispositivo confiable).
+- **2FA**: `/2fa/activar|desactivar|estado-config|pendientes|aprobar|validar-codigo|estado/{id}|decidir`; el correo (Brevo) trae deep link `senaaccess://2fa` / `https://.../2fa` con botones SÍ/NO.
+- **Errores**: JSON con `message`; la app los muestra con `detalleHttp`.
+- **Permisos en backend**: `/admin/*` → superadmin; `admin_or_portero` → equipos, historial, excusas y PIN de acceso.
+
+## Backend y repos hermanos (por URL, sin rutas locales)
+
+| Repo | Qué es |
+|---|---|
+| `https://github.com/Andres777233/SenaAccessWeb` | Backend Laravel 10 + SPA React 19. Rama `main` → Railway auto-deploy. **Tiene su propio `AGENTS.md` con su historial.** |
+| `https://github.com/Andres777233/SenaAccessWebDef1` | Copia del backend para entrega a terceros (historial limpio, sin rastros de opencode). |
+| `https://github.com/Andres777233/SenaAccessMovil` | Este repo. |
+| `https://github.com/Andres777233/QR-MOVIL` | Distribución del APK + página de descarga con QR. |
+
+**Regla**: el backend no está en este repo. Para tocarlo, clonar `SenaAccessWeb` y abrir opencode en esa carpeta (allá están sus rutas, seeders y convenciones).
+
+## Estado actual y pendientes
+
+- Última versión compilada: **v9.0 (code 19)**, APK ≈46 MB. El APK v9.0 quedó **pendiente de instalar en el moto g86** desde 2026-10-19.
+- Último commit: `0e0d40e` (2026-10-19) "Asistente: saludo inicial abierto a preguntas generales".
+- Rama `v1.8-merge` sincronizada con `origin/main` (0 commits de diferencia).
+- Pendientes conocidos: (1) instalar y verificar v9.0 en el dispositivo; (2) confirmar que el backend tiene desplegado el push del 2026-10-13 (`SenaAccessWebDef1` → `SenaAccessWeb/main`); (3) revisar que las líneas "pendiente instalar" antiguas del historial **no** reflecten el estado real (solo las 2 últimas entradas cuentan).
+
+## Esta máquina (verificar antes de usar)
+
+- **SDK Android**: `local.properties` apunta a `sdk.dir=/home/andres/Android/Sdk`. Ese archivo **no** está versionado: en otra máquina hay que crearlo (o usar el build por Docker).
+- **adb**: `/home/andres/android-sdk/platform-tools/adb` (segundo SDK, con platform-tools). Dispositivo de pruebas: moto g86 `ZY32MFMZMX`.
+- **Java local**: 17; el toolchain 21 lo descarga Gradle solo (requiere red la primera vez).
+- **Docker**: **no está instalado** en esta máquina; el build portable por Docker requiere instalarlo antes.
+- **Railway**: el servicio en vivo pertenece a la cuenta del dueño; el proyecto CLI `superb-peace` solo tiene la BD `MySQL-DK1Y` y un web viejo, así que `railway logs` **no** muestra el servicio en vivo.
+- **Backend local**: servicio systemd de usuario `sennaccess` + watcher que aplica `adb reverse` (≤3 s tras conectar USB).
+
+## Checklist de verificación al abrir el proyecto
+
+Ejecútalo al arrancar una sesión (es el control de coherencia entre este documento y el código):
+
+1. `git rev-parse --show-toplevel` → debe imprimir la raíz; `git status -sb` → rama `v1.8-merge` y sin cambios sin commitear.
+2. `ls app/src/main/java/com/example/sennaccess` → 12 paquetes: `administrador, aplicacion, aprendiz, asistente, autenticacion, biometria, comun, datos, excusas, instructor, perfil, portero`.
+3. `find app/src/main/java -name "*.kt" | wc -l` → **109**.
+4. `find app/src/main/java -name "RetrofitClient.kt" -o -name "SessionManager.kt" -o -name "MockData.kt" -o -name "HuellaCredentialStore.kt"` → **0 resultados** (nombres legacy prohibidos).
+5. `grep -n "BASE_URL_REMOTE" app/src/main/java/com/example/sennaccess/datos/red/ClienteApi.kt` → la URL de la sección "Contrato con la API".
+6. `grep -nE "versionName|versionCode" app/build.gradle.kts` → `9.0` / `19`.
+7. `grep -cE "@(GET|POST|PUT|DELETE|PATCH)" app/src/main/java/com/example/sennaccess/datos/red/ServicioApi.kt` → **73**.
+8. `cat local.properties` → `sdk.dir` válido; si falta, crearlo o usar Docker.
+9. `./gradlew assembleDebug` (o `docker compose run --rm sennaccess-movil`) → **BUILD SUCCESSFUL**.
+10. `grep -A8 "fun normalizar" app/src/main/java/com/example/sennaccess/datos/sesion/RolSeguro.kt` → `superadmin`, `admin`, `instructor`, `aprendiz`, `invitado`.
+
+Si algo no cuadra, **corrige este `AGENTS.md`** (es la fuente de verdad) y anótalo en el historial.
 
 ## Retomar trabajo (IMPORTANTE)
+
 - Este proyecto = **"SenaAccess MÓVIL"**.
 - Palabra clave: **"continuemos con Sena access movil"** (o "continuemos"/"retomemos"/"seguimos"). En ese caso NO leas archivos extra y NO re-explores el repo con grep/glob — el estado completo y todo el historial están AQUÍ MISMO (sección `## Historial`, entradas más recientes al final).
 
 ## Autoguardar historial (OBLIGATORIO)
-Al terminar cada tarea/sesión, agrega al FINAL de `## Historial` una entrada fechada `- YYYY-MM-DD — <qué cambiaste y por qué>`: MUY concreta, directa y clara (1-2 líneas máximo). Nunca borres ni reescribas entradas anteriores.
+
+Al terminar cada tarea/sesión, agrega al FINAL de la sección `## Historial` **de este mismo archivo** una entrada fechada `- YYYY-MM-DD — <qué cambiaste y por qué>`: MUY concreta, directa y clara (1-2 líneas máximo). Nunca borres ni reescribas entradas anteriores. El historial vive dentro del proyecto (este archivo versionado en git).
 
 ## Agentes y skills (ruteo obligatorio)
-Agentes en `.opencode/agent/`, skills en `.opencode/skill/*/SKILL.md`.
+
+Agentes en `.opencode/agent/`, skills en `.opencode/skill/*/SKILL.md` (todo versionado: `git clone` los restaura; `.opencode/node_modules` se regenera solo).
 - `screen|compose|Retrofit|CameraX|apk|biometric|huella|dashboard|dock` → agent `android-compose` + skill `android-secure-ui`.
 - `test|hueco|seguridad|vulnerabilidad|revisar|pentest|rol|2fa` → agent `qa-seguridad` + skills `pentest-sena` + `testing-flujos`.
-- Funcionalidad nueva end-to-end (requiere backend WEB) → `android-compose`, pide abrir opencode en WEB para el backend, cierra `qa-seguridad`.
+- Funcionalidad nueva end-to-end (requiere backend WEB) → `android-compose`, pide abrir opencode en el repo del backend para la parte WEB, cierra `qa-seguridad`.
 
 ## Bug recurrente: cuentas que caen a Invitado (rol invisible)
+
 - Síntoma: una cuenta (p. ej. `volverasandres7@gmail.com`, ID 13) aparece con rol Invitado: no entra a ningún dashboard (`RolSeguro.esValido` lo rechaza) y no se ve en Usuarios.
 - Causa: `fk_id_rol=4` (Invitado) puesto por seed, edición manual o fallback viejo; ya pasó 3 veces con la misma cuenta.
 - Fix en vivo: `PUT /api/admin/users/13` con cuerpo completo (`user_identification/name/lastname/email/documento_tipo` + `fk_id_rol` destino) usando token de `admin@sena.edu.co`; el PUT solo con `fk_id_rol` da 422.
@@ -38,7 +155,8 @@ Agentes en `.opencode/agent/`, skills en `.opencode/skill/*/SKILL.md`.
 - Ojo: `/api/admin/roles` con token inválido devuelve HTML 500 de Laravel; no es caída del backend.
 
 ## Palabra clave: PARIDAD TOTAL
-- Si el dueño dice **PARIDAD TOTAL** (aquí o en el WEB), significa replicar en el WEB todo el rediseño del móvil + panel Portero (ver memoria global). El WEB real es `SenaAccessRailway/SenaAccessWeb` (clon con remoto SSH, pushea a `SenaAccessWeb/main` y Railway autodespliega; NO usar Repo2 ni Final-master, son copias sin remoto). Al decirla en la sesión del WEB, mi primera palabra debe ser **Mandarina**.
+
+- Si el dueño dice **PARIDAD TOTAL** (aquí o en el WEB), significa replicar en el WEB (repo `https://github.com/Andres777233/SenaAccessWeb`) todo el rediseño del móvil + el panel de portería. Al decirla en la sesión del WEB, la primera palabra debe ser **Mandarina**.
 
 ## Historial
 - 2026-08-22 — Paridad con el backend + refresco: quité de la app REPORTES/ASIGNACIONES/MENSAJE, arreglé dock EQUIPOS del admin (abre inventario); refetch automático al cambiar/volver de pestaña. APK compilado PENDIENTE de instalar en el moto g86.
@@ -173,3 +291,4 @@ Agentes en `.opencode/agent/`, skills en `.opencode/skill/*/SKILL.md`.
 - 2026-10-14 — Manual técnico móvil v9.0 v3 en `~/Documentos/Manual_Tecnico_SenaAccess_Movil_v9.0.docx` (208 párrafos, 19 tablas, 12 capturas REALES de Android Studio del dueño en `~/Imágenes/Capturas Documentacion`, Arial B/N, 68 endpoints).
 - 2026-10-19 — Menú “Perfil” abre la vista de perfil (no edición) en los 4 roles; dock y pantalla QR pasan de “Ingreso” a “Salida”; el aprendiz borra del historial sus excusas cerradas (basura + confirmación en `MisExcusas`, endpoint WEB `DELETE /mis-excusas/{id}`). BUILD SUCCESSFUL; APK sin instalar (sin dispositivo conectado).
 - 2026-10-19 — Asistente móvil: el saludo inicial invita también a preguntas generales (el backend ya responde cualquier tema con contexto del proyecto y herramientas).
+- 2026-10-21 — AGENTS.md autocontenido y portable: reescribí el encabezado (cómo ubicarse sin rutas absolutas, identidad v9.0/code 19, mapa de los 12 paquetes y 109 .kt, comandos + build por Docker, convenciones con los nombres reales en español, roles, contrato API, backend solo por URL de GitHub, estado y pendientes, "esta máquina" y checklist de verificación) sin tocar ninguna de las 132 entradas del historial; el WEB recibió su AGENTS.md equivalente.
