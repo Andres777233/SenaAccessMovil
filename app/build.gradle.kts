@@ -18,17 +18,26 @@ android {
     }
 
     signingConfigs {
-        getByName("debug") {
-            storeFile = file("debug.keystore")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
+        // Las llaves NO se versionan. Si app/debug.keystore existe se usa para
+        // conservar la firma de los APK ya instalados; si no, Gradle genera la
+        // suya en ~/.android/debug.keystore y un clon limpio compila igual.
+        val debugLocal = file("debug.keystore")
+        if (debugLocal.exists()) {
+            getByName("debug") {
+                storeFile = debugLocal
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
         }
         create("release") {
-            storeFile = file(keystoreProps.getProperty("storeFile", "release.keystore"))
-            storePassword = keystoreProps.getProperty("storePassword")
-            keyAlias = keystoreProps.getProperty("keyAlias", "senaaccess")
-            keyPassword = keystoreProps.getProperty("keyPassword")
+            val releaseFile = file(keystoreProps.getProperty("storeFile", "release.keystore"))
+            if (releaseFile.exists()) {
+                storeFile = releaseFile
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias", "senaaccess")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
         }
     }
 
@@ -48,7 +57,10 @@ versionCode = 19
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            signingConfig = signingConfigs.getByName("release")
+            // Sin llave de release el APK sale sin firmar en vez de romper el
+            // build (clones limpios y CI); con llave, se firma de verdad.
+            signingConfig = signingConfigs.findByName("release")
+                ?.takeIf { it.storeFile?.exists() == true }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

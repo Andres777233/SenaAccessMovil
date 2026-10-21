@@ -46,7 +46,9 @@ App Android (Kotlin + Jetpack Compose, estilo vidrio verde) de SenaAccess: contr
 - **Compilar**: `./gradlew assembleDebug` → `app/build/outputs/apk/debug/app-debug.apk` (≈46 MB).
 - **Compilar sin Android Studio (portable)**: `docker compose run --rm sennaccess-movil` → APK en `artifacts/apk/`. El `Dockerfile` instala temurin 17 + SDK 36 y produce el mismo APK.
 - **Tests**: `./gradlew testDebugUnitTest`.
-- **Release**: `./gradlew assembleRelease` (R8 + shrink). Requiere `app/keystore.properties` + `release.keystore`, **no versionados**: sin ellos solo compila debug.
+- **Release**: `./gradlew assembleRelease` (R8 + shrink). Con `app/keystore.properties` + llave de release sale **firmado**; **sin llaves (clon limpio) el APK sale sin firmar** (`app-release-unsigned.apk`) en vez de romper el build. Las llaves nunca se versionan (`.gitignore`).
+- **Debug y firma**: si existe `app/debug.keystore` se usa (conserva la firma de los APK ya instalados en los dispositivos); si no, Gradle firma con la llave por defecto `~/.android/debug.keystore`. Ojo: una app firmada con otra llave **no se actualiza encima** → hay que desinstalarla antes.
+- **SDK**: `local.properties` con `sdk.dir` **o** la variable `ANDROID_HOME`; si faltan las dos, el build falla con "SDK location not found".
 - **Instalar en el dispositivo**: `adb install -r app/build/outputs/apk/debug/app-debug.apk` (moto g86 = `ZY32MFMZMX`).
 - **Git**: rama de trabajo `v1.8-merge`, remoto `git@github.com:Andres777233/SenaAccessMovil.git`. Regla fija del proyecto: **commit + push a `main` al final de cada tarea** (`git push origin HEAD:main`).
 - **Backend local (opcional)**: servicio systemd de usuario `sennaccess` (`systemctl --user status|restart sennaccess`) que levanta `artisan serve` y aplica `adb reverse tcp:8000`. La app **no** usa ese backend: habla siempre con Railway.
@@ -124,7 +126,7 @@ Ejecútalo al arrancar una sesión (es el control de coherencia entre este docum
 5. `grep -n "BASE_URL_REMOTE" app/src/main/java/com/example/sennaccess/datos/red/ClienteApi.kt` → la URL de la sección "Contrato con la API".
 6. `grep -nE "versionName|versionCode" app/build.gradle.kts` → `9.0` / `19`.
 7. `grep -cE "@(GET|POST|PUT|DELETE|PATCH)" app/src/main/java/com/example/sennaccess/datos/red/ServicioApi.kt` → **73**.
-8. `cat local.properties` → `sdk.dir` válido; si falta, crearlo o usar Docker.
+8. `cat local.properties` → `sdk.dir` válido; si falta, crearlo o usar `ANDROID_HOME` o Docker.
 9. `./gradlew assembleDebug` (o `docker compose run --rm sennaccess-movil`) → **BUILD SUCCESSFUL**.
 10. `grep -A8 "fun normalizar" app/src/main/java/com/example/sennaccess/datos/sesion/RolSeguro.kt` → `superadmin`, `admin`, `instructor`, `aprendiz`, `invitado`.
 
@@ -292,3 +294,4 @@ Agentes en `.opencode/agent/`, skills en `.opencode/skill/*/SKILL.md` (todo vers
 - 2026-10-19 — Menú “Perfil” abre la vista de perfil (no edición) en los 4 roles; dock y pantalla QR pasan de “Ingreso” a “Salida”; el aprendiz borra del historial sus excusas cerradas (basura + confirmación en `MisExcusas`, endpoint WEB `DELETE /mis-excusas/{id}`). BUILD SUCCESSFUL; APK sin instalar (sin dispositivo conectado).
 - 2026-10-19 — Asistente móvil: el saludo inicial invita también a preguntas generales (el backend ya responde cualquier tema con contexto del proyecto y herramientas).
 - 2026-10-21 — AGENTS.md autocontenido y portable: reescribí el encabezado (cómo ubicarse sin rutas absolutas, identidad v9.0/code 19, mapa de los 12 paquetes y 109 .kt, comandos + build por Docker, convenciones con los nombres reales en español, roles, contrato API, backend solo por URL de GitHub, estado y pendientes, "esta máquina" y checklist de verificación) sin tocar ninguna de las 132 entradas del historial; el WEB recibió su AGENTS.md equivalente.
+- 2026-10-21 — Build portable: `app/build.gradle.kts` ya no exige llaves ausentes (debug usa `app/debug.keystore` si existe y si no la llave por defecto de Gradle; release sale `unsigned` sin `keystore.properties`), así un clon limpio compila; verificado con `git clone` nuevo + `assembleDebug assembleRelease` OK, y la firma debug del APK del dueño no cambió (SHA-256 6482c042…).
