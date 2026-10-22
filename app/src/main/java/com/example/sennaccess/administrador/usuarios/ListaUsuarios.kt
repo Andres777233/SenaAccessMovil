@@ -108,6 +108,11 @@ fun ContenidoUsuarios(
                 onEditar = { onEditarUsuario(it) },
                 onBorrar = { usuarioAEliminar = it; errorEliminar = null }
             )
+            "PENDIENTES" -> VistaSolicitudesPendientes(
+                estado = uiState,
+                viewModel = viewModel,
+                onBack = { vista = ""; busqueda = "" }
+            )
             "INVITADOS" -> VistaListaUsuarios(
                 titulo = "Invitados",
                 icono = Icons.Default.PersonSearch,
@@ -126,7 +131,8 @@ fun ContenidoUsuarios(
                 onInstructores = { vista = "INSTRUCTORES"; busqueda = "" },
                 onAprendices = { vista = "APRENDICES"; busqueda = "" },
                 onPorteros = { vista = "ADMINS"; busqueda = "" },
-                onInvitados = { vista = "INVITADOS"; busqueda = "" }
+                onInvitados = { vista = "INVITADOS"; busqueda = "" },
+                onPendientes = { vista = "PENDIENTES"; busqueda = "" }
             )
         }
 
@@ -168,7 +174,8 @@ private fun MenuUsuarios(
     onInstructores: () -> Unit,
     onAprendices: () -> Unit,
     onPorteros: () -> Unit = {},
-    onInvitados: () -> Unit = {}
+    onInvitados: () -> Unit = {},
+    onPendientes: () -> Unit = {}
 ) {
     val colors = ColoresAppLocal.current
     val datos = (estado as? EstadoCarga.Success)?.datos.orEmpty()
@@ -176,6 +183,8 @@ private fun MenuUsuarios(
     val nApr = datos.count { it.role?.rol_name.equals("Aprendiz", ignoreCase = true) }
     val nPor = datos.count { it.role?.rol_name.equals("Admin", ignoreCase = true) }
     val nInv = datos.count { it.esInvitado() }
+    // Cuentas que esperan autorizacion del superadmin (registro publico).
+    val nPendientes = datos.count { it.estaPendiente() }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -222,6 +231,16 @@ private fun MenuUsuarios(
             icono = Icons.Default.PersonSearch,
             onClick = onInvitados
         )
+        if (nPendientes > 0) {
+            Spacer(modifier = Modifier.height(12.dp))
+            CategoriaUsuarioCard(
+                titulo = "Solicitudes pendientes",
+                descripcion = "Cuentas esperando tu aprobación",
+                conteo = "$nPendientes por revisar",
+                icono = Icons.Default.HourglassTop,
+                onClick = onPendientes
+            )
+        }
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             "Busca por nombre, documento, correo o ficha dentro de cada grupo.",
@@ -539,6 +558,142 @@ private fun VistaListaUsuarios(
                                 onEditar = { onEditar(usuario) },
                                 onBorrar = { onBorrar(usuario) }
                             )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Bandeja de solicitudes: cuentas que esperan la aprobacion del superadmin.
+// Mismo criterio que el panel web (POST /admin/users/{id}/aprobar|rechazar).
+@Composable
+private fun VistaSolicitudesPendientes(
+    estado: EstadoCarga<List<UsuarioApi>>,
+    viewModel: ModeloUsuarios,
+    onBack: () -> Unit
+) {
+    val colors = ColoresAppLocal.current
+    val scope = rememberCoroutineScope()
+    var procesando by remember { mutableStateOf<Int?>(null) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var aviso by remember { mutableStateOf<String?>(null) }
+
+    val pendientes = (estado as? EstadoCarga.Success)?.datos.orEmpty().filter { it.estaPendiente() }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = verdeMarca())
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Solicitudes pendientes", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text(
+                    if (estado is EstadoCarga.Loading) "Cargando solicitudes..." else "${pendientes.size} por revisar",
+                    color = colors.textSecondary,
+                    fontSize = 12.sp
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        if (error != null) {
+            Text(error!!, color = Color(0xFFFF6B6B), fontSize = 12.sp)
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+        if (aviso != null) {
+            Text(aviso!!, color = verdeMarca(), fontSize = 12.sp)
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        when (estado) {
+            is EstadoCarga.Loading -> {
+                Box(modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = verdeMarca(), modifier = Modifier.size(32.dp))
+                }
+            }
+            is EstadoCarga.Error -> {
+                VistaVacia(icono = Icons.Default.Warning, titulo = "No se pudo cargar", mensaje = estado.mensaje)
+            }
+            is EstadoCarga.Success -> {
+                if (pendientes.isEmpty()) {
+                    VistaVacia(
+                        icono = Icons.Default.CheckCircle,
+                        titulo = "Nada pendiente",
+                        mensaje = "No hay cuentas esperando aprobación."
+                    )
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        contentPadding = PaddingValues(bottom = 16.dp)
+                    ) {
+                        items(pendientes, key = { it.id_usuario ?: it.user_email ?: it.nombreCompleto }) { usuario ->
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .superficiePlana(cornerRadius = RadioVidrio)
+                                    .padding(14.dp)
+                            ) {
+                                Text(usuario.nombreCompleto, color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                Text(usuario.user_email ?: "", color = colors.textSecondary, fontSize = 12.sp)
+                                Text(
+                                    "Documento: ${usuario.user_identification ?: "-"}" +
+                                        (if (!usuario.user_program.isNullOrBlank()) " • ${usuario.user_program}" else ""),
+                                    color = colors.textSecondary,
+                                    fontSize = 12.sp
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    Button(
+                                        onClick = {
+                                            val id = usuario.id_usuario ?: return@Button
+                                            procesando = id
+                                            error = null
+                                            scope.launch {
+                                                try {
+                                                    aviso = viewModel.aprobarCuenta(id)
+                                                    procesando = null
+                                                } catch (e: retrofit2.HttpException) {
+                                                    procesando = null
+                                                    error = detalleHttp(e)
+                                                } catch (e: Exception) {
+                                                    procesando = null
+                                                    error = "No se pudo conectar al servidor."
+                                                }
+                                            }
+                                        },
+                                        enabled = procesando == null,
+                                        modifier = Modifier.weight(1f).height(46.dp),
+                                        shape = RoundedCornerShape(28.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = VerdeSena, contentColor = Color.Black)
+                                    ) { Text("APROBAR", fontWeight = FontWeight.Bold, fontSize = 12.sp) }
+                                    OutlinedButton(
+                                        onClick = {
+                                            val id = usuario.id_usuario ?: return@OutlinedButton
+                                            procesando = id
+                                            error = null
+                                            scope.launch {
+                                                try {
+                                                    aviso = viewModel.rechazarCuenta(id)
+                                                    procesando = null
+                                                } catch (e: retrofit2.HttpException) {
+                                                    procesando = null
+                                                    error = detalleHttp(e)
+                                                } catch (e: Exception) {
+                                                    procesando = null
+                                                    error = "No se pudo conectar al servidor."
+                                                }
+                                            }
+                                        },
+                                        enabled = procesando == null,
+                                        modifier = Modifier.weight(1f).height(46.dp),
+                                        shape = RoundedCornerShape(28.dp)
+                                    ) { Text("RECHAZAR", fontWeight = FontWeight.Bold, fontSize = 12.sp) }
+                                }
+                            }
                         }
                     }
                 }

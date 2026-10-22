@@ -23,7 +23,6 @@ import com.example.sennaccess.datos.modelos.EquipoIngreso
 import com.example.sennaccess.datos.modelos.EstadoConfigDobleFactor
 import com.example.sennaccess.datos.modelos.EstadoVerificacion
 import com.example.sennaccess.datos.modelos.Excusa
-import com.example.sennaccess.datos.modelos.HorarioAmbiente
 import com.example.sennaccess.datos.modelos.Ingreso
 import com.example.sennaccess.datos.modelos.Notificacion
 import com.example.sennaccess.datos.modelos.Novedad
@@ -38,14 +37,11 @@ import com.example.sennaccess.datos.modelos.PeticionAprobarReto
 import com.example.sennaccess.datos.modelos.PeticionCrearExcusa
 import com.example.sennaccess.datos.modelos.PeticionDesactivarDobleFactor
 import com.example.sennaccess.datos.modelos.PeticionEquipoIngreso
-import com.example.sennaccess.datos.modelos.PeticionHorario
 import com.example.sennaccess.datos.modelos.PeticionInvitado
 import com.example.sennaccess.datos.modelos.PeticionNovedad
 import com.example.sennaccess.datos.modelos.PeticionRecuperacion
 import com.example.sennaccess.datos.modelos.PeticionRegistro
-import com.example.sennaccess.datos.modelos.PeticionResponderSugerencia
 import com.example.sennaccess.datos.modelos.PeticionRestablecer
-import com.example.sennaccess.datos.modelos.PeticionSugerencia
 import com.example.sennaccess.datos.modelos.PeticionUsuario
 import com.example.sennaccess.datos.modelos.PeticionValidarCodigo
 import com.example.sennaccess.datos.modelos.PeticionValidarExcusa
@@ -61,13 +57,11 @@ import com.example.sennaccess.datos.modelos.RespuestaMensaje
 import com.example.sennaccess.datos.modelos.PeticionValidarAcceso
 import com.example.sennaccess.datos.modelos.PeticionValidarPin
 import com.example.sennaccess.datos.modelos.RespuestaValidarAcceso
-import com.example.sennaccess.datos.modelos.RespuestaPaginaSugerencias
 import com.example.sennaccess.datos.modelos.RespuestaQrInvitado
 import com.example.sennaccess.datos.modelos.RespuestaRegistro
 import com.example.sennaccess.datos.modelos.RespuestaSalida
 import com.example.sennaccess.datos.modelos.RespuestaValidarExcusa
 import com.example.sennaccess.datos.modelos.Rol
-import com.example.sennaccess.datos.modelos.Sugerencia
 import com.example.sennaccess.datos.modelos.UsuarioApi
 
 interface ServicioApi {
@@ -200,6 +194,21 @@ interface ServicioApi {
     @GET("admin/presentes")
     suspend fun getPresentes(@Header("Authorization") auth: String): List<Presente>
 
+    // 7b. POST /api/admin/users/{id}/aprobar: el superadmin aprueba una cuenta
+    // que esta esperando autorizacion (mismo criterio que el panel web).
+    @POST("admin/users/{id}/aprobar")
+    suspend fun aprobarCuenta(
+        @Header("Authorization") authorization: String,
+        @Path("id") id: Int
+    ): RespuestaMensaje
+
+    // 7c. POST /api/admin/users/{id}/rechazar: el superadmin rechaza la solicitud.
+    @POST("admin/users/{id}/rechazar")
+    suspend fun rechazarCuenta(
+        @Header("Authorization") authorization: String,
+        @Path("id") id: Int
+    ): RespuestaMensaje
+
     // 8. GET /api/my-novedades: novedades publicadas por el usuario logueado.
     @GET("my-novedades")
     suspend fun getMyNovedades(@Header("Authorization") auth: String): List<Novedad>
@@ -280,18 +289,8 @@ interface ServicioApi {
     @DELETE("admin/ambientes/{id}")
     suspend fun deleteAmbiente(@Header("Authorization") auth: String, @Path("id") id: Int): RespuestaMensaje
 
-    @GET("admin/ambientes/{id}/horarios")
-    suspend fun getHorarios(@Header("Authorization") auth: String, @Path("id") id: Int): List<HorarioAmbiente>
-
-    @POST("admin/ambientes/{id}/horario")
-    suspend fun createHorario(
-        @Header("Authorization") auth: String,
-        @Path("id") id: Int,
-        @Body body: PeticionHorario
-    ): HorarioAmbiente
-
-    @DELETE("admin/ambiente-horarios/{id}")
-    suspend fun deleteHorario(@Header("Authorization") auth: String, @Path("id") id: Int): RespuestaMensaje
+    // El backend no expone una tabla de horarios por ambiente: el salon
+    // guarda hora_inicio/hora_fin. Esas rutas quedaron como codigo muerto.
 
     // ---- Novedades: crear y eliminar (el propietario o un admin) ----
     @POST("novedades")
@@ -300,32 +299,8 @@ interface ServicioApi {
     @DELETE("novedades/{id}")
     suspend fun deleteNovedad(@Header("Authorization") auth: String, @Path("id") id: Int): RespuestaMensaje
 
-    // ---- Sugerencias: crear y ver las propias (cualquier rol), bandeja y
-    // respuesta (solo admin). Rutas del SugerenciaController del backend.
-    @GET("my-sugerencias")
-    suspend fun getMisSugerencias(@Header("Authorization") auth: String): List<Sugerencia>
-
-    @POST("sugerencias")
-    suspend fun crearSugerencia(@Header("Authorization") auth: String, @Body body: PeticionSugerencia): Sugerencia
-
-    @GET("sugerencias")
-    suspend fun getSugerencias(
-        @Header("Authorization") auth: String,
-        @Query("q") q: String? = null,
-        @Query("status") status: String? = null,
-        @Query("categoria") categoria: String? = null,
-        @Query("per_page") perPage: Int = 50
-    ): RespuestaPaginaSugerencias
-
-    @PUT("admin/sugerencias/{id}/responder")
-    suspend fun responderSugerencia(
-        @Header("Authorization") auth: String,
-        @Path("id") id: Int,
-        @Body body: PeticionResponderSugerencia
-    ): Sugerencia
-
-    @DELETE("admin/sugerencias/{id}")
-    suspend fun eliminarSugerencia(@Header("Authorization") auth: String, @Path("id") id: Int): RespuestaMensaje
+    // El buzon de sugerencias se retiro del backend el 30-sep: sus rutas ya no
+    // existen, asi que el cliente no las declara (quedaban como codigo muerto).
 
     // ---- Notificaciones in-app ----
     @GET("notifications")

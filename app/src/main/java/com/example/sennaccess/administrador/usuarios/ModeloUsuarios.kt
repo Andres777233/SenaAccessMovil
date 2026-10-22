@@ -38,4 +38,20 @@ class ModeloUsuarios : ViewModel() {
         repository.eliminarUsuario(token, id)
         cargarUsuarios()
     }
+
+    // Aprueba una cuenta pendiente y refresca la lista.
+    suspend fun aprobarCuenta(id: Int): String {
+        val token = GestorSesion.token ?: return "No hay sesión activa."
+        val respuesta = repository.aprobarCuenta(token, id)
+        cargarUsuarios()
+        return respuesta.message ?: "Cuenta aprobada."
+    }
+
+    // Rechaza la solicitud de una cuenta y refresca la lista.
+    suspend fun rechazarCuenta(id: Int): String {
+        val token = GestorSesion.token ?: return "No hay sesión activa."
+        val respuesta = repository.rechazarCuenta(token, id)
+        cargarUsuarios()
+        return respuesta.message ?: "Solicitud rechazada."
+    }
 }

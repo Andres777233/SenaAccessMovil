@@ -130,10 +130,14 @@ data class UsuarioApi(
     @SerializedName("user_jornada_sabado") val user_jornada_sabado: String? = null,
     @SerializedName("fk_id_rol") val fk_id_rol: Int? = null,
     @SerializedName("profile_photo_path") val profile_photo_path: String? = null,
+    @SerializedName("estado_cuenta") val estado_cuenta: String? = null,
     val role: Rol? = null
 ) {
     val nombreCompleto: String get() = listOfNotNull(user_name, user_lastname).joinToString(" ").ifBlank { "Sin nombre" }
     fun esRol(rol: String): Boolean = role?.rol_name.equals(rol, ignoreCase = true)
+    // Cuenta esperando aprobacion del superadmin (registro publico).
+    fun estaPendiente(): Boolean = estado_cuenta?.trim()?.lowercase() == "pendiente"
+
     // Invitado temporal (QR): nunca va a ambientes ni a dueños de equipos.
     fun esInvitado(): Boolean {
         val r = role?.rol_name?.trim()?.lowercase()
@@ -366,22 +370,8 @@ data class PeticionAmbienteInstructores(
     val instructores: List<Int>
 )
 
-// Ventana de clase de un ambiente.
-data class HorarioAmbiente(
-    @SerializedName("id_horario") val id_horario: Int? = null,
-    @SerializedName("fk_id_ambiente") val fk_id_ambiente: Int? = null,
-    @SerializedName("dia") val dia: String? = null,
-    @SerializedName("jornada") val jornada: String? = null,
-    @SerializedName("fk_id_instructor") val fk_id_instructor: Int? = null,
-    val instructor: UsuarioApi? = null
-)
-
-// Horario para crear o actualizar.
-data class PeticionHorario(
-    @SerializedName("dia") val dia: String,
-    @SerializedName("jornada") val jornada: String,
-    @SerializedName("fk_id_instructor") val fk_id_instructor: Int
-)
+// La tabla de horarios por ambiente no existe en el backend: el salon guarda
+// hora_inicio/hora_fin en el mismo registro.
 
 // ---- Notificaciones ----
 // Notificación del usuario en sesión.

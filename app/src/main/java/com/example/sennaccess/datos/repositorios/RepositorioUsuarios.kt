@@ -77,4 +77,12 @@ class RepositorioUsuarios {
     // Elimina un usuario por id (DELETE /admin/users/{id}, rol admin).
     suspend fun eliminarUsuario(token: String, id: Int): RespuestaMensaje =
         ClienteApi.conServicio { it.deleteUser("Bearer $token", id) }
+
+    // Aprueba una cuenta pendiente (POST /admin/users/{id}/aprobar).
+    suspend fun aprobarCuenta(token: String, id: Int): RespuestaMensaje =
+        ClienteApi.conServicio { it.aprobarCuenta("Bearer $token", id) }
+
+    // Rechaza la solicitud de una cuenta (POST /admin/users/{id}/rechazar).
+    suspend fun rechazarCuenta(token: String, id: Int): RespuestaMensaje =
+        ClienteApi.conServicio { it.rechazarCuenta("Bearer $token", id) }
 }

@@ -23,6 +23,7 @@ App Android (Kotlin + Jetpack Compose, estilo vidrio verde) de SenaAccess: contr
 | Toolchain | Gradle 9.3.1, AGP 9.1.1, Kotlin 2.2.10, Compose BOM 2026.02.01, **JDK 21** (auto-descarga con foojay: requiere red la primera vez) |
 | Red | Retrofit 2.11 + OkHttp 4.12 (logging) + Gson, Coil 2.6, CameraX 1.4.2 + MLKit 17.3, ZXing 3.5.3, Biometric 1.1.0 |
 | Tamaño | 109 archivos `.kt` en 12 paquetes, todos en español (el contrato de API conserva inglés en `@SerializedName`, endpoints y Manifest) |
+| Contrato | El móvil declara **66** endpoints (`datos/red/ServicioApi.kt`) frente a **83** rutas del backend |
 
 ## Mapa del repo (`app/src/main/java/com/example/sennaccess/`)
 
@@ -82,7 +83,9 @@ En el backend los `roles.rol_name` son `Superadmin`, `Admin`, `Instructor`, `Apr
 ## Contrato con la API
 
 - **Base**: `https://senaaccessweb-production-4c6e.up.railway.app/api/` (`datos/red/ClienteApi.kt:17`).
-- **Endpoints**: 73 en `datos/red/ServicioApi.kt` (fuente de verdad del contrato del móvil) frente a 80 rutas en el backend (`routes/api.php`).
+- **Errores del API**: toda ruta `/api/*` inexistente responde **404 JSON** y sin token **401 JSON** (nunca HTML ni 500): el móvil puede usar `detalleHttp` sin sorpresas.
+- **Huella digital**: el móvil usa biometría **local** (`BiometricPrompt` + Keystore AES-256-GCM; la biometría nunca sale del dispositivo). La **web** ya tiene su equivalente con **WebAuthn/passkey** (`/api/huellas/*`), por si se quiere paridad total en algún momento.
+- **Endpoints**: **66** en `datos/red/ServicioApi.kt` (fuente de verdad del contrato del móvil) frente a **83** rutas en el backend (`routes/api.php`).
 - **Auth**: `Bearer` (Sanctum) + `device_id` (2FA solo reta fuera del dispositivo confiable).
 - **2FA**: `/2fa/activar|desactivar|estado-config|pendientes|aprobar|validar-codigo|estado/{id}|decidir`; el correo (Brevo) trae deep link `senaaccess://2fa` / `https://.../2fa` con botones SÍ/NO.
 - **Errores**: JSON con `message`; la app los muestra con `detalleHttp`.
@@ -121,7 +124,7 @@ Ejecútalo al arrancar una sesión (es el control de coherencia entre este docum
 
 1. `git rev-parse --show-toplevel` → debe imprimir la raíz; `git status -sb` → rama `v1.8-merge` y sin cambios sin commitear.
 2. `ls app/src/main/java/com/example/sennaccess` → 12 paquetes: `administrador, aplicacion, aprendiz, asistente, autenticacion, biometria, comun, datos, excusas, instructor, perfil, portero`.
-3. `find app/src/main/java -name "*.kt" | wc -l` → **109**.
+3. `find app/src/main/java -name "*.kt" | wc -l` → **109** (109 = 111 − 2 módulos muertos eliminados en la auditoría del 2026-10-21: `sugerencias` y `horarios`).
 4. `find app/src/main/java -name "RetrofitClient.kt" -o -name "SessionManager.kt" -o -name "MockData.kt" -o -name "HuellaCredentialStore.kt"` → **0 resultados** (nombres legacy prohibidos).
 5. `grep -n "BASE_URL_REMOTE" app/src/main/java/com/example/sennaccess/datos/red/ClienteApi.kt` → la URL de la sección "Contrato con la API".
 6. `grep -nE "versionName|versionCode" app/build.gradle.kts` → `9.0` / `19`.
@@ -295,3 +298,4 @@ Agentes en `.opencode/agent/`, skills en `.opencode/skill/*/SKILL.md` (todo vers
 - 2026-10-19 — Asistente móvil: el saludo inicial invita también a preguntas generales (el backend ya responde cualquier tema con contexto del proyecto y herramientas).
 - 2026-10-21 — AGENTS.md autocontenido y portable: reescribí el encabezado (cómo ubicarse sin rutas absolutas, identidad v9.0/code 19, mapa de los 12 paquetes y 109 .kt, comandos + build por Docker, convenciones con los nombres reales en español, roles, contrato API, backend solo por URL de GitHub, estado y pendientes, "esta máquina" y checklist de verificación) sin tocar ninguna de las 132 entradas del historial; el WEB recibió su AGENTS.md equivalente.
 - 2026-10-21 — Build portable: `app/build.gradle.kts` ya no exige llaves ausentes (debug usa `app/debug.keystore` si existe y si no la llave por defecto de Gradle; release sale `unsigned` sin `keystore.properties`), así un clon limpio compila; verificado con `git clone` nuevo + `assembleDebug assembleRelease` OK, y la firma debug del APK del dueño no cambió (SHA-256 6482c042…).
+- 2026-10-21 — Auditoría integral web+móvil (ver `AUDIT_REPORT.md`): en el móvil añadí la **bandeja de solicitudes pendientes** (aprobar/rechazar cuentas, paridad con el web) con `estado_cuenta` en `UsuarioApi`, 2 endpoints nuevos y errores reales del servidor; eliminé el código muerto del módulo **sugerencias** (retirado del backend el 30-sep) y los endpoints de **horarios por ambiente** que el backend nunca tuvo —el contrato pasa de 9 discrepancias a 1 (el `POST my-profile` con spoofing `_method`, verificado 200)—; en el web corregí el solape del `<select>` sobre su etiqueta, el desborde de las páginas públicas, el navbar y la **huella real (WebAuthn)**. BUILD SUCCESSFUL (debug + release) y `testDebugUnitTest` OK.
