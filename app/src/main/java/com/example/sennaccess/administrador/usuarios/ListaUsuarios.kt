@@ -57,6 +57,8 @@ fun ContenidoUsuarios(
     viewModel: ModeloUsuarios = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    // Cuentas en espera de aprobacion: llegan del servidor (estado=pendiente).
+    val pendientes by viewModel.pendientes.collectAsState()
 
     LaunchedEffect(Unit) { viewModel.cargarUsuarios() }
 
@@ -109,7 +111,7 @@ fun ContenidoUsuarios(
                 onBorrar = { usuarioAEliminar = it; errorEliminar = null }
             )
             "PENDIENTES" -> VistaSolicitudesPendientes(
-                estado = uiState,
+                pendientes = pendientes,
                 viewModel = viewModel,
                 onBack = { vista = ""; busqueda = "" }
             )
@@ -128,6 +130,7 @@ fun ContenidoUsuarios(
             )
             else -> MenuUsuarios(
                 estado = uiState,
+                nPendientes = pendientes.size,
                 onInstructores = { vista = "INSTRUCTORES"; busqueda = "" },
                 onAprendices = { vista = "APRENDICES"; busqueda = "" },
                 onPorteros = { vista = "ADMINS"; busqueda = "" },
@@ -171,6 +174,7 @@ fun ContenidoUsuarios(
 @Composable
 private fun MenuUsuarios(
     estado: EstadoCarga<List<UsuarioApi>>,
+    nPendientes: Int,
     onInstructores: () -> Unit,
     onAprendices: () -> Unit,
     onPorteros: () -> Unit = {},
@@ -183,8 +187,6 @@ private fun MenuUsuarios(
     val nApr = datos.count { it.role?.rol_name.equals("Aprendiz", ignoreCase = true) }
     val nPor = datos.count { it.role?.rol_name.equals("Admin", ignoreCase = true) }
     val nInv = datos.count { it.esInvitado() }
-    // Cuentas que esperan autorizacion del superadmin (registro publico).
-    val nPendientes = datos.count { it.estaPendiente() }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -570,7 +572,7 @@ private fun VistaListaUsuarios(
 // Mismo criterio que el panel web (POST /admin/users/{id}/aprobar|rechazar).
 @Composable
 private fun VistaSolicitudesPendientes(
-    estado: EstadoCarga<List<UsuarioApi>>,
+    pendientes: List<UsuarioApi>,
     viewModel: ModeloUsuarios,
     onBack: () -> Unit
 ) {
@@ -580,8 +582,6 @@ private fun VistaSolicitudesPendientes(
     var error by remember { mutableStateOf<String?>(null) }
     var aviso by remember { mutableStateOf<String?>(null) }
 
-    val pendientes = (estado as? EstadoCarga.Success)?.datos.orEmpty().filter { it.estaPendiente() }
-
     Column(modifier = Modifier.fillMaxSize()) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
@@ -590,7 +590,7 @@ private fun VistaSolicitudesPendientes(
             Column(modifier = Modifier.weight(1f)) {
                 Text("Solicitudes pendientes", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 Text(
-                    if (estado is EstadoCarga.Loading) "Cargando solicitudes..." else "${pendientes.size} por revisar",
+                    "${pendientes.size} por revisar",
                     color = colors.textSecondary,
                     fontSize = 12.sp
                 )
@@ -608,17 +608,7 @@ private fun VistaSolicitudesPendientes(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        when (estado) {
-            is EstadoCarga.Loading -> {
-                Box(modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = verdeMarca(), modifier = Modifier.size(32.dp))
-                }
-            }
-            is EstadoCarga.Error -> {
-                VistaVacia(icono = Icons.Default.Warning, titulo = "No se pudo cargar", mensaje = estado.mensaje)
-            }
-            is EstadoCarga.Success -> {
-                if (pendientes.isEmpty()) {
+        if (pendientes.isEmpty()) {
                     VistaVacia(
                         icono = Icons.Default.CheckCircle,
                         titulo = "Nada pendiente",
@@ -697,11 +687,8 @@ private fun VistaSolicitudesPendientes(
                         }
                     }
                 }
-            }
         }
     }
-}
-
 // permite cancelar antes de ejecutar el DELETE /admin/users/{id}.
 @Composable
 private fun EliminarUsuarioDialog(

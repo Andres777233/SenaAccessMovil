@@ -25,10 +25,30 @@ class ModeloUsuarios : ViewModel() {
     private val _uiState = MutableStateFlow<EstadoCarga<List<UsuarioApi>>>(EstadoCarga.Loading)
     val uiState: StateFlow<EstadoCarga<List<UsuarioApi>>> = _uiState.asStateFlow()
 
-    // Recarga la lista de usuarios.
+    // Cuentas que esperan aprobacion: el listado general NO las trae (el
+    // backend las filtra), asi que se piden aparte con estado=pendiente.
+    private val _pendientes = MutableStateFlow<List<UsuarioApi>>(emptyList())
+    val pendientes: StateFlow<List<UsuarioApi>> = _pendientes.asStateFlow()
+
+    // Recarga la lista de usuarios y las solicitudes pendientes.
     fun cargarUsuarios() {
         cargarConRespaldo(fallback = { DatosSimulados.usuarios }, setState = { _uiState.value = it }) {
             repository.getUsers(GestorSesion.token!!)
+        }
+        cargarPendientes()
+    }
+
+    // Carga las cuentas en espera de aprobacion (bandeja de solicitudes).
+    fun cargarPendientes() {
+        val token = GestorSesion.token ?: return
+        viewModelScope.launch {
+            try {
+                _pendientes.value = repository.getCuentasPendientes(token)
+            } catch (e: Exception) {
+                // Sin pendientes no se rompe la pantalla: la bandeja simplemente
+                // queda vacia y el aviso real se muestra al aprobar o rechazar.
+                _pendientes.value = emptyList()
+            }
         }
     }
 
@@ -53,5 +73,10 @@ class ModeloUsuarios : ViewModel() {
         val respuesta = repository.rechazarCuenta(token, id)
         cargarUsuarios()
         return respuesta.message ?: "Solicitud rechazada."
+    }
+
+    // Cierra la sesion del ViewModel: las solicitudes pendientes se limpian.
+    fun limpiarPendientes() {
+        _pendientes.value = emptyList()
     }
 }

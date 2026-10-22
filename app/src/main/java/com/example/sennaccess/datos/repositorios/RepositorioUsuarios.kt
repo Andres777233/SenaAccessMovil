@@ -15,9 +15,14 @@ import com.example.sennaccess.datos.modelos.UsuarioApi
 
 class RepositorioUsuarios {
 
-    // Usuarios registrados (solo admin).
-    suspend fun getUsers(token: String): List<UsuarioApi> =
-        ClienteApi.conServicio { it.getUsers("Bearer $token") }
+    // Usuarios registrados (solo admin). Con estado se filtran las cuentas
+    // pendientes de aprobacion (las que registró el publico).
+    suspend fun getUsers(token: String, estado: String? = null, perPage: Int? = null): List<UsuarioApi> =
+        ClienteApi.conServicio { it.getUsers("Bearer $token", estado, perPage) }
+
+    // Cuentas que esperan la aprobacion del superadmin.
+    suspend fun getCuentasPendientes(token: String): List<UsuarioApi> =
+        ClienteApi.conServicio { it.getUsers("Bearer $token", "pendiente", null) }
 
     // Perfil del usuario de la sesión actual.
     suspend fun getCurrentUser(token: String): UsuarioApi =

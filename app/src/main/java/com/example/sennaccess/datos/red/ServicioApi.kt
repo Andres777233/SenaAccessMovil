@@ -166,7 +166,11 @@ interface ServicioApi {
 
     // ---- Admin / Instructor ----
     @GET("admin/users")
-    suspend fun getUsers(@Header("Authorization") auth: String): List<UsuarioApi>
+    suspend fun getUsers(
+        @Header("Authorization") auth: String,
+        @Query("estado") estado: String? = null,
+        @Query("per_page") perPage: Int? = null
+    ): List<UsuarioApi>
 
     @POST("admin/users")
     suspend fun createUser(@Header("Authorization") auth: String, @Body body: PeticionUsuario): UsuarioApi
