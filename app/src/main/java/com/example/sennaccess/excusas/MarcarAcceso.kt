@@ -222,7 +222,7 @@ fun MarcarAcceso(
                 )
                 Spacer(modifier = Modifier.height(14.dp))
                 BotonPrimarioNeon(
-                    text = "ACTIVAR CAMARA",
+                    text = "Activar cámara",
                     icon = Icons.Default.CameraAlt,
                     onClick = { launcherPermiso.launch(Manifest.permission.CAMERA) }
                 )
@@ -267,7 +267,7 @@ fun MarcarAcceso(
             ) {
                 Icon(Icons.Default.QrCode2, null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("MARCAR OTRO")
+                Text("Marcar otro")
             }
             Spacer(modifier = Modifier.height(8.dp))
         }
@@ -282,7 +282,7 @@ fun MarcarAcceso(
         )
         Spacer(modifier = Modifier.height(8.dp))
         BotonPrimarioNeon(
-            text = "MARCAR ACCESO",
+            text = "Marcar acceso",
             icon = Icons.Default.QrCode2,
             onClick = { validar(codigoManual) },
             loading = cargando,

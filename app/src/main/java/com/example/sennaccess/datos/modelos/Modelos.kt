@@ -424,6 +424,18 @@ data class UsuarioCodigoAcceso(
     @SerializedName("identificacion") val identificacion: String? = null
 )
 
+// Carnet digital escaneado en portería: el servidor registra la Entrada del
+// dueño del carnet (el QR que muestra la web o el móvil en "Mi carnet").
+data class PeticionValidarCarnet(
+    @SerializedName("carnet") val carnet: String
+)
+
+data class RespuestaValidarCarnet(
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("duplicado") val duplicado: Boolean = false,
+    @SerializedName("usuario") val usuario: UsuarioCodigoAcceso? = null
+)
+
 data class RespuestaValidarCodigoAcceso(
     @SerializedName("message") val message: String? = null,
     @SerializedName("usuario") val usuario: UsuarioCodigoAcceso? = null,

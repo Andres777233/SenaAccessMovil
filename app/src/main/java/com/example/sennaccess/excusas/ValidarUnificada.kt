@@ -1,16 +1,19 @@
 package com.example.sennaccess.excusas
 
-// Validación unificada de portería: PIN manual, QR de excusa y QR de invitado
-// en una sola sesión con pestañas. El operario decide si escribe el PIN a mano,
-// escanea el QR del permiso del aprendiz o escanea un invitado, sin salir de
-// la pantalla.
+// Validación unificada de portería: PIN manual, QR de excusa, QR de invitado y
+// código de entrada de la web en una sola sesión.
+//
+// Diseño v2: una sola fila de pestañas (compacta, 44dp) en lugar de cuatro
+// tarjetas grandes, para que el escáner —lo importante— quede arriba y visible
+// sin desplazar. La pestaña activa se marca con tinte de acento, no con un
+// bloque verde lleno.
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.*
@@ -19,17 +22,32 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.sennaccess.autenticacion.invitado.EscanearQrInvitado
 import com.example.sennaccess.comun.diseno.ContenidoPestana
 import com.example.sennaccess.comun.diseno.EntradaSuave
+import com.example.sennaccess.comun.diseno.EspaciadoSena
 import com.example.sennaccess.comun.diseno.superficiePlana
 import com.example.sennaccess.comun.diseno.RadioSena
 import com.example.sennaccess.comun.tema.ColoresAppLocal
-import com.example.sennaccess.comun.tema.VerdeSena
 import com.example.sennaccess.comun.tema.verdeMarca
+
+private data class PestanaValidar(
+    val icono: ImageVector,
+    val titulo: String,
+    val ayuda: String
+)
+
+private val PESTANAS = listOf(
+    PestanaValidar(Icons.Default.Keyboard, "PIN", "PIN de 6 dígitos que dicta el instructor en portería."),
+    PestanaValidar(Icons.Default.QrCodeScanner, "Excusa", "Escanea el QR del permiso del aprendiz para registrar su salida."),
+    PestanaValidar(Icons.Default.QrCodeScanner, "Invitado", "Escanea el QR de un invitado. Sirve una sola vez y caduca a la hora."),
+    PestanaValidar(Icons.Default.QrCodeScanner, "Web", "Escanea el carnet del usuario o el código de entrada que generó en la web.")
+)
 
 @Composable
 fun VistaValidarUnificada(onBack: () -> Unit) {
@@ -37,62 +55,77 @@ fun VistaValidarUnificada(onBack: () -> Unit) {
     var tab by remember { mutableIntStateOf(0) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Cabecera profesional con volver + eyebrow + título.
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) { Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = colors.textPrimary) }
+            IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = colors.textPrimary)
+            }
+            Spacer(modifier = Modifier.width(2.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text("CONTROL DE PORTERÍA", color = verdeMarca(), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp)
-                Text("Validar accesos", color = colors.textPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp)
+                Text(
+                    "Validar accesos",
+                    color = colors.textPrimary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 21.sp
+                )
+                Text(
+                    "Un solo lugar para permisos, invitados y códigos de la web.",
+                    color = colors.textSecondary,
+                    fontSize = 12.sp
+                )
             }
         }
-        Text("Salidas por PIN o QR de excusa, entradas de invitado o códigos de entrada web.", color = colors.textSecondary, fontSize = 12.sp)
-        Spacer(modifier = Modifier.height(14.dp))
-        // Segmentado profesional en plana: tres opciones grandes de 52dp.
-        Column(
+
+        Spacer(modifier = Modifier.height(EspaciadoSena.sm))
+
+        // Selector compacto: cuatro destinos en una fila.
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .superficiePlana(cornerRadius = RadioSena.lg)
-                .padding(6.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+                .superficiePlana(cornerRadius = RadioSena.md)
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                SegmentoValidar(
-                    seleccionado = tab == 0,
-                    icono = Icons.Default.Keyboard,
-                    titulo = "PIN A MANO",
-                    subtitulo = "Excusas",
-                    onClick = { tab = 0 },
-                    modifier = Modifier.weight(1f)
-                )
-                SegmentoValidar(
-                    seleccionado = tab == 1,
-                    icono = Icons.Default.QrCodeScanner,
-                    titulo = "QR EXCUSA",
-                    subtitulo = "Permisos",
-                    onClick = { tab = 1 },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                SegmentoValidar(
-                    seleccionado = tab == 2,
-                    icono = Icons.Default.QrCodeScanner,
-                    titulo = "QR INVITADO",
-                    subtitulo = "Visitantes",
-                    onClick = { tab = 2 },
-                    modifier = Modifier.weight(1f)
-                )
-                SegmentoValidar(
-                    seleccionado = tab == 3,
-                    icono = Icons.Default.QrCodeScanner,
-                    titulo = "QR ENTRADA",
-                    subtitulo = "Web",
-                    onClick = { tab = 3 },
-                    modifier = Modifier.weight(1f)
-                )
+            PESTANAS.forEachIndexed { indice, pestana ->
+                val seleccionada = tab == indice
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(RadioSena.sm))
+                        .background(if (seleccionada) verdeMarca().copy(alpha = 0.14f) else Color.Transparent)
+                        .clickable { tab = indice }
+                        .padding(vertical = 10.dp, horizontal = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = pestana.icono,
+                        contentDescription = null,
+                        tint = if (seleccionada) verdeMarca() else colors.textSecondary,
+                        modifier = Modifier.size(17.dp)
+                    )
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text(
+                        text = pestana.titulo,
+                        color = if (seleccionada) colors.textPrimary else colors.textSecondary,
+                        fontSize = 11.sp,
+                        fontWeight = if (seleccionada) FontWeight.Bold else FontWeight.Medium,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         }
-        Spacer(modifier = Modifier.height(12.dp))
+
+        Spacer(modifier = Modifier.height(EspaciadoSena.xs))
+        Text(
+            text = PESTANAS[tab].ayuda,
+            color = colors.textSecondary,
+            fontSize = 12.sp,
+            modifier = Modifier.padding(horizontal = 4.dp)
+        )
+        Spacer(modifier = Modifier.height(EspaciadoSena.sm))
+
         EntradaSuave(indice = tab) {
             ContenidoPestana(objetivo = tab) { pestana ->
                 when (pestana) {
@@ -103,30 +136,5 @@ fun VistaValidarUnificada(onBack: () -> Unit) {
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun SegmentoValidar(
-    seleccionado: Boolean,
-    icono: androidx.compose.ui.graphics.vector.ImageVector,
-    titulo: String,
-    subtitulo: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val colors = ColoresAppLocal.current
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(if (seleccionado) VerdeSena else Color.Transparent, RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp, horizontal = 8.dp)
-    ) {
-        Icon(icono, null, tint = if (seleccionado) Color.Black else colors.textSecondary, modifier = Modifier.size(22.dp))
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(titulo, color = if (seleccionado) Color.Black else colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
-        Text(subtitulo, color = if (seleccionado) Color.Black.copy(alpha = 0.7f) else colors.textSecondary, fontSize = 11.sp)
     }
 }

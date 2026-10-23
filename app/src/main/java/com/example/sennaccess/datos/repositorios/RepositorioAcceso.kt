@@ -1,9 +1,11 @@
 package com.example.sennaccess.datos.repositorios
 
 import com.example.sennaccess.datos.modelos.PeticionValidarAcceso
+import com.example.sennaccess.datos.modelos.PeticionValidarCarnet
 import com.example.sennaccess.datos.modelos.PeticionValidarCodigoAcceso
 import com.example.sennaccess.datos.modelos.PeticionValidarPin
 import com.example.sennaccess.datos.modelos.RespuestaValidarAcceso
+import com.example.sennaccess.datos.modelos.RespuestaValidarCarnet
 import com.example.sennaccess.datos.modelos.RespuestaValidarCodigoAcceso
 import com.example.sennaccess.datos.red.ClienteApi
 
@@ -21,5 +23,11 @@ class RepositorioAcceso {
     suspend fun validarCodigo(token: String, codigo: String? = null, pin: String? = null): RespuestaValidarCodigoAcceso =
         ClienteApi.conServicio {
             it.validarCodigoAcceso("Bearer $token", PeticionValidarCodigoAcceso(codigo = codigo, pin = pin))
+        }
+
+    // Carnet digital: registra la Entrada del dueño del QR (web o móvil).
+    suspend fun validarCarnet(token: String, carnet: String): RespuestaValidarCarnet =
+        ClienteApi.conServicio {
+            it.validarCarnetAcceso("Bearer $token", PeticionValidarCarnet(carnet))
         }
 }

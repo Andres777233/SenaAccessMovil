@@ -55,9 +55,11 @@ import com.example.sennaccess.datos.modelos.RespuestaEquipo
 import com.example.sennaccess.datos.modelos.RespuestaIngresos
 import com.example.sennaccess.datos.modelos.RespuestaMensaje
 import com.example.sennaccess.datos.modelos.PeticionValidarAcceso
+import com.example.sennaccess.datos.modelos.PeticionValidarCarnet
 import com.example.sennaccess.datos.modelos.PeticionValidarCodigoAcceso
 import com.example.sennaccess.datos.modelos.PeticionValidarPin
 import com.example.sennaccess.datos.modelos.RespuestaValidarAcceso
+import com.example.sennaccess.datos.modelos.RespuestaValidarCarnet
 import com.example.sennaccess.datos.modelos.RespuestaValidarCodigoAcceso
 import com.example.sennaccess.datos.modelos.RespuestaQrInvitado
 import com.example.sennaccess.datos.modelos.RespuestaRegistro
@@ -372,4 +374,8 @@ interface ServicioApi {
     // ---- Código de entrada generado en la web (QR + PIN) ----
     @POST("acceso/validar-codigo")
     suspend fun validarCodigoAcceso(@Header("Authorization") auth: String, @Body body: PeticionValidarCodigoAcceso): RespuestaValidarCodigoAcceso
+
+    // ---- Carnet digital: registra la Entrada del dueño del QR ----
+    @POST("acceso/carnet")
+    suspend fun validarCarnetAcceso(@Header("Authorization") auth: String, @Body body: PeticionValidarCarnet): RespuestaValidarCarnet
 }

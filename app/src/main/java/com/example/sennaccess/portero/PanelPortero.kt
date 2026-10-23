@@ -229,12 +229,10 @@ fun VistaPorteroInicio(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
     ) {
-        // Hero de turno: eyebrow + saludo + acción principal de validación.
-        Text("TURNO DE PORTERÍA", color = verdeMarca(), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp)
-        Spacer(modifier = Modifier.height(4.dp))
+        // Hero de turno: saludo + acción principal de validación.
         Text(
             "Hola, ${GestorSesion.userName ?: "Portero"}",
-            color = colors.textPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp, maxLines = 1
+            color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 24.sp, maxLines = 1
         )
         Text("Controla entradas y salidas del centro desde aquí.", color = colors.textSecondary, fontSize = 12.sp)
         Spacer(modifier = Modifier.height(14.dp))
@@ -318,7 +316,7 @@ private fun CintaPendientesPortero(onValidar: () -> Unit) {
                 },
                 color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp
             )
-            Text("Toca para abrir Validar en el dock", color = colors.textSecondary, fontSize = 12.sp)
+            Text("Abre Validar para gestionarlas", color = colors.textSecondary, fontSize = 12.sp)
         }
         Icon(Icons.Default.ChevronRight, contentDescription = "Ir a validar", tint = verdeMarca(), modifier = Modifier.size(22.dp))
     }
@@ -331,9 +329,9 @@ private fun ContadorPortero(titulo: String, valor: String, modifier: Modifier = 
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier.superficiePlana(cornerRadius = RadioSena.lg).padding(vertical = 14.dp, horizontal = 8.dp)
     ) {
-        Text(valor, color = colors.textPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp)
+        Text(valor, color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 22.sp)
         Spacer(modifier = Modifier.height(2.dp))
-        Text(titulo.uppercase(), color = colors.textSecondary, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.0.sp)
+        Text(titulo, color = colors.textSecondary, fontSize = 11.sp, fontWeight = FontWeight.Medium)
     }
 }
 

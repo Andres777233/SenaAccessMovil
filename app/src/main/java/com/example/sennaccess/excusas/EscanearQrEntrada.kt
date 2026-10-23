@@ -117,21 +117,50 @@ fun EscanearQrEntrada(mostrarCabecera: Boolean = true) {
         }
     }
 
+    // Carnet digital: el servidor registra la Entrada del dueño del QR.
+    fun validarCarnet(texto: String) {
+        val token = GestorSesion.token
+        if (token == null || cargando) return
+
+        scope.launch {
+            cargando = true
+            errorQr = null
+            errorValidar = null
+            try {
+                val resp = repo.validarCarnet(token, texto)
+                exito = resp.usuario
+                mensaje = resp.message
+                detenerAnalisis.value = true
+            } catch (e: retrofit2.HttpException) {
+                errorValidar = detalleHttp(e)
+                detenerAnalisis.value = false
+            } catch (e: Exception) {
+                errorValidar = "Error de conexión: ${e.message ?: e.javaClass.simpleName}"
+                detenerAnalisis.value = false
+            } finally {
+                cargando = false
+            }
+        }
+    }
+
     fun alEscanear(raw: String) {
-        if (!raw.startsWith("SENA-ACCESO:")) {
-            errorQr = "Ese QR no es un código de entrada. Pide al usuario que lo genere desde la web."
+        val texto = raw.trim()
+        // Carnet: JSON SENA_ACCESS o el número de documento.
+        val esCarnet = texto.startsWith("{") || texto.matches(Regex("^\\d{6,15}$"))
+        if (!texto.startsWith("SENA-ACCESO:") && !esCarnet) {
+            errorQr = "Ese QR no es un carnet ni un código de entrada. Pide al usuario que lo genere desde la web."
             detenerAnalisis.value = false
             return
         }
         errorQr = null
         detenerAnalisis.value = true
-        validar(codigo = raw)
+        if (esCarnet) validarCarnet(texto) else validar(codigo = texto)
     }
 
     Column(modifier = Modifier.fillMaxWidth().imePadding()) {
         if (mostrarCabecera) {
             Text(
-                "Escanea el QR de entrada generado en la web o dicta el PIN.",
+                "Escanea el QR del carnet o el código de entrada generado en la web.",
                 color = colors.textSecondary,
                 fontSize = 12.sp
             )
@@ -201,7 +230,7 @@ fun EscanearQrEntrada(mostrarCabecera: Boolean = true) {
             }
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                if (cargando) "Validando código..." else "Apunta al QR que muestra la web del usuario",
+                if (cargando) "Validando código..." else "Apunta al QR del carnet o al código de la web",
                 color = colors.textSecondary,
                 fontSize = 13.sp,
                 textAlign = TextAlign.Center,
@@ -220,7 +249,7 @@ fun EscanearQrEntrada(mostrarCabecera: Boolean = true) {
                 )
                 Spacer(modifier = Modifier.height(14.dp))
                 BotonPrimarioNeon(
-                    text = "ACTIVAR CAMARA",
+                    text = "Activar cámara",
                     icon = Icons.Default.CameraAlt,
                     onClick = { launcherPermiso.launch(Manifest.permission.CAMERA) }
                 )
@@ -250,7 +279,7 @@ fun EscanearQrEntrada(mostrarCabecera: Boolean = true) {
         )
         Spacer(modifier = Modifier.height(10.dp))
         BotonPrimarioNeon(
-            text = "VALIDAR PIN",
+            text = "Validar PIN",
             icon = Icons.Default.Keyboard,
             onClick = { validar(pinTexto = pin) },
             enabled = pin.length == 6 && !cargando,
@@ -326,7 +355,7 @@ fun EscanearQrEntrada(mostrarCabecera: Boolean = true) {
             }
             Spacer(modifier = Modifier.height(12.dp))
             BotonBordeBrillante(
-                text = "ESCANEAR OTRO",
+                text = "Escanear otro",
                 icon = Icons.Default.QrCode2,
                 onClick = {
                     exito = null

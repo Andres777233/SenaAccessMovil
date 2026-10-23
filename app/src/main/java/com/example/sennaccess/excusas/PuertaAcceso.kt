@@ -119,17 +119,9 @@ fun PuertaAcceso(onEntrar: () -> Unit, onSalir: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            "CONTROL DE ACCESO",
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 3.sp,
-            color = com.example.sennaccess.comun.tema.verdeMarca()
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
             "Marca tu entrada",
             color = colors.textPrimary,
-            fontWeight = FontWeight.ExtraBold,
+            fontWeight = FontWeight.Bold,
             fontSize = 22.sp
         )
         Text(
@@ -171,7 +163,7 @@ fun PuertaAcceso(onEntrar: () -> Unit, onSalir: () -> Unit) {
                 if (validandoPin) {
                     CircularProgressIndicator(color = com.example.sennaccess.comun.tema.verdeMarca(), modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                 } else {
-                    Text("VALIDAR PIN")
+                    Text("Validar PIN")
                 }
             }
             Spacer(modifier = Modifier.height(4.dp))
