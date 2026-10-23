@@ -45,7 +45,7 @@ fun VistaValidarUnificada(onBack: () -> Unit) {
                 Text("Validar accesos", color = colors.textPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp)
             }
         }
-        Text("Salidas por PIN o QR de excusa, o entradas de invitado por QR.", color = colors.textSecondary, fontSize = 12.sp)
+        Text("Salidas por PIN o QR de excusa, entradas de invitado o códigos de entrada web.", color = colors.textSecondary, fontSize = 12.sp)
         Spacer(modifier = Modifier.height(14.dp))
         // Segmentado profesional en plana: tres opciones grandes de 52dp.
         Column(
@@ -73,14 +73,24 @@ fun VistaValidarUnificada(onBack: () -> Unit) {
                     modifier = Modifier.weight(1f)
                 )
             }
-            SegmentoValidar(
-                seleccionado = tab == 2,
-                icono = Icons.Default.QrCodeScanner,
-                titulo = "QR INVITADO",
-                subtitulo = "Visitantes",
-                onClick = { tab = 2 },
-                modifier = Modifier.fillMaxWidth()
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                SegmentoValidar(
+                    seleccionado = tab == 2,
+                    icono = Icons.Default.QrCodeScanner,
+                    titulo = "QR INVITADO",
+                    subtitulo = "Visitantes",
+                    onClick = { tab = 2 },
+                    modifier = Modifier.weight(1f)
+                )
+                SegmentoValidar(
+                    seleccionado = tab == 3,
+                    icono = Icons.Default.QrCodeScanner,
+                    titulo = "QR ENTRADA",
+                    subtitulo = "Web",
+                    onClick = { tab = 3 },
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
         Spacer(modifier = Modifier.height(12.dp))
         EntradaSuave(indice = tab) {
@@ -88,7 +98,8 @@ fun VistaValidarUnificada(onBack: () -> Unit) {
                 when (pestana) {
                     0 -> VistaValidarExcusa(onBack = onBack, mostrarCabecera = false)
                     1 -> EscanearQrExcusa(mostrarCabecera = false)
-                    else -> EscanearQrInvitado(onVolver = onBack, mostrarCabecera = false)
+                    2 -> EscanearQrInvitado(onVolver = onBack, mostrarCabecera = false)
+                    else -> EscanearQrEntrada(mostrarCabecera = false)
                 }
             }
         }

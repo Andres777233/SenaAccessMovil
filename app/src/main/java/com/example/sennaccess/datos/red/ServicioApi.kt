@@ -55,8 +55,10 @@ import com.example.sennaccess.datos.modelos.RespuestaEquipo
 import com.example.sennaccess.datos.modelos.RespuestaIngresos
 import com.example.sennaccess.datos.modelos.RespuestaMensaje
 import com.example.sennaccess.datos.modelos.PeticionValidarAcceso
+import com.example.sennaccess.datos.modelos.PeticionValidarCodigoAcceso
 import com.example.sennaccess.datos.modelos.PeticionValidarPin
 import com.example.sennaccess.datos.modelos.RespuestaValidarAcceso
+import com.example.sennaccess.datos.modelos.RespuestaValidarCodigoAcceso
 import com.example.sennaccess.datos.modelos.RespuestaQrInvitado
 import com.example.sennaccess.datos.modelos.RespuestaRegistro
 import com.example.sennaccess.datos.modelos.RespuestaSalida
@@ -366,4 +368,8 @@ interface ServicioApi {
     // ---- PIN corto de acceso (fallback sin cámara) ----
     @POST("acceso/validar-pin")
     suspend fun validarPinAcceso(@Header("Authorization") auth: String, @Body body: PeticionValidarPin): RespuestaValidarAcceso
+
+    // ---- Código de entrada generado en la web (QR + PIN) ----
+    @POST("acceso/validar-codigo")
+    suspend fun validarCodigoAcceso(@Header("Authorization") auth: String, @Body body: PeticionValidarCodigoAcceso): RespuestaValidarCodigoAcceso
 }

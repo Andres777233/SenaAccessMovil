@@ -411,6 +411,25 @@ data class RespuestaValidarAcceso(
     @SerializedName("duplicado") val duplicado: Boolean? = null
 )
 
+// Código de entrada generado en la web (QR + PIN) para que portería lo valide.
+data class PeticionValidarCodigoAcceso(
+    @SerializedName("codigo") val codigo: String? = null,
+    @SerializedName("pin") val pin: String? = null
+)
+
+data class UsuarioCodigoAcceso(
+    @SerializedName("id_usuario") val id_usuario: Int? = null,
+    @SerializedName("nombre") val nombre: String? = null,
+    @SerializedName("rol") val rol: String? = null,
+    @SerializedName("identificacion") val identificacion: String? = null
+)
+
+data class RespuestaValidarCodigoAcceso(
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("usuario") val usuario: UsuarioCodigoAcceso? = null,
+    @SerializedName("ingreso") val ingreso: Ingreso? = null
+)
+
 // Turno del historial enviado al asistente (el servidor ya acepta history).
 data class TurnoChat(
     @SerializedName("role") val role: String,

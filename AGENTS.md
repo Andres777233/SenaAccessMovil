@@ -104,10 +104,10 @@ En el backend los `roles.rol_name` son `Superadmin`, `Admin`, `Instructor`, `Apr
 
 ## Estado actual y pendientes
 
-- Última versión compilada: **v9.0 (code 19)**, APK ≈46 MB. El APK v9.0 quedó **pendiente de instalar en el moto g86** desde 2026-10-19.
-- Último commit: `0e0d40e` (2026-10-19) "Asistente: saludo inicial abierto a preguntas generales".
+- Última versión compilada: **v9.1 (code 20)**, APK ≈44 MB, instalada y verificada en el moto g86 (ZY32MFMZMX).
+- Último commit: 2026-10-22 — Entrada asistida QR/PIN en portería (v9.1).
 - Rama `v1.8-merge` sincronizada con `origin/main` (0 commits de diferencia).
-- Pendientes conocidos: (1) instalar y verificar v9.0 en el dispositivo; (2) confirmar que el backend tiene desplegado el push del 2026-10-13 (`SenaAccessWebDef1` → `SenaAccessWeb/main`); (3) revisar que las líneas "pendiente instalar" antiguas del historial **no** reflecten el estado real (solo las 2 últimas entradas cuentan).
+- Pendientes conocidos: (1) confirmar que el backend tiene desplegado el push del 2026-10-13 (`SenaAccessWebDef1` → `SenaAccessWeb/main`); (3) revisar que las líneas "pendiente instalar" antiguas del historial **no** reflecten el estado real (solo las 2 últimas entradas cuentan).
 
 ## Esta máquina (verificar antes de usar)
 
@@ -300,3 +300,4 @@ Agentes en `.opencode/agent/`, skills en `.opencode/skill/*/SKILL.md` (todo vers
 - 2026-10-21 — Build portable: `app/build.gradle.kts` ya no exige llaves ausentes (debug usa `app/debug.keystore` si existe y si no la llave por defecto de Gradle; release sale `unsigned` sin `keystore.properties`), así un clon limpio compila; verificado con `git clone` nuevo + `assembleDebug assembleRelease` OK, y la firma debug del APK del dueño no cambió (SHA-256 6482c042…).
 - 2026-10-21 — Auditoría integral web+móvil (ver `AUDIT_REPORT.md`): en el móvil añadí la **bandeja de solicitudes pendientes** (aprobar/rechazar cuentas, paridad con el web) con `estado_cuenta` en `UsuarioApi`, 2 endpoints nuevos y errores reales del servidor; eliminé el código muerto del módulo **sugerencias** (retirado del backend el 30-sep) y los endpoints de **horarios por ambiente** que el backend nunca tuvo —el contrato pasa de 9 discrepancias a 1 (el `POST my-profile` con spoofing `_method`, verificado 200)—; en el web corregí el solape del `<select>` sobre su etiqueta, el desborde de las páginas públicas, el navbar y la **huella real (WebAuthn)**. BUILD SUCCESSFUL (debug + release) y `testDebugUnitTest` OK.
 - 2026-10-22 — Repo limpio `SenaAccessWebDef1` sincronizado (faltaba desde el 21): subí los dos commits pendientes (APK v9.0 y auditoría integral con WebAuthn, `MiHuella`, `BotonTema`, pruebas y `AUDIT_REPORT.md`) sobre el historial ya reescrito, sin tocar autores ni fechas; verificado desde clon fresco que el árbol es idéntico a `SenaAccessWeb/main` salvo los archivos de configuración de agentes que ese repo no versiona (0 rastros) y que el APK coincide por md5 (`c7491953`).
+- 2026-10-22 — Entrada asistida en portería (v9.1, code 20): nuevo tab QR ENTRADA en `VistaValidarUnificada` con `EscanearQrEntrada.kt` (CameraX + MLKit + PIN manual); `POST /acceso/validar-codigo` en `ServicioApi`/`RepositorioAcceso` y modelos; valida el QR `SENA-ACCESO:<token>` o el PIN generado en la web y registra la Entrada del usuario que creó el código. Compilado e instalado en moto g86 (desinstalación previa por firma distinta).
