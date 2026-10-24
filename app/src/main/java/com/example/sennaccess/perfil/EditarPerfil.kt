@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.ZoomIn
@@ -35,6 +36,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -73,6 +75,7 @@ import com.example.sennaccess.comun.diseno.CabeceraPlegable
 import com.example.sennaccess.comun.diseno.superficieVidrio
 import com.example.sennaccess.comun.diseno.superficiePlana
 import com.example.sennaccess.comun.diseno.escalaPresion
+import com.example.sennaccess.comun.diseno.EntradaSuave
 import com.example.sennaccess.comun.tema.RojoError
 import com.example.sennaccess.comun.tema.ColoresAppLocal
 import com.example.sennaccess.comun.tema.VerdeSena
@@ -165,42 +168,53 @@ fun VistaEditarPerfil(
                 programa = usuario.user_program ?: ""
             }
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .superficieVidrio(cornerRadius = RadioVidrio, elevated = true)
-                    .padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Box(
+            EntradaSuave(indice = 0) {
+                Column(
                     modifier = Modifier
-                        .size(80.dp)
-                        .clip(CircleShape)
-                        .background(VerdeSena.copy(alpha = 0.15f))
-                        .escalaPresion(pressedScale = 0.95f),
-                    contentAlignment = Alignment.Center
+                        .fillMaxWidth()
+                        .superficieVidrio(cornerRadius = RadioVidrio, elevated = true)
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    val urlServidor = GestorSesion.fotoUrl(usuario.profile_photo_path)
-                    when {
-                        fotoBitmap != null -> Image(
-                            bitmap = fotoBitmap!!.asImageBitmap(),
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                        urlServidor != null -> AsyncImage(
-                            model = urlServidor, contentDescription = null,
-                            modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop
-                        )
-                        else -> Icon(Icons.Default.Person, null, tint = verdeMarca(), modifier = Modifier.size(50.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(96.dp)
+                            .shadow(14.dp, CircleShape, spotColor = VerdeSena, ambientColor = VerdeSena.copy(alpha = 0.3f))
+                            .border(2.dp, VerdeSena.copy(alpha = 0.55f), CircleShape)
+                            .clip(CircleShape)
+                            .background(VerdeSena.copy(alpha = 0.15f))
+                            .escalaPresion(pressedScale = 0.95f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val urlServidor = GestorSesion.fotoUrl(usuario.profile_photo_path)
+                        when {
+                            fotoBitmap != null -> Image(
+                                bitmap = fotoBitmap!!.asImageBitmap(),
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                            urlServidor != null -> AsyncImage(
+                                model = urlServidor, contentDescription = null,
+                                modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop
+                            )
+                            else -> Icon(Icons.Default.Person, null, tint = verdeMarca(), modifier = Modifier.size(50.dp))
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(usuario.nombreCompleto, color = colors.textPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("Así te verán en tu perfil", color = colors.textSecondary, fontSize = 12.sp)
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OutlinedButton(
+                        onClick = { selectorFoto.launch("image/*") },
+                        shape = RoundedCornerShape(28.dp),
+                        border = BorderStroke(1.dp, verdeMarca())
+                    ) {
+                        Icon(Icons.Default.PhotoCamera, null, tint = verdeMarca(), modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("CAMBIAR FOTO", color = verdeMarca(), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     }
                 }
-                Spacer(modifier = Modifier.height(6.dp))
-                androidx.compose.material3.TextButton(onClick = { selectorFoto.launch("image/*") }) {
-                    Text("CAMBIAR FOTO", color = verdeMarca(), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                }
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(usuario.nombreCompleto, color = colors.textPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.height(12.dp))
             // Ficha de datos en plana: el vidrio queda solo para el hero de foto.
@@ -286,7 +300,7 @@ fun VistaEditarPerfil(
                 Spacer(modifier = Modifier.height(12.dp))
                 // Ficha/programa: SOLO el admin los cambia (Crear/ActualizarUsuario).
                 // Aquí siempre son solo lectura, nunca editables desde el perfil propio.
-                if (!usuario.user_program.isNullOrBlank() || (usuario.user_coursenumber ?: 0) > 0) {
+                if (!mostrarFichaPrograma && (!usuario.user_program.isNullOrBlank() || (usuario.user_coursenumber ?: 0) > 0)) {
                     if ((usuario.user_coursenumber ?: 0) > 0) {
                         campoLectura("Ficha", usuario.user_coursenumber.toString())
                         Spacer(modifier = Modifier.height(12.dp))
@@ -303,12 +317,26 @@ fun VistaEditarPerfil(
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .superficiePlana(cornerRadius = RadioVidrio)
+                    .padding(20.dp)
+            ) {
                 EtiquetaPerfil("Seguridad")
-                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    "Solo si quieres cambiar tu contraseña.",
+                    color = colors.textSecondary,
+                    fontSize = 12.sp
+                )
+                Spacer(modifier = Modifier.height(10.dp))
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
-                    label = { Text("Nueva contraseña (opcional)", color = colors.textSecondary) },                    modifier = Modifier.fillMaxWidth().campoVisible(),
+                    label = { Text("Nueva contraseña (opcional)", color = colors.textSecondary) },
+                    modifier = Modifier.fillMaxWidth().campoVisible(),
                     singleLine = true,
                     visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
@@ -333,6 +361,12 @@ fun VistaEditarPerfil(
                     visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                     colors = campoPerfilColors(),
                     shape = RoundedCornerShape(16.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    "Si tu cuenta tiene verificación en dos pasos, se pedirá un código al guardar.",
+                    color = colors.textSecondary,
+                    fontSize = 11.sp
                 )
             }
             Spacer(modifier = Modifier.height(12.dp))
@@ -448,20 +482,23 @@ fun VistaEditarPerfil(
                         }
                     }
                 }
-                Button(
-                    onClick = { guardarPerfil(codigoClave.ifBlank { null }) },
-                    modifier = Modifier.fillMaxWidth().height(52.dp).escalaPresion(pressedScale = 0.97f),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = VerdeSena, contentColor = Color.Black)
-                ) { Text(if (guardando) "GUARDANDO..." else "GUARDAR CAMBIOS", fontWeight = FontWeight.Bold, fontSize = 15.sp) }
-
-                Spacer(modifier = Modifier.height(12.dp))
-                OutlinedButton(
-                    onClick = onBack,
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, colors.textSecondary)
-                ) { Text("CANCELAR", color = colors.textSecondary, fontWeight = FontWeight.Bold) }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onBack,
+                        modifier = Modifier.weight(1f).height(52.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(1.dp, colors.textSecondary)
+                    ) { Text("CANCELAR", color = colors.textSecondary, fontWeight = FontWeight.Bold) }
+                    Button(
+                        onClick = { guardarPerfil(codigoClave.ifBlank { null }) },
+                        modifier = Modifier.weight(1f).height(52.dp).escalaPresion(pressedScale = 0.97f),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = VerdeSena, contentColor = Color.Black)
+                    ) { Text(if (guardando) "GUARDANDO..." else "GUARDAR", fontWeight = FontWeight.Bold, fontSize = 14.sp) }
+                }
 
                 if (pedirCodigoClave) {
                     var codigoTmp by remember { mutableStateOf(codigoClave) }
