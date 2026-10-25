@@ -18,7 +18,7 @@ App Android (Kotlin + Jetpack Compose, estilo vidrio verde) de SenaAccess: contr
 | Dato | Valor |
 |---|---|
 | applicationId / namespace | `com.example.sennaccess` |
-| Versión | `versionName 9.0` / `versionCode 19` (`app/build.gradle.kts`) |
+| Versión | `versionName 9.1` / `versionCode 20` (`app/build.gradle.kts`) |
 | SDK | minSdk 24, targetSdk 36, compileSdk 36.1 |
 | Toolchain | Gradle 9.3.1, AGP 9.1.1, Kotlin 2.2.10, Compose BOM 2026.02.01, **JDK 21** (auto-descarga con foojay: requiere red la primera vez) |
 | Red | Retrofit 2.11 + OkHttp 4.12 (logging) + Gson, Coil 2.6, CameraX 1.4.2 + MLKit 17.3, ZXing 3.5.3, Biometric 1.1.0 |
@@ -127,7 +127,7 @@ Ejecútalo al arrancar una sesión (es el control de coherencia entre este docum
 3. `find app/src/main/java -name "*.kt" | wc -l` → **109** (109 = 111 − 2 módulos muertos eliminados en la auditoría del 2026-10-21: `sugerencias` y `horarios`).
 4. `find app/src/main/java -name "RetrofitClient.kt" -o -name "SessionManager.kt" -o -name "MockData.kt" -o -name "HuellaCredentialStore.kt"` → **0 resultados** (nombres legacy prohibidos).
 5. `grep -n "BASE_URL_REMOTE" app/src/main/java/com/example/sennaccess/datos/red/ClienteApi.kt` → la URL de la sección "Contrato con la API".
-6. `grep -nE "versionName|versionCode" app/build.gradle.kts` → `9.0` / `19`.
+6. `grep -nE "versionName|versionCode" app/build.gradle.kts` → `9.1` / `20`.
 7. `grep -cE "@(GET|POST|PUT|DELETE|PATCH)" app/src/main/java/com/example/sennaccess/datos/red/ServicioApi.kt` → **73**.
 8. `cat local.properties` → `sdk.dir` válido; si falta, crearlo o usar `ANDROID_HOME` o Docker.
 9. `./gradlew assembleDebug` (o `docker compose run --rm sennaccess-movil`) → **BUILD SUCCESSFUL**.
@@ -304,3 +304,5 @@ Agentes en `.opencode/agent/`, skills en `.opencode/skill/*/SKILL.md` (todo vers
 - 2026-10-22 — Accesos ordenados (mismo diseño de la app): `VistaValidarUnificada` pasó de 4 tarjetas grandes a una fila compacta de pestañas (PIN · Excusa · Invitado · Web) con ayuda contextual; se quitaron el eyebrow y las MAYÚSCULAS del panel de portería (`PanelPortero`) y de la puerta (`PuertaAcceso`); el escáner de portería ahora acepta el **carnet digital** además del código `SENA-ACCESO:` (nuevo `POST /acceso/carnet` en `ServicioApi`/`RepositorioAcceso` y modelos `PeticionValidarCarnet`/`RespuestaValidarCarnet`), así que escanear el carnet mostrado en la web registra la Entrada del usuario. `compileDebugKotlin` OK.
 - 2026-10-23 — WEB local listo para probar: el servicio `sennaccess` servía la copia vieja `SenaAccess-Repo2-master` (por eso `/api/*` daba 500); repunté `~/.local/bin/sennaccess-watcher.sh` al repo real `~/Escritorio/SenaAccessRailway/SenaAccessWeb` (respaldo `.bak-2026-10-23`) y afiné su `pgrep` al puerto 8000 para no confundirse con otros `artisan serve`. Verificado en vivo: `http://localhost:8000` 200, bundle Vite al día, login `admin@sena.edu.co`/`12345678` 200 y `/api/admin/{roles,users,presentes,ingresos}` + `/api/ambientes` 200 con MariaDB local.
 - 2026-10-23 — Perfil móvil con las skills Taste/Impeccable/Emil: `PerfilSenior` con hero de cuenta (avatar 96 con anillo, estado activo, rol, correo y editar), información en plana y seguridad con fila de verificación en dos pasos; `VistaEditarPerfil` con foto 96, secciones Datos/Seguridad, botones en fila y sin duplicar ficha/programa (solo el aprendiz los edita). `assembleDebug` OK (APK 44M); pendiente instalar en el moto g86 (no conectado).
+
+- 2026-10-25 — Versión documentada a 9.1/code 20 y novedades con `TextOverflow.Ellipsis` (título 2 líneas, cuerpo 4) para que el texto largo no se corte en silencio. `PersonasDentro`/Presentes se dejó intacta y sin enlazar por decisión del dueño. `assembleDebug` + `testDebugUnitTest` OK.

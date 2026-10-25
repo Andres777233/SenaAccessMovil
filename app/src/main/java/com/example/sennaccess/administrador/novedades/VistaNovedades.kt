@@ -31,6 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.sennaccess.datos.modelos.Novedad
@@ -437,9 +438,9 @@ fun TarjetaNovedad(
             }
         }
         Spacer(modifier = Modifier.height(10.dp))
-        Text(n.novedad_title ?: "Novedad", color = colors.textPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, lineHeight = 22.sp, maxLines = 2)
+        Text(n.novedad_title ?: "Novedad", color = colors.textPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, lineHeight = 22.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
         Spacer(modifier = Modifier.height(6.dp))
-        Text(n.novedad_body ?: "—", color = colors.textSecondary, fontSize = 13.sp, lineHeight = 18.sp, maxLines = 4)
+        Text(n.novedad_body ?: "—", color = colors.textSecondary, fontSize = 13.sp, lineHeight = 18.sp, maxLines = 4, overflow = TextOverflow.Ellipsis)
         Spacer(modifier = Modifier.height(12.dp))
         HorizontalDivider(color = colors.divider)
         Spacer(modifier = Modifier.height(10.dp))
