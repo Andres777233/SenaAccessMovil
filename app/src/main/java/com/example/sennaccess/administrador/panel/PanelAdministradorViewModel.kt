@@ -17,7 +17,6 @@ import com.example.sennaccess.datos.modelos.Novedad
 import com.example.sennaccess.datos.repositorios.RepositorioNovedades
 import com.example.sennaccess.datos.modelos.Ambiente
 import com.example.sennaccess.datos.repositorios.RepositorioAmbientes
-import com.example.sennaccess.datos.modelos.Presente
 import com.example.sennaccess.datos.modelos.Rol
 import com.example.sennaccess.datos.sesion.GestorSesion
 import com.example.sennaccess.datos.modelos.UsuarioApi
@@ -74,10 +73,6 @@ class PanelAdministradorViewModel : ViewModel() {
 
     private val _novedades = MutableStateFlow<EstadoCarga<List<Novedad>>>(EstadoCarga.Loading)
     val novedades: StateFlow<EstadoCarga<List<Novedad>>> = _novedades.asStateFlow()
-
-    // Quiénes están DENTRO ahora (GET /admin/presentes).
-    private val _presentes = MutableStateFlow<EstadoCarga<List<Presente>>>(EstadoCarga.Loading)
-    val presentes: StateFlow<EstadoCarga<List<Presente>>> = _presentes.asStateFlow()
 
     // Ambientes del centro (GET /admin/ambientes).
     private val _ambientes = MutableStateFlow<EstadoCarga<List<Ambiente>>>(EstadoCarga.Loading)
@@ -224,13 +219,6 @@ class PanelAdministradorViewModel : ViewModel() {
     fun cargarNovedades() {
         cargarConRespaldo(fallback = { DatosSimulados.novedades }, setState = { _novedades.value = it }) {
             novedadRepo.getNovedades(GestorSesion.token!!)
-        }
-    }
-
-    // Quiénes están DENTRO ahora (GET /admin/presentes). Sin sesión (demo) se
-    fun cargarPresentes() {
-        cargarConRespaldo(fallback = { emptyList() }, setState = { _presentes.value = it }) {
-            ingresoRepo.getPresentes(GestorSesion.token!!)
         }
     }
 

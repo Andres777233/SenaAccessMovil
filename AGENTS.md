@@ -104,8 +104,8 @@ En el backend los `roles.rol_name` son `Superadmin`, `Admin`, `Instructor`, `Apr
 
 ## Estado actual y pendientes
 
-- Última versión compilada: **v9.1 (code 20)**, APK ≈44 MB, instalada y verificada en el moto g86 (ZY32MFMZMX).
-- Último commit: 2026-10-22 — Entrada asistida QR/PIN en portería (v9.1).
+- Última versión compilada: **v9.1 (code 20)**, APK ≈46 MB, `assembleDebug` OK; el APK con estos cambios queda pendiente de instalar en el moto g86 (no conectado).
+- Último commit: 2026-10-25 — Presentes eliminado y novedades con ellipsis (v9.1).
 - Rama `v1.8-merge` sincronizada con `origin/main` (0 commits de diferencia).
 - Pendientes conocidos: (1) confirmar que el backend tiene desplegado el push del 2026-10-13 (`SenaAccessWebDef1` → `SenaAccessWeb/main`); (3) revisar que las líneas "pendiente instalar" antiguas del historial **no** reflecten el estado real (solo las 2 últimas entradas cuentan).
 
@@ -306,3 +306,5 @@ Agentes en `.opencode/agent/`, skills en `.opencode/skill/*/SKILL.md` (todo vers
 - 2026-10-23 — Perfil móvil con las skills Taste/Impeccable/Emil: `PerfilSenior` con hero de cuenta (avatar 96 con anillo, estado activo, rol, correo y editar), información en plana y seguridad con fila de verificación en dos pasos; `VistaEditarPerfil` con foto 96, secciones Datos/Seguridad, botones en fila y sin duplicar ficha/programa (solo el aprendiz los edita). `assembleDebug` OK (APK 44M); pendiente instalar en el moto g86 (no conectado).
 
 - 2026-10-25 — Versión documentada a 9.1/code 20 y novedades con `TextOverflow.Ellipsis` (título 2 líneas, cuerpo 4) para que el texto largo no se corte en silencio. `PersonasDentro`/Presentes se dejó intacta y sin enlazar por decisión del dueño. `assembleDebug` + `testDebugUnitTest` OK.
+
+- 2026-10-25 — Presentes eliminado por decisión del dueño (revierte la entrada anterior): se borró `administrador/accesos/PersonasDentro.kt` y los estados `presentes`/`cargarPresentes` del `PanelAdministradorViewModel`; se conservan `GET /admin/presentes`, `Presente`, `ServicioApi.getPresentes` y `RepositorioIngresos.getPresentes` como contrato de API. `assembleDebug` + `testDebugUnitTest` OK.
