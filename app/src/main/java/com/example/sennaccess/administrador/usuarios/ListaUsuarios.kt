@@ -184,7 +184,7 @@ private fun MenuUsuarios(
     val colors = ColoresAppLocal.current
     val datos = (estado as? EstadoCarga.Success)?.datos.orEmpty()
     val nIns = datos.count { it.role?.rol_name.equals("Instructor", ignoreCase = true) }
-    val nApr = datos.count { it.role?.rol_name.equals("Aprendiz", ignoreCase = true) }
+    val nApr = datos.count { !it.esInvitado() && it.role?.rol_name.equals("Aprendiz", ignoreCase = true) }
     val nPor = datos.count { it.role?.rol_name.equals("Admin", ignoreCase = true) }
     val nInv = datos.count { it.esInvitado() }
     Column(
@@ -771,7 +771,11 @@ private fun FilaUsuarioCard(usuario: UsuarioApi, onEditar: () -> Unit, onBorrar:
             )
             Spacer(modifier = Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                val rolTxt = usuario.role?.rol_name?.trim()?.uppercase()?.takeIf { it.isNotBlank() } ?: "—"
+                val rolTxt = if (usuario.esInvitado()) {
+                    "INVITADO"
+                } else {
+                    usuario.role?.rol_name?.trim()?.uppercase()?.takeIf { it.isNotBlank() } ?: "—"
+                }
                 Box(
                     modifier = Modifier.clip(CircleShape).background(VerdeSena.copy(alpha = 0.15f)).padding(horizontal = 8.dp, vertical = 3.dp)
                 ) {
@@ -780,14 +784,15 @@ private fun FilaUsuarioCard(usuario: UsuarioApi, onEditar: () -> Unit, onBorrar:
                 Spacer(modifier = Modifier.width(6.dp))
                 val ficha = usuario.user_coursenumber ?: 0
                 Text(
-                    "${usuario.user_documento_tipo ?: "CC"} ${usuario.user_identification ?: "—"}${if (ficha > 0) " • Ficha $ficha" else ""}",
+                    "${usuario.user_documento_tipo ?: "CC"} ${usuario.user_identification ?: "—"}" +
+                        if (ficha > 0 && !usuario.esInvitado()) " • Ficha $ficha" else "",
                     color = colors.textSecondary, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false)
                 )
             }
             Spacer(modifier = Modifier.height(2.dp))
             Text(usuario.user_email ?: "", color = colors.textSecondary, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (!usuario.user_program.isNullOrBlank()) {
+            if (!usuario.esInvitado() && !usuario.user_program.isNullOrBlank()) {
                 Text(usuario.user_program!!, color = colors.textSecondary, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }

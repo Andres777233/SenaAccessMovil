@@ -139,9 +139,12 @@ data class UsuarioApi(
     fun estaPendiente(): Boolean = estado_cuenta?.trim()?.lowercase() == "pendiente"
 
     // Invitado temporal (QR): nunca va a ambientes ni a dueños de equipos.
+    // El correo guest_* cubre cuentas viejas que quedaron con rol Aprendiz.
     fun esInvitado(): Boolean {
         val r = role?.rol_name?.trim()?.lowercase()
-        return r == "invitado" || r == "visitante" || r == "guest"
+        val correo = user_email?.trim()?.lowercase().orEmpty()
+        return r == "invitado" || r == "visitante" || r == "guest" ||
+            correo.startsWith("guest_")
     }
     // Jornada efectiva hoy (sábado especial si aplica).
     fun jornadaHoy(): String? {
