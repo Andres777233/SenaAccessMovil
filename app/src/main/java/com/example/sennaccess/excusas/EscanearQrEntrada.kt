@@ -16,8 +16,10 @@ import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
@@ -31,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -38,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import com.example.sennaccess.comun.campoVisible
 import com.example.sennaccess.comun.detalleHttp
 import com.example.sennaccess.comun.diseno.BotonBordeBrillante
 import com.example.sennaccess.comun.diseno.BotonPrimarioNeon
@@ -157,7 +161,12 @@ fun EscanearQrEntrada(mostrarCabecera: Boolean = true) {
         if (esCarnet) validarCarnet(texto) else validar(codigo = texto)
     }
 
-    Column(modifier = Modifier.fillMaxWidth().imePadding()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .imePadding()
+    ) {
         if (mostrarCabecera) {
             Text(
                 "Escanea el QR del carnet o el código de entrada generado en la web.",
@@ -258,7 +267,7 @@ fun EscanearQrEntrada(mostrarCabecera: Boolean = true) {
 
         Spacer(modifier = Modifier.height(14.dp))
         Text(
-            "O digita el PIN de 6 dígitos",
+            "O digita el PIN de 6 dígitos del usuario",
             color = colors.textPrimary,
             fontWeight = FontWeight.Bold,
             fontSize = 14.sp
@@ -272,10 +281,17 @@ fun EscanearQrEntrada(mostrarCabecera: Boolean = true) {
                     errorValidar = null
                 }
             },
-            label = { Text("PIN de entrada") },
+            label = { Text("PIN o código del usuario (web)") },
+            placeholder = { Text("• • • • • •") },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().campoVisible(),
+            textStyle = TextStyle(
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 8.sp,
+                textAlign = TextAlign.Center
+            )
         )
         Spacer(modifier = Modifier.height(10.dp))
         BotonPrimarioNeon(

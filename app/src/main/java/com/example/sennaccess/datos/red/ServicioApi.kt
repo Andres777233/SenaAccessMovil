@@ -21,6 +21,7 @@ import com.example.sennaccess.datos.modelos.Ambiente
 import com.example.sennaccess.datos.modelos.ConteoNoLeidas
 import com.example.sennaccess.datos.modelos.EquipoIngreso
 import com.example.sennaccess.datos.modelos.EstadoConfigDobleFactor
+import com.example.sennaccess.datos.modelos.EstadoPuerta
 import com.example.sennaccess.datos.modelos.EstadoVerificacion
 import com.example.sennaccess.datos.modelos.Excusa
 import com.example.sennaccess.datos.modelos.Ingreso
@@ -362,6 +363,10 @@ interface ServicioApi {
     // ---- Pronóstico de accesos diarios (solo superadmin) ----
     @GET("admin/prediccion")
     suspend fun getPrediccion(@Header("Authorization") auth: String, @Query("dias") dias: Int): RespuestaPrediccion
+
+    // ---- Estado de la puerta: entrada de hoy y último movimiento ----
+    @GET("acceso/estado")
+    suspend fun getEstadoAcceso(@Header("Authorization") auth: String): EstadoPuerta
 
     // ---- QR de acceso de portería (entrada/salida al historial) ----
     @POST("acceso/validar")

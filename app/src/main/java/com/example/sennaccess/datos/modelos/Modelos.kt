@@ -411,6 +411,23 @@ data class RespuestaValidarAcceso(
     @SerializedName("duplicado") val duplicado: Boolean? = null
 )
 
+// Estado de la puerta (GET /acceso/estado): entrada_hoy evita que una Entrada
+// de otro día cuente como "estoy dentro"; dentro es el último movimiento.
+data class EstadoPuerta(
+    @SerializedName("entrada_hoy") val entrada_hoy: Boolean = false,
+    @SerializedName("dentro") val dentro: Boolean = false,
+    @SerializedName("ultimo") val ultimo: MovimientoPuerta? = null
+) {
+    val estaDentroHoy: Boolean get() = entrada_hoy && dentro
+}
+
+data class MovimientoPuerta(
+    @SerializedName("id_ingreso") val id_ingreso: Int? = null,
+    @SerializedName("tipo") val tipo: String? = null,
+    @SerializedName("fecha") val fecha: String? = null,
+    @SerializedName("lugar") val lugar: String? = null
+)
+
 // Código de entrada generado en la web (QR + PIN) para que portería lo valide.
 data class PeticionValidarCodigoAcceso(
     @SerializedName("codigo") val codigo: String? = null,

@@ -16,11 +16,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
+import com.example.sennaccess.comun.campoVisible
+import com.example.sennaccess.comun.esHoyBogota
 import com.example.sennaccess.comun.diseno.CajaError as CajaErrorSena
 import com.example.sennaccess.comun.tema.ColoresAppLocal
 import com.example.sennaccess.datos.repositorios.RepositorioAcceso
@@ -53,18 +57,27 @@ fun PuertaAcceso(onEntrar: () -> Unit, onSalir: () -> Unit) {
         scope.launch {
             if (!silenciosoAlEntrar) verificando = true
             try {
-                val lista = repo.getMyIngresos(token)
-                // Regla de permanencia: dentro si el ÚLTIMO movimiento es
-                // Entrada (el servidor ordena descendente). El QR solo se
-                // exige tras una Salida o sin historial.
-                val ok = lista.firstOrNull()?.ingreso_type.equals("Entrada", ignoreCase = true) == true
+                // El servidor decide: entrada de HOY y último movimiento
+                // Entrada. Una Entrada de ayer (sin Salida) ya no cuenta.
+                val ok = try {
+                    repoAcceso.estado(token).estaDentroHoy
+                } catch (e: retrofit2.HttpException) {
+                    if (e.code() != 404) throw e
+                    // Compatibilidad con un backend anterior al endpoint:
+                    // se conserva la regla estricta usando el historial.
+                    val ultimo = repo.getMyIngresos(token).firstOrNull()
+                    ultimo?.ingreso_type?.equals("Entrada", ignoreCase = true) == true &&
+                        esHoyBogota(ultimo?.ingreso_datetime)
+                }
                 tieneEntrada = ok
                 error = null
                 if (ok) alEntrar?.invoke() ?: onEntrar()
             } catch (e: retrofit2.HttpException) {
                 error = com.example.sennaccess.comun.detalleHttp(e)
+                mensajeExito = null
             } catch (e: Exception) {
                 error = "No se pudo conectar al servidor."
+                mensajeExito = null
             } finally {
                 cargando = false
                 verificando = false
@@ -102,8 +115,10 @@ fun PuertaAcceso(onEntrar: () -> Unit, onSalir: () -> Unit) {
                 alMarcar(resp.message ?: "Movimiento registrado.")
             } catch (e: retrofit2.HttpException) {
                 error = com.example.sennaccess.comun.detalleHttp(e)
+                mensajeExito = null
             } catch (e: Exception) {
                 error = "No se pudo conectar al servidor."
+                mensajeExito = null
             } finally {
                 validandoPin = false
             }
@@ -114,6 +129,7 @@ fun PuertaAcceso(onEntrar: () -> Unit, onSalir: () -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
+            .imePadding()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -147,11 +163,18 @@ fun PuertaAcceso(onEntrar: () -> Unit, onSalir: () -> Unit) {
             OutlinedTextField(
                 value = pinManual,
                 onValueChange = { pinManual = it.filter(Char::isDigit).take(6) },
-                label = { Text("...o ingresa el PIN de portería") },
-                modifier = Modifier.fillMaxWidth(),
+                label = { Text("PIN de portería (6 dígitos)") },
+                placeholder = { Text("• • • • • •") },
+                modifier = Modifier.fillMaxWidth().campoVisible(),
                 shape = RoundedCornerShape(16.dp),
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                textStyle = TextStyle(
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 6.sp,
+                    textAlign = TextAlign.Center
+                )
             )
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedButton(

@@ -18,12 +18,12 @@ App Android (Kotlin + Jetpack Compose, estilo vidrio verde) de SenaAccess: contr
 | Dato | Valor |
 |---|---|
 | applicationId / namespace | `com.example.sennaccess` |
-| Versión | `versionName 9.1` / `versionCode 20` (`app/build.gradle.kts`) |
+| Versión | `versionName 9.2` / `versionCode 21` (`app/build.gradle.kts`) |
 | SDK | minSdk 24, targetSdk 36, compileSdk 36.1 |
 | Toolchain | Gradle 9.3.1, AGP 9.1.1, Kotlin 2.2.10, Compose BOM 2026.02.01, **JDK 21** (auto-descarga con foojay: requiere red la primera vez) |
 | Red | Retrofit 2.11 + OkHttp 4.12 (logging) + Gson, Coil 2.6, CameraX 1.4.2 + MLKit 17.3, ZXing 3.5.3, Biometric 1.1.0 |
 | Tamaño | 109 archivos `.kt` en 12 paquetes, todos en español (el contrato de API conserva inglés en `@SerializedName`, endpoints y Manifest) |
-| Contrato | El móvil declara **66** endpoints (`datos/red/ServicioApi.kt`) frente a **83** rutas del backend |
+| Contrato | El móvil declara **70** endpoints (`datos/red/ServicioApi.kt`) frente a **83** rutas del backend |
 
 ## Mapa del repo (`app/src/main/java/com/example/sennaccess/`)
 
@@ -85,7 +85,7 @@ En el backend los `roles.rol_name` son `Superadmin`, `Admin`, `Instructor`, `Apr
 - **Base**: `https://senaaccessweb-production-4c6e.up.railway.app/api/` (`datos/red/ClienteApi.kt:17`).
 - **Errores del API**: toda ruta `/api/*` inexistente responde **404 JSON** y sin token **401 JSON** (nunca HTML ni 500): el móvil puede usar `detalleHttp` sin sorpresas.
 - **Huella digital**: el móvil usa biometría **local** (`BiometricPrompt` + Keystore AES-256-GCM; la biometría nunca sale del dispositivo). La **web** ya tiene su equivalente con **WebAuthn/passkey** (`/api/huellas/*`), por si se quiere paridad total en algún momento.
-- **Endpoints**: **66** en `datos/red/ServicioApi.kt` (fuente de verdad del contrato del móvil) frente a **83** rutas en el backend (`routes/api.php`).
+- **Endpoints**: **70** en `datos/red/ServicioApi.kt` (fuente de verdad del contrato del móvil) frente a **83** rutas en el backend (`routes/api.php`).
 - **Auth**: `Bearer` (Sanctum) + `device_id` (2FA solo reta fuera del dispositivo confiable).
 - **2FA**: `/2fa/activar|desactivar|estado-config|pendientes|aprobar|validar-codigo|estado/{id}|decidir`; el correo (Brevo) trae deep link `senaaccess://2fa` / `https://.../2fa` con botones SÍ/NO.
 - **Errores**: JSON con `message`; la app los muestra con `detalleHttp`.
@@ -104,8 +104,8 @@ En el backend los `roles.rol_name` son `Superadmin`, `Admin`, `Instructor`, `Apr
 
 ## Estado actual y pendientes
 
-- Última versión compilada: **v9.1 (code 20)**, APK ≈46 MB, `assembleDebug` OK; el APK con estos cambios queda pendiente de instalar en el moto g86 (no conectado).
-- Último commit: 2026-10-25 — Presentes eliminado y novedades con ellipsis (v9.1).
+- Última versión compilada: **v9.2 (code 21)**, APK ≈46 MB, `assembleDebug` + `testDebugUnitTest` OK; el APK queda pendiente de instalar en el moto g86 (no conectado).
+- Último commit: 2026-10-28 — Correcciones de puerta (Entrada de hoy), PIN y roles (v9.2).
 - Rama `v1.8-merge` sincronizada con `origin/main` (0 commits de diferencia).
 - Pendientes conocidos: (1) confirmar que el backend tiene desplegado el push del 2026-10-13 (`SenaAccessWebDef1` → `SenaAccessWeb/main`); (3) revisar que las líneas "pendiente instalar" antiguas del historial **no** reflecten el estado real (solo las 2 últimas entradas cuentan).
 
@@ -127,8 +127,8 @@ Ejecútalo al arrancar una sesión (es el control de coherencia entre este docum
 3. `find app/src/main/java -name "*.kt" | wc -l` → **109** (109 = 111 − 2 módulos muertos eliminados en la auditoría del 2026-10-21: `sugerencias` y `horarios`).
 4. `find app/src/main/java -name "RetrofitClient.kt" -o -name "SessionManager.kt" -o -name "MockData.kt" -o -name "HuellaCredentialStore.kt"` → **0 resultados** (nombres legacy prohibidos).
 5. `grep -n "BASE_URL_REMOTE" app/src/main/java/com/example/sennaccess/datos/red/ClienteApi.kt` → la URL de la sección "Contrato con la API".
-6. `grep -nE "versionName|versionCode" app/build.gradle.kts` → `9.1` / `20`.
-7. `grep -cE "@(GET|POST|PUT|DELETE|PATCH)" app/src/main/java/com/example/sennaccess/datos/red/ServicioApi.kt` → **73**.
+6. `grep -nE "versionName|versionCode" app/build.gradle.kts` → `9.2` / `21`.
+7. `grep -cE "@(GET|POST|PUT|DELETE|PATCH)" app/src/main/java/com/example/sennaccess/datos/red/ServicioApi.kt` → **70**.
 8. `cat local.properties` → `sdk.dir` válido; si falta, crearlo o usar `ANDROID_HOME` o Docker.
 9. `./gradlew assembleDebug` (o `docker compose run --rm sennaccess-movil`) → **BUILD SUCCESSFUL**.
 10. `grep -A8 "fun normalizar" app/src/main/java/com/example/sennaccess/datos/sesion/RolSeguro.kt` → `superadmin`, `admin`, `instructor`, `aprendiz`, `invitado`.
@@ -308,3 +308,5 @@ Agentes en `.opencode/agent/`, skills en `.opencode/skill/*/SKILL.md` (todo vers
 - 2026-10-25 — Versión documentada a 9.1/code 20 y novedades con `TextOverflow.Ellipsis` (título 2 líneas, cuerpo 4) para que el texto largo no se corte en silencio. `PersonasDentro`/Presentes se dejó intacta y sin enlazar por decisión del dueño. `assembleDebug` + `testDebugUnitTest` OK.
 
 - 2026-10-25 — Presentes eliminado por decisión del dueño (revierte la entrada anterior): se borró `administrador/accesos/PersonasDentro.kt` y los estados `presentes`/`cargarPresentes` del `PanelAdministradorViewModel`; se conservan `GET /admin/presentes`, `Presente`, `ServicioApi.getPresentes` y `RepositorioIngresos.getPresentes` como contrato de API. `assembleDebug` + `testDebugUnitTest` OK.
+
+- 2026-10-28 — QA web+móvil de puerta, roles y PIN (v9.2, code 21): web con `/puerta-acceso` en componente (fin del rebote al login), regla `entrada_hoy && dentro`, guard de entrada en `/aprendiz` y `/instructor`, reto 2FA con prioridad sobre token viejo, limpieza de sesión al iniciar login, sincronización entre pestañas y corrección del rol contra `/api/user`; móvil con `GET /acceso/estado` (`EstadoPuerta`), puerta reevaluada al restaurar/reanudar/deep link, PIN de 6 dígitos a 28sp con scroll, PIN de pendientes a 20sp y ayudas 4/6 dígitos corregidas. `assembleDebug` + `testDebugUnitTest` OK; APK pendiente de instalar en moto g86.

@@ -17,7 +17,9 @@ import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
@@ -121,7 +123,12 @@ fun EscanearQrExcusa(mostrarCabecera: Boolean = true) {
         validarPin(pin)
     }
 
-    Column(modifier = Modifier.fillMaxWidth().imePadding()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .imePadding()
+    ) {
         if (mostrarCabecera) {
             Text("QR de excusa para autorizar la salida.", color = colors.textSecondary, fontSize = 12.sp)
             Spacer(modifier = Modifier.height(12.dp))

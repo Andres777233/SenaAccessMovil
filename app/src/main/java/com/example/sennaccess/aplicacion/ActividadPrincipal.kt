@@ -17,11 +17,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.example.sennaccess.comun.tema.*
 import com.example.sennaccess.administrador.panel.*
 import com.example.sennaccess.aprendiz.panel.PanelAprendiz
 import com.example.sennaccess.instructor.panel.PanelInstructor
 import com.example.sennaccess.portero.PanelPortero
+import com.example.sennaccess.datos.repositorios.RepositorioAcceso
 import com.example.sennaccess.datos.repositorios.RepositorioAutenticacion
 import com.example.sennaccess.datos.sesion.RolSeguro
 import com.example.sennaccess.datos.sesion.GestorSesion
@@ -78,6 +82,10 @@ class ActividadPrincipal : AppCompatActivity() {
                 TemaSennaccess(darkTheme = isDark) {
                     var currentScreen by rememberSaveable { mutableStateOf("splash") }
                     val pilaRetroceso = remember { ArrayDeque<String>() }
+                    val scope = rememberCoroutineScope()
+                    val repoPuerta = remember { RepositorioAcceso() }
+                    val lifecycleOwner = LocalLifecycleOwner.current
+                    var verificandoPuerta by remember { mutableStateOf(false) }
                     fun irA(destino: String) {
                         if (currentScreen == destino) return
                         if (destino == "aprendiz_dashboard" || destino == "instructor_dashboard" || destino == "admin" || destino == "portero_dashboard" || destino == "puerta_acceso") {
@@ -106,6 +114,39 @@ class ActividadPrincipal : AppCompatActivity() {
                         }
                         return false
                     }
+                    // La puerta no se exige solo al entrar por el login:
+                    // también al restaurar la app (proceso muerto o desde
+                    // recientes) y al volver del background. Si la Entrada de
+                    // hoy ya no está abierta, se regresa a escanear.
+                    fun verificarEntradaVigente() {
+                        val rol = RolSeguro.normalizar(GestorSesion.userRole) ?: return
+                        if (rol != "aprendiz" && rol != "instructor") return
+                        val token = GestorSesion.token ?: return
+                        if (verificandoPuerta) return
+                        verificandoPuerta = true
+                        scope.launch {
+                            try {
+                                val estado = repoPuerta.estado(token)
+                                if (!estado.estaDentroHoy) {
+                                    pilaRetroceso.clear()
+                                    currentScreen = "puerta_acceso"
+                                }
+                            } catch (e: retrofit2.HttpException) {
+                                // Token vencido: se cierra la sesión local.
+                                if (e.code() == 401) {
+                                    GestorSesion.clear()
+                                    pilaRetroceso.clear()
+                                    currentScreen = "landing"
+                                }
+                            } catch (_: Exception) {
+                                // Sin red no se bloquea la app: la puerta
+                                // vuelve a exigir un movimiento verificado
+                                // cuando el servidor responda.
+                            } finally {
+                                verificandoPuerta = false
+                            }
+                        }
+                    }
                     val enRaiz = currentScreen == "splash" || currentScreen == "landing"
                     BackHandler(enabled = !enRaiz) {
                         retroceder()
@@ -117,16 +158,37 @@ class ActividadPrincipal : AppCompatActivity() {
                         if (GestorSesion.token == null && (currentScreen == "aprendiz_dashboard" || currentScreen == "instructor_dashboard" || currentScreen == "admin" || currentScreen == "portero_dashboard" || currentScreen == "puerta_acceso")) {
                             pilaRetroceso.clear()
                             currentScreen = "landing"
+                            return@LaunchedEffect
                         }
+                        if (currentScreen == "aprendiz_dashboard" || currentScreen == "instructor_dashboard") {
+                            verificarEntradaVigente()
+                        }
+                    }
+
+                    // Al volver del background se reevalúa la permanencia: una
+                    // Salida marcada en portería mientras la app estaba abierta
+                    // no puede dejar el panel accesible como si nada.
+                    DisposableEffect(lifecycleOwner, currentScreen) {
+                        val observador = LifecycleEventObserver { _, evento ->
+                            if (evento == Lifecycle.Event.ON_RESUME &&
+                                (currentScreen == "aprendiz_dashboard" || currentScreen == "instructor_dashboard")) {
+                                verificarEntradaVigente()
+                            }
+                        }
+                        lifecycleOwner.lifecycle.addObserver(observador)
+                        onDispose { lifecycleOwner.lifecycle.removeObserver(observador) }
                     }
 
                     val retoLink = deepLinkChallenge.value
                     LaunchedEffect(retoLink) {
                         if (retoLink == null) return@LaunchedEffect
                         if (GestorSesion.token != null) {
+                            // Aprendiz e instructor pasan por la puerta: ella
+                            // entra sola si la Entrada de hoy sigue abierta y,
+                            // si no, exige el QR/PIN. Antes el deep link 2FA
+                            // abría el panel sin verificar permanencia.
                             when (RolSeguro.normalizar(GestorSesion.userRole)) {
-                                "aprendiz" -> irA("aprendiz_dashboard")
-                                "instructor" -> irA("instructor_dashboard")
+                                "aprendiz", "instructor" -> irA("puerta_acceso")
                                 "superadmin" -> irA("admin")
                                 "admin" -> irA("portero_dashboard")
                                 else -> irA("login")
@@ -136,7 +198,6 @@ class ActividadPrincipal : AppCompatActivity() {
                         }
                     }
 
-                    val scope = rememberCoroutineScope()
                     val cerrarSesion: () -> Unit = {
                         // Limpieza local inmediata: solo sesión y retos.
                         // La huella y el dispositivo se conservan para reingresar

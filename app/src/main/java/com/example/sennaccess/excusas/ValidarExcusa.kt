@@ -226,7 +226,23 @@ fun VistaValidarExcusa(onBack: () -> Unit, mostrarCabecera: Boolean = true) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(ex.aprendiz?.nombreCompleto ?: "Aprendiz #${ex.fk_id_aprendiz}", color = colors.textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, maxLines = 1)
                             Text(textoCreacionExcusa(ex), color = colors.textSecondary, fontSize = 11.sp)
-                            Text("PIN ${ex.pin ?: "—"} • ${textoVigencia(ex.expira_en, ahora)}", color = colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 2.dp))
+                            // El PIN es el dato que portería necesita leer y
+                            // dictar: va grande, no perdido en 12sp.
+                            Text(
+                                "PIN ${ex.pin ?: "—"}",
+                                color = verdeMarca(),
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 2.sp,
+                                maxLines = 1,
+                                modifier = Modifier.padding(top = 3.dp)
+                            )
+                            Text(
+                                textoVigencia(ex.expira_en, ahora),
+                                color = colors.textSecondary,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium
+                            )
                             Text("Instructor: ${ex.instructor?.nombreCompleto ?: "#${ex.fk_id_instructor}"}", color = colors.textSecondary, fontSize = 10.sp, maxLines = 1)
                         }
                         Spacer(modifier = Modifier.width(8.dp))

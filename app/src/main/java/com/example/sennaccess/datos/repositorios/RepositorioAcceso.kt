@@ -4,6 +4,7 @@ import com.example.sennaccess.datos.modelos.PeticionValidarAcceso
 import com.example.sennaccess.datos.modelos.PeticionValidarCarnet
 import com.example.sennaccess.datos.modelos.PeticionValidarCodigoAcceso
 import com.example.sennaccess.datos.modelos.PeticionValidarPin
+import com.example.sennaccess.datos.modelos.EstadoPuerta
 import com.example.sennaccess.datos.modelos.RespuestaValidarAcceso
 import com.example.sennaccess.datos.modelos.RespuestaValidarCarnet
 import com.example.sennaccess.datos.modelos.RespuestaValidarCodigoAcceso
@@ -11,6 +12,11 @@ import com.example.sennaccess.datos.red.ClienteApi
 
 // Repositorio del QR de acceso: marca entrada/salida con POST /acceso/validar.
 class RepositorioAcceso {
+
+    // Estado barato de la puerta: evita descargar todo el historial solo para
+    // saber si la persona ya está dentro hoy.
+    suspend fun estado(token: String): EstadoPuerta =
+        ClienteApi.conServicio { it.getEstadoAcceso("Bearer $token") }
 
     suspend fun validar(token: String, qrPayload: String): RespuestaValidarAcceso =
         ClienteApi.conServicio { it.validarAcceso("Bearer $token", PeticionValidarAcceso(qrPayload)) }

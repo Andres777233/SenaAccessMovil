@@ -16,7 +16,9 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
@@ -115,7 +117,13 @@ fun EscanearQrInvitado(
     }
 
     Box(modifier = Modifier.fillMaxSize().background(colors.background)) {
-        Column(modifier = Modifier.fillMaxSize().imePadding().padding(16.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .imePadding()
+                .padding(16.dp)
+        ) {
             // Cabecera propia solo fuera de la vista unificada (ella ya trae volver).
             if (mostrarCabecera) {
             Row(verticalAlignment = Alignment.CenterVertically) {
