@@ -127,13 +127,16 @@ class ActividadPrincipal : AppCompatActivity() {
                         scope.launch {
                             try {
                                 val estado = repoPuerta.estado(token)
+                                // Si mientras se consultaba se cerró sesión o
+                                // entró otra cuenta, no se pisa la navegación.
+                                if (GestorSesion.token != token) return@launch
                                 if (!estado.estaDentroHoy) {
                                     pilaRetroceso.clear()
                                     currentScreen = "puerta_acceso"
                                 }
                             } catch (e: retrofit2.HttpException) {
                                 // Token vencido: se cierra la sesión local.
-                                if (e.code() == 401) {
+                                if (e.code() == 401 && GestorSesion.token == token) {
                                     GestorSesion.clear()
                                     pilaRetroceso.clear()
                                     currentScreen = "landing"
