@@ -2,7 +2,7 @@ package com.example.sennaccess.autenticacion.invitado
 
 // Registro de INVITADO (público, sin correo ni contraseña): el visitante
 // aporta documento, nombre y apellidos, y el backend devuelve un QR de un solo
-// uso con 60 minutos de validez que debe presentar en recepción (POST
+// uso, con una visita de 6 horas, que debe presentar en recepción (POST
 // /register-guest). Al generarse el QR, la pantalla pasa a CodigoQrInvitado.
 
 import androidx.compose.foundation.layout.*
@@ -163,7 +163,7 @@ fun FormularioInvitado(
 
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    "El QR caduca a los 60 minutos y solo puede usarse una vez.",
+                    "La visita dura 6 horas: el QR de entrada es de un solo uso y al entrar se genera el de salida.",
                     color = colors.textSecondary,
                     fontSize = 11.sp,
                     modifier = Modifier.padding(top = 4.dp)

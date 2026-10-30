@@ -125,8 +125,18 @@ fun PantallaVerificacion(
     var bloqueadoHasta by remember { mutableStateOf(0L) }
 
     var estadoMensaje by remember { mutableStateOf<String?>(null) }
+    // Reenvío del código: espera entre envíos y mensaje de confirmación.
+    var esperaReenvio by remember { mutableStateOf(0) }
+    var reenviando by remember { mutableStateOf(false) }
+    var avisoReenvio by remember { mutableStateOf<String?>(null) }
     var resuelto by remember { mutableStateOf(false) }
     var aprobado by remember { mutableStateOf(false) }
+
+    LaunchedEffect(esperaReenvio) {
+        if (esperaReenvio <= 0) return@LaunchedEffect
+        delay(1000)
+        esperaReenvio -= 1
+    }
 
     LaunchedEffect(challengeId) {
         val inicio = System.currentTimeMillis()
@@ -323,7 +333,47 @@ fun PantallaVerificacion(
                     Text("VERIFICAR", fontWeight = FontWeight.ExtraBold)
                 }
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(8.dp))
+                TextButton(
+                    onClick = {
+                        if (!reenviando && esperaReenvio == 0) {
+                            reenviando = true
+                            avisoReenvio = null
+                            scope.launch {
+                                try {
+                                    val resp = repo.reenviarCodigo(challengeId)
+                                    esperaReenvio = resp.segundos_para_reenvio ?: 60
+                                    val pista = resp.email_hint?.let { " a $it" } ?: ""
+                                    avisoReenvio = "Código reenviado$pista."
+                                    errorCodigo = null
+                                } catch (e: Exception) {
+                                    avisoReenvio = mensajeHttp(e)
+                                    esperaReenvio = 30
+                                } finally {
+                                    reenviando = false
+                                }
+                            }
+                        }
+                    },
+                    enabled = !reenviando && esperaReenvio == 0,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        when {
+                            reenviando -> "ENVIANDO…"
+                            esperaReenvio > 0 -> "REENVIAR CÓDIGO EN ${esperaReenvio}s"
+                            else -> "REENVIAR CÓDIGO"
+                        },
+                        color = verdeMarca(),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
+                }
+                avisoReenvio?.let {
+                    Text(it, color = colors.textSecondary, fontSize = 12.sp, textAlign = TextAlign.Center)
+                }
+
+                Spacer(Modifier.height(10.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()

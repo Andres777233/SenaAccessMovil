@@ -95,7 +95,7 @@ fun EscanearQrInvitado(
             cargando = true
             try {
                 val resp = ClienteApi.conServicio { servicio ->
-                    servicio.validateGuestQr(PeticionValidarQr(tk))
+                    servicio.validarVisitaInvitado(PeticionValidarQr(tk))
                 }
                 cargando = false
                 resultadoExito = true
@@ -208,12 +208,19 @@ fun EscanearQrInvitado(
                                                 }
                                                 .addOnCompleteListener { imageProxy.close() }
                                         }
-                                        cameraProvider.bindToLifecycle(
-                                            lifecycleOwner,
-                                            CameraSelector.DEFAULT_BACK_CAMERA,
-                                            preview,
-                                            analysis
-                                        )
+                                        // CameraX: una sola cámara por Activity. Sin este
+                                        // unbind, al cambiar de pestaña en "Validar accesos"
+                                        // la pestaña anterior seguía bindeada y la app se
+                                        // cerraba (IllegalStateException).
+                                        try {
+                                            cameraProvider.unbindAll()
+                                            cameraProvider.bindToLifecycle(
+                                                lifecycleOwner,
+                                                CameraSelector.DEFAULT_BACK_CAMERA,
+                                                preview,
+                                                analysis
+                                            )
+                                        } catch (_: Exception) { }
                                     }, ContextCompat.getMainExecutor(ctx))
                                 }
                             },

@@ -128,9 +128,12 @@ fun VistaValidarUnificada(onBack: () -> Unit) {
 
         // El peso va en EntradaSuave, que sí es hijo directo del Column; el
         // contenido de la pestaña recibe el alto restante y puede hacer scroll.
-        EntradaSuave(indice = tab, modifier = Modifier.weight(1f)) {
-            ContenidoPestana(objetivo = tab) { pestana ->
-                when (pestana) {
+        // Una sola pestaña viva a la vez. Antes había AnimatedContent y las dos
+        // pestañas seguían compuestas durante la transición: dos cámaras
+        // bindeadas a la Activity y crash al pasar de "código web" a "invitado".
+        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            key(tab) {
+                when (tab) {
                     0 -> VistaValidarExcusa(onBack = onBack, mostrarCabecera = false)
                     1 -> EscanearQrExcusa(mostrarCabecera = false)
                     2 -> EscanearQrInvitado(onVolver = onBack, mostrarCabecera = false)

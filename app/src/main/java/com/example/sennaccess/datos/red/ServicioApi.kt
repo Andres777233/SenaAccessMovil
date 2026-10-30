@@ -21,6 +21,11 @@ import com.example.sennaccess.datos.modelos.Ambiente
 import com.example.sennaccess.datos.modelos.ConteoNoLeidas
 import com.example.sennaccess.datos.modelos.EquipoIngreso
 import com.example.sennaccess.datos.modelos.EstadoConfigDobleFactor
+import com.example.sennaccess.datos.modelos.EstadoVisitaInvitado
+import com.example.sennaccess.datos.modelos.PeticionReenviarCodigo
+import com.example.sennaccess.datos.modelos.RespuestaReenvioCodigo
+import com.example.sennaccess.datos.modelos.RespuestaVersionApp
+import com.example.sennaccess.datos.modelos.RespuestaVisitaInvitado
 import com.example.sennaccess.datos.modelos.EstadoPuerta
 import com.example.sennaccess.datos.modelos.EstadoVerificacion
 import com.example.sennaccess.datos.modelos.Excusa
@@ -100,6 +105,20 @@ interface ServicioApi {
     @POST("validate-guest-qr")
     suspend fun validateGuestQr(@Body body: PeticionValidarQr): RespuestaMensaje
 
+    // 1f-bis. POST /api/guest/validar: portería escanea el QR del invitado y el
+    // servidor decide si es la entrada o la salida de la visita.
+    @POST("guest/validar")
+    suspend fun validarVisitaInvitado(@Body body: PeticionValidarQr): RespuestaVisitaInvitado
+
+    // 1f-ter. GET /api/guest/estado/{token}: el invitado consulta su visita
+    // (pendiente / dentro / salida) y recibe su QR de salida. Público.
+    @GET("guest/estado/{token}")
+    suspend fun estadoVisitaInvitado(@Path("token") token: String): EstadoVisitaInvitado
+
+    // 1f-quater. GET /api/app/version: versión publicada de la app Android.
+    @GET("app/version")
+    suspend fun versionApp(): RespuestaVersionApp
+
     // 1g. POST /api/email/verification-notification: reenvía el enlace de verificación
     @POST("email/verification-notification")
     suspend fun resendVerification(@Header("Authorization") auth: String): RespuestaMensaje
@@ -108,6 +127,10 @@ interface ServicioApi {
     // 1f. POST /api/2fa/validar-codigo: el dispositivo en intento de login envía el
     @POST("2fa/validar-codigo")
     suspend fun validarCodigo2Fa(@Body body: PeticionValidarCodigo): RespuestaAcceso
+
+    // 1f-bis. POST /api/2fa/reenviar: pide un código nuevo (1 por minuto).
+    @POST("2fa/reenviar")
+    suspend fun reenviarCodigo2Fa(@Body body: PeticionReenviarCodigo): RespuestaReenvioCodigo
 
     // 1g. GET /api/2fa/estado/{id}: polling del dispositivo que intenta iniciar sesión.
     @GET("2fa/estado/{challengeId}")

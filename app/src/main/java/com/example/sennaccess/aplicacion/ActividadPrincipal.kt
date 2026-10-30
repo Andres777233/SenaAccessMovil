@@ -80,6 +80,8 @@ class ActividadPrincipal : AppCompatActivity() {
 
             CompositionLocalProvider(ColoresAppLocal provides appColors) {
                 TemaSennaccess(darkTheme = isDark) {
+                    // Aviso (obligatorio) cuando hay un APK nuevo publicado.
+                    com.example.sennaccess.datos.sesion.AvisoActualizacion()
                     var currentScreen by rememberSaveable { mutableStateOf("splash") }
                     val pilaRetroceso = remember { ArrayDeque<String>() }
                     val scope = rememberCoroutineScope()

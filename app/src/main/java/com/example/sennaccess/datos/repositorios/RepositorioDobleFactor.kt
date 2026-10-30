@@ -3,6 +3,8 @@ package com.example.sennaccess.datos.repositorios
 import com.example.sennaccess.datos.red.ClienteApi
 import com.example.sennaccess.datos.modelos.EstadoConfigDobleFactor
 import com.example.sennaccess.datos.modelos.EstadoVerificacion
+import com.example.sennaccess.datos.modelos.PeticionReenviarCodigo
+import com.example.sennaccess.datos.modelos.RespuestaReenvioCodigo
 import com.example.sennaccess.datos.modelos.PendientesDobleFactor
 import com.example.sennaccess.datos.modelos.PeticionAprobarReto
 import com.example.sennaccess.datos.modelos.PeticionDesactivarDobleFactor
@@ -30,6 +32,10 @@ class RepositorioDobleFactor {
     // Valida el código del correo y completa el inicio de sesión.
     suspend fun validarCodigo(challengeId: String, code: String): RespuestaAcceso =
         ClienteApi.conServicio { it.validarCodigo2Fa(PeticionValidarCodigo(challengeId, code)) }
+
+    // Reenvía el código de 6 dígitos al correo (1 por minuto).
+    suspend fun reenviarCodigo(challengeId: String): RespuestaReenvioCodigo =
+        ClienteApi.conServicio { it.reenviarCodigo2Fa(PeticionReenviarCodigo(challengeId)) }
 
     // Estado del reto, para el polling del teléfono que intenta entrar.
     suspend fun estadoChallenge(challengeId: String): EstadoVerificacion =

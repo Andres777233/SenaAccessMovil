@@ -90,6 +90,28 @@ data class PendientesDobleFactor(
     val challenge: RetoDobleFactor? = null
 )
 
+// Reenvío del código 2FA (POST /2fa/reenviar).
+data class PeticionReenviarCodigo(
+    @SerializedName("challenge_id") val challenge_id: String
+)
+
+data class RespuestaReenvioCodigo(
+    val message: String? = null,
+    @SerializedName("email_hint") val email_hint: String? = null,
+    @SerializedName("code_expires_at") val code_expires_at: String? = null,
+    @SerializedName("segundos_para_reenvio") val segundos_para_reenvio: Int? = null
+)
+
+// Versión publicada de la app Android (GET /app/version).
+data class RespuestaVersionApp(
+    @SerializedName("version_code") val version_code: Int? = null,
+    @SerializedName("version_name") val version_name: String? = null,
+    @SerializedName("min_version_code") val min_version_code: Int? = null,
+    @SerializedName("apk_url") val apk_url: String? = null,
+    val mensaje: String? = null,
+    val obligatorio: Boolean? = null
+)
+
 // (GET /2fa/estado/{id}). Solo devuelve access_token/user/role cuando quedó aprobado.
 data class EstadoVerificacion(
     val message: String? = null,
@@ -299,7 +321,34 @@ data class RespuestaQrInvitado(
     val message: String? = null,
     val user: UsuarioSesion? = null,
     @SerializedName("qr_token") val qr_token: String? = null,
-    @SerializedName("qr_expires_at") val qr_expires_at: String? = null
+    @SerializedName("qr_expires_at") val qr_expires_at: String? = null,
+    // La visita dura 6 horas: se muestra en la pantalla del QR.
+    @SerializedName("horas_vigencia") val horas_vigencia: Int? = null
+)
+
+// Estado de la visita de un invitado (GET /guest/estado/{token}).
+// 'pendiente' = aún no entró, 'dentro' = ya entró (tiene QR de salida),
+// 'salida' = ya salió, 'expirado' = se cumplió el plazo de 6 horas.
+data class EstadoVisitaInvitado(
+    val estado: String? = null,
+    val nombre: String? = null,
+    @SerializedName("qr_token") val qr_token: String? = null,
+    @SerializedName("qr_expires_at") val qr_expires_at: String? = null,
+    @SerializedName("qr_salida") val qr_salida: String? = null,
+    @SerializedName("qr_salida_expires_at") val qr_salida_expires_at: String? = null,
+    @SerializedName("entrada_at") val entrada_at: String? = null,
+    @SerializedName("salida_at") val salida_at: String? = null,
+    @SerializedName("horas_vigencia") val horas_vigencia: Int? = null
+)
+
+// Respuesta al escanear un QR de invitado (entrada o salida de la visita).
+data class RespuestaVisitaInvitado(
+    val message: String? = null,
+    val user: UsuarioSesion? = null,
+    val estado: EstadoVisitaInvitado? = null,
+    @SerializedName("qr_salida") val qr_salida: String? = null,
+    @SerializedName("qr_salida_expires_at") val qr_salida_expires_at: String? = null,
+    val duplicado: Boolean? = null
 )
 
 // Datos enviados a POST /validate-guest-qr: el token contenido en el QR escaneado.
