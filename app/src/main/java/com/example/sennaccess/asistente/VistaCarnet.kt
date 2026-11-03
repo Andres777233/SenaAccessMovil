@@ -133,6 +133,9 @@ fun VistaCarnet(perfilEstado: EstadoCarga<UsuarioApi>, onBack: () -> Unit) {
             )
             if ((usuario?.user_coursenumber ?: 0) > 0) {
                 Text("Ficha ${usuario?.user_coursenumber} • ${usuario?.user_program ?: ""}", color = colors.textSecondary, fontSize = 13.sp)
+            } else if (com.example.sennaccess.datos.sesion.RolSeguro.normalizar(usuario?.role?.rol_name) == "funcionario") {
+                // El funcionario no cursa ficha: su dependencia ocupa ese lugar.
+                Text("Área ${usuario?.user_program ?: "General"}", color = colors.textSecondary, fontSize = 13.sp)
             }
             Spacer(modifier = Modifier.height(20.dp))
             if (qr != null) {

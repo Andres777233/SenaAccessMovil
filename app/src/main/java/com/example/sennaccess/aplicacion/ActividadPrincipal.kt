@@ -122,7 +122,7 @@ class ActividadPrincipal : AppCompatActivity() {
                     // hoy ya no está abierta, se regresa a escanear.
                     fun verificarEntradaVigente() {
                         val rol = RolSeguro.normalizar(GestorSesion.userRole) ?: return
-                        if (rol != "aprendiz" && rol != "instructor") return
+                        if (rol != "aprendiz" && rol != "instructor" && rol != "funcionario") return
                         val token = GestorSesion.token ?: return
                         if (verificandoPuerta) return
                         verificandoPuerta = true
@@ -193,7 +193,7 @@ class ActividadPrincipal : AppCompatActivity() {
                             // si no, exige el QR/PIN. Antes el deep link 2FA
                             // abría el panel sin verificar permanencia.
                             when (RolSeguro.normalizar(GestorSesion.userRole)) {
-                                "aprendiz", "instructor" -> irA("puerta_acceso")
+                                "aprendiz", "instructor", "funcionario" -> irA("puerta_acceso")
                                 "superadmin" -> irA("admin")
                                 "admin" -> irA("portero_dashboard")
                                 else -> irA("login")
@@ -245,7 +245,7 @@ class ActividadPrincipal : AppCompatActivity() {
                                 onNavigateToRecovery = { irA("recovery") },
                                 onLoginSuccess = { role ->
                                     when (RolSeguro.normalizar(role)) {
-                                        "aprendiz", "instructor" -> irA("puerta_acceso")
+                                        "aprendiz", "instructor", "funcionario" -> irA("puerta_acceso")
                                         "superadmin" -> irA("admin")
                                         "admin" -> irA("portero_dashboard")
                                         else -> Unit
@@ -278,7 +278,7 @@ class ActividadPrincipal : AppCompatActivity() {
                             "puerta_acceso" -> com.example.sennaccess.excusas.PuertaAcceso(
                                 onEntrar = {
                                     when (RolSeguro.normalizar(GestorSesion.userRole)) {
-                                        "aprendiz" -> irA("aprendiz_dashboard")
+                                        "aprendiz", "funcionario" -> irA("aprendiz_dashboard")
                                         "instructor" -> irA("instructor_dashboard")
                                         "superadmin" -> irA("admin")
                                         "admin" -> irA("portero_dashboard")

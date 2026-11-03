@@ -298,6 +298,9 @@ data class PeticionRegistro(
     @SerializedName("user_program") val user_program: String,
     @SerializedName("user_documento_tipo") val user_documento_tipo: String,
     @SerializedName("user_telefono") val user_telefono: String? = null,
+    // Vinculación con la que nace la cuenta: "aprendiz" (por defecto) o
+    // "funcionario" (personal administrativo, sin ficha de formación).
+    @SerializedName("role") val role: String? = null,
     @SerializedName("user_jornada") val user_jornada: String? = null,
     @SerializedName("user_jornada_sabado") val user_jornada_sabado: String? = null
 )

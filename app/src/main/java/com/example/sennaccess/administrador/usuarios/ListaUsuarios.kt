@@ -110,6 +110,19 @@ fun ContenidoUsuarios(
                 onEditar = { onEditarUsuario(it) },
                 onBorrar = { usuarioAEliminar = it; errorEliminar = null }
             )
+            "FUNCIONARIOS" -> VistaListaUsuarios(
+                titulo = "Funcionarios",
+                icono = Icons.Default.Badge,
+                estado = uiState,
+                rol = "Funcionario",
+                busqueda = busqueda,
+                onBusqueda = { busqueda = it },
+                onBack = { vista = ""; busqueda = "" },
+                onReintentar = viewModel::cargarUsuarios,
+                onAgregarUsuario = { onNavigate(PantallaAdmin.CREAR_USUARIO) },
+                onEditar = { onEditarUsuario(it) },
+                onBorrar = { usuarioAEliminar = it; errorEliminar = null }
+            )
             "PENDIENTES" -> VistaSolicitudesPendientes(
                 pendientes = pendientes,
                 viewModel = viewModel,
@@ -134,6 +147,7 @@ fun ContenidoUsuarios(
                 onInstructores = { vista = "INSTRUCTORES"; busqueda = "" },
                 onAprendices = { vista = "APRENDICES"; busqueda = "" },
                 onPorteros = { vista = "ADMINS"; busqueda = "" },
+                onFuncionarios = { vista = "FUNCIONARIOS"; busqueda = "" },
                 onInvitados = { vista = "INVITADOS"; busqueda = "" },
                 onPendientes = { vista = "PENDIENTES"; busqueda = "" }
             )
@@ -178,6 +192,7 @@ private fun MenuUsuarios(
     onInstructores: () -> Unit,
     onAprendices: () -> Unit,
     onPorteros: () -> Unit = {},
+    onFuncionarios: () -> Unit = {},
     onInvitados: () -> Unit = {},
     onPendientes: () -> Unit = {}
 ) {
@@ -185,11 +200,13 @@ private fun MenuUsuarios(
     val datos = (estado as? EstadoCarga.Success)?.datos.orEmpty()
     val nIns = datos.count { it.role?.rol_name.equals("Instructor", ignoreCase = true) }
     val nApr = datos.count { !it.esInvitado() && it.role?.rol_name.equals("Aprendiz", ignoreCase = true) }
+    val nFun = datos.count { !it.esInvitado() && it.role?.rol_name.equals("Funcionario", ignoreCase = true) }
     val nPor = datos.count { it.role?.rol_name.equals("Admin", ignoreCase = true) }
     val nInv = datos.count { it.esInvitado() }
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 4.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.Top
     ) {
@@ -198,7 +215,7 @@ private fun MenuUsuarios(
         Spacer(modifier = Modifier.height(4.dp))
         Text("Usuarios", color = colors.textPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp)
         Text(
-            if (estado is EstadoCarga.Loading) "Cargando personal..." else "${datos.size} registrados • $nIns instructores • $nApr aprendices • $nPor admins • $nInv invitados",
+            if (estado is EstadoCarga.Loading) "Cargando personal..." else "${datos.size} registrados • $nIns instructores • $nApr aprendices • $nFun funcionarios • $nPor admins • $nInv invitados",
             color = colors.textSecondary, fontSize = 12.sp
         )
         Spacer(modifier = Modifier.height(14.dp))
@@ -216,6 +233,14 @@ private fun MenuUsuarios(
             conteo = if (estado is EstadoCarga.Loading) "…" else "$nApr registrados",
             icono = Icons.Default.Person,
             onClick = onAprendices
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        CategoriaUsuarioCard(
+            titulo = "Funcionarios",
+            descripcion = "Personal administrativo del centro",
+            conteo = if (estado is EstadoCarga.Loading) "…" else "$nFun registrados",
+            icono = Icons.Default.Badge,
+            onClick = onFuncionarios
         )
         Spacer(modifier = Modifier.height(12.dp))
         CategoriaUsuarioCard(
@@ -793,7 +818,12 @@ private fun FilaUsuarioCard(usuario: UsuarioApi, onEditar: () -> Unit, onBorrar:
             Spacer(modifier = Modifier.height(2.dp))
             Text(usuario.user_email ?: "", color = colors.textSecondary, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (!usuario.esInvitado() && !usuario.user_program.isNullOrBlank()) {
-                Text(usuario.user_program!!, color = colors.textSecondary, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                // El funcionario no tiene ficha: su dependencia se rotula como área.
+                val esFuncionario = usuario.role?.rol_name.equals("Funcionario", ignoreCase = true)
+                Text(
+                    (if (esFuncionario) "Área: " else "") + usuario.user_program!!,
+                    color = colors.textSecondary, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
+                )
             }
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {

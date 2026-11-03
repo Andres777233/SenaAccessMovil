@@ -278,9 +278,22 @@ fun ContenidoHistorial(
             )
             ModalBottomSheet(
                 onDismissRequest = { if (!exportando) mostrarHojaExport = false },
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                // La hoja abre a pantalla completa y su contenido se desplaza:
+                // con 3 formatos y 6 columnas la lista no cabe en pantallas
+                // pequeñas y las últimas casillas quedaban encimadas contra la
+                // barra de navegación del sistema.
+                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
             ) {
-                Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .navigationBarsPadding()
+                        .padding(horizontal = 20.dp)
+                        .padding(bottom = 28.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                     Text("Exportar historial", color = ColoresAppLocal.current.textPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     Text(
                         "Se descarga ${etiquetaFecha()} con las columnas elegidas. El archivo solo filtra por día: ignora la búsqueda y el tipo (entradas/salidas) que ves en pantalla.",
@@ -339,15 +352,34 @@ fun ContenidoHistorial(
         EstadoContenido(estado = historial, onReintentar = onReintentar) { data ->
             val ins = data.instructores.filter(::coincideFiltro)
             val apr = data.aprendices.filter(::coincideFiltro)
+            val funs = data.funcionarios.filter(::coincideFiltro)
             val lista: List<RegistroAcceso> = when (tabRol) {
                 1 -> ins
                 2 -> apr
-                else -> (ins + apr).sortedByDescending { it.hora }
+                3 -> funs
+                else -> (ins + apr + funs).sortedByDescending { it.hora }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                FiltroSena(texto = "Todos • ${ins.size + apr.size}", seleccionado = tabRol == 0, onClick = { tabRol = 0 })
-                FiltroSena(texto = "Instr. • ${ins.size}", seleccionado = tabRol == 1, onClick = { tabRol = 1 })
-                FiltroSena(texto = "Aprend. • ${apr.size}", seleccionado = tabRol == 2, onClick = { tabRol = 2 })
+            androidx.compose.foundation.lazy.LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                contentPadding = PaddingValues(end = 8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                item(key = "r-todos") {
+                    FiltroSena(texto = "Todos • ${ins.size + apr.size + funs.size}", seleccionado = tabRol == 0, onClick = { tabRol = 0 })
+                }
+                item(key = "r-ins") {
+                    FiltroSena(texto = "Instr. • ${ins.size}", seleccionado = tabRol == 1, onClick = { tabRol = 1 })
+                }
+                item(key = "r-apr") {
+                    FiltroSena(texto = "Aprend. • ${apr.size}", seleccionado = tabRol == 2, onClick = { tabRol = 2 })
+                }
+                // El chip de funcionarios solo aparece cuando hay movimientos.
+                if (funs.isNotEmpty()) {
+                    item(key = "r-fun") {
+                        FiltroSena(texto = "Func. • ${funs.size}", seleccionado = tabRol == 3, onClick = { tabRol = 3 })
+                    }
+                }
             }
             Spacer(modifier = Modifier.height(12.dp))
             if (lista.isEmpty()) {

@@ -72,8 +72,9 @@ fun VistaRegistrarEquipo(onBack: () -> Unit, onRegistrado: () -> Unit, adminMode
     var cargandoDuenos by remember { mutableStateOf(false) }
     var errorDuenos by remember { mutableStateOf<String?>(null) }
 
-    // En modo admin se cargan los usuarios con rol Instructor/Aprendiz (GET /admin/users).
-    // Invitados temporales excluidos: no son dueños permanentes de equipos.
+    // En modo admin se cargan los usuarios con rol Instructor/Aprendiz/Funcionario
+    // (GET /admin/users). Invitados temporales excluidos: no son dueños
+    // permanentes de equipos.
     LaunchedEffect(adminMode) {
         if (!adminMode) return@LaunchedEffect
         cargandoDuenos = true
@@ -81,7 +82,7 @@ fun VistaRegistrarEquipo(onBack: () -> Unit, onRegistrado: () -> Unit, adminMode
         if (token != null) {
             try {
                 usuariosDisponibles = RepositorioUsuarios().getUsers(token)
-                    .filter { (it.esRol("Instructor") || it.esRol("Aprendiz")) && !it.esInvitado() }
+                    .filter { (it.esRol("Instructor") || it.esRol("Aprendiz") || it.esRol("Funcionario")) && !it.esInvitado() }
                 if (usuariosDisponibles.isNotEmpty()) dueno = usuariosDisponibles.first()
             } catch (e: Exception) {
                 errorDuenos = "No se pudieron cargar los usuarios."
@@ -173,7 +174,7 @@ fun VistaRegistrarEquipo(onBack: () -> Unit, onRegistrado: () -> Unit, adminMode
                         strokeWidth = 2.dp
                     )
                     usuariosDisponibles.isEmpty() -> Text(
-                        errorDuenos ?: "No hay instructores ni aprendices registrados.",
+                        errorDuenos ?: "No hay instructores, aprendices ni funcionarios registrados.",
                         color = Color(0xFFE53935),
                         fontSize = 13.sp
                     )
@@ -294,7 +295,8 @@ fun VistaRegistrarEquipo(onBack: () -> Unit, onRegistrado: () -> Unit, adminMode
                             )
                             if (adminMode) {
                                 RepositorioEquipos().registrar(token, request)
-                            } else if (RolSeguro.normalizar(GestorSesion.userRole) == "aprendiz") {
+                            } else if (RolSeguro.normalizar(GestorSesion.userRole) in listOf("aprendiz", "funcionario")) {
+                                // Aprendiz y funcionario registran su equipo propio.
                                 RepositorioEquipos().registrarPropio(token, request)
                             } else {
                                 RepositorioEquipos().registrar(token, request)

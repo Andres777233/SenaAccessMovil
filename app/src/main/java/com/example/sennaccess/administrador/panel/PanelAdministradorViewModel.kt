@@ -38,7 +38,10 @@ data class RegistroAcceso(
 
 data class DatosHistorial(
     val instructores: List<RegistroAcceso>,
-    val aprendices: List<RegistroAcceso>
+    val aprendices: List<RegistroAcceso>,
+    // Personal administrativo (rol Funcionario): entra y sale como cualquier
+    // persona, así que sus movimientos también cuentan en el historial.
+    val funcionarios: List<RegistroAcceso> = emptyList()
 )
 
 // Datos del panel admin: resumen, historial, presentes y catálogos.
@@ -235,6 +238,7 @@ class PanelAdministradorViewModel : ViewModel() {
     ): DatosHistorial {
         val instructores = mutableListOf<RegistroAcceso>()
         val aprendices = mutableListOf<RegistroAcceso>()
+        val funcionarios = mutableListOf<RegistroAcceso>()
         ingresos.forEach { ingreso ->
             val rol = ingreso.user?.role?.rol_name ?: rolesPorUsuario[ingreso.fk_id_user]
             when {
@@ -252,8 +256,15 @@ class PanelAdministradorViewModel : ViewModel() {
                         hora = ingreso.ingreso_datetime ?: "",
                         tipo = ingreso.ingreso_type ?: "Entrada"
                     )
+                rol.equals("Funcionario", ignoreCase = true) ->
+                    funcionarios += RegistroAcceso(
+                        nombre = ingreso.user?.nombreCompleto ?: "Usuario",
+                        rol = "Funcionario",
+                        hora = ingreso.ingreso_datetime ?: "",
+                        tipo = ingreso.ingreso_type ?: "Entrada"
+                    )
             }
         }
-        return DatosHistorial(instructores, aprendices)
+        return DatosHistorial(instructores, aprendices, funcionarios)
     }
 }

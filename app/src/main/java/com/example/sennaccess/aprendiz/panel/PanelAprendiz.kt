@@ -88,6 +88,9 @@ import kotlinx.coroutines.launch
 fun PanelAprendiz(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggleTheme: () -> Unit = {}) {
     var currentView by rememberSaveable { mutableStateOf("DASHBOARD") }
     val colors = ColoresAppLocal.current
+    // El funcionario comparte este panel con el aprendiz: no tiene ficha de
+    // formación ni permisos (excusas), igual que en el WEB.
+    val esFuncionario = com.example.sennaccess.datos.sesion.RolSeguro.normalizar(GestorSesion.userRole) == "funcionario"
     // Instancia ligada al usuario en sesión: otro login nunca reutiliza el perfil en memoria.
     val viewModel: PanelAprendizViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
         key = "panel-aprendiz-${GestorSesion.userId ?: "anon"}"
@@ -143,6 +146,7 @@ fun PanelAprendiz(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggleTh
 
         Column(modifier = Modifier.fillMaxSize()) {
             BarraAprendiz(
+                rol = if (esFuncionario) "Funcionario" else "Aprendiz",
                 onLogout = onCerrarSesion,
                 onPerfil = { currentView = "PERFIL" },
                 onEditarPerfil = { currentView = "EDITAR_PERFIL" },
@@ -178,6 +182,7 @@ fun PanelAprendiz(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggleTh
                         estado = resumen,
                         historialEstado = historial,
                         perfilEstado = perfil,
+                        esFuncionario = esFuncionario,
                         onReintentar = viewModel::cargarResumen,
                         onVerHistorial = { currentView = "HISTORIAL" }
                     )
@@ -218,13 +223,14 @@ fun PanelAprendiz(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggleTh
         }
 
         BarraNavegacion(
-            items = listOf(
-                ElementoNavegacion("DASHBOARD", Icons.Default.Home, "Inicio"),
-                ElementoNavegacion("MIS_EXCUSAS", Icons.Default.Assignment, "Excusas"),
-                ElementoNavegacion("MARCAR_ACCESO", Icons.Default.QrCode2, "Salida"),
-                ElementoNavegacion("HISTORIAL", Icons.Default.History, "Historial"),
-                ElementoNavegacion("COMPROBANTES", Icons.Default.Devices, "Equipos")
-            ),
+            items = buildList {
+                add(ElementoNavegacion("DASHBOARD", Icons.Default.Home, "Inicio"))
+                // Los permisos (excusas) son del aprendiz: el funcionario no los tiene.
+                if (!esFuncionario) add(ElementoNavegacion("MIS_EXCUSAS", Icons.Default.Assignment, "Excusas"))
+                add(ElementoNavegacion("MARCAR_ACCESO", Icons.Default.QrCode2, "Salida"))
+                add(ElementoNavegacion("HISTORIAL", Icons.Default.History, "Historial"))
+                add(ElementoNavegacion("COMPROBANTES", Icons.Default.Devices, "Equipos"))
+            },
             selectedKey = claveNavegacion(currentView, "DASHBOARD"),
             onSelect = { currentView = it },
             modifier = Modifier.align(Alignment.BottomCenter)
@@ -237,6 +243,7 @@ fun PanelAprendiz(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggleTh
 @Composable
 fun BarraAprendiz(
     onLogout: () -> Unit,
+    rol: String = "Aprendiz",
     onPerfil: (() -> Unit)? = null,
     onEditarPerfil: (() -> Unit)? = null,
     onAsistente: (() -> Unit)? = null,
@@ -248,7 +255,7 @@ fun BarraAprendiz(
 ) {
     // Barra unificada de los 4 roles: marca + chip de rol + notis + menú perfil.
     com.example.sennaccess.comun.diseno.BarraSuperiorSena(
-        rol = "Aprendiz",
+        rol = rol,
         noLeidas = noLeidas,
         isDark = isDark,
         onToggleTheme = onToggleTheme,
@@ -275,6 +282,7 @@ fun VistaResumen(
     estado: EstadoCarga<ResumenAprendiz>,
     historialEstado: EstadoCarga<List<Ingreso>> = EstadoCarga.Success(emptyList()),
     perfilEstado: EstadoCarga<UsuarioApi> = EstadoCarga.Loading,
+    esFuncionario: Boolean = false,
     onReintentar: () -> Unit,
     onVerHistorial: () -> Unit = {}
 ) {
@@ -293,7 +301,7 @@ fun VistaResumen(
             .verticalScroll(scrollState)
     ) {
         com.example.sennaccess.comun.diseno.CabeceraPantalla(
-            eyebrow = "Aprendiz",
+            eyebrow = if (esFuncionario) "Funcionario" else "Aprendiz",
             titulo = nombreBienvenida,
             subtitulo = if (ficha != null && ficha > 0) "Ficha $ficha" else "Tu día en el centro"
         )
@@ -303,7 +311,7 @@ fun VistaResumen(
                 TarjetaBienvenida(
                     fotoPath = fotoPath,
                     nombre = nombreBienvenida,
-                    rol = "APRENDIZ",
+                    rol = if (esFuncionario) "FUNCIONARIO" else "APRENDIZ",
                     ficha = ficha,
                     programa = programa
                 )
@@ -698,15 +706,27 @@ fun PerfilAprendizView(estado: EstadoCarga<UsuarioApi>, onBack: () -> Unit, onRe
         Spacer(modifier = Modifier.height(8.dp))
 
         EstadoContenido(estado = estado, onReintentar = onReintentar) { usuario ->
+            val esFuncionario = com.example.sennaccess.datos.sesion.RolSeguro
+                .normalizar(usuario.role?.rol_name ?: GestorSesion.userRole) == "funcionario"
+            val fichaUsuario = usuario.user_coursenumber ?: 0
             val filas = buildList {
                 add(Triple(Icons.Default.Badge, "Documento", usuario.user_identification ?: "—"))
-                if (usuario.user_coursenumber != null) add(Triple(Icons.Default.Numbers, "Ficha", usuario.user_coursenumber.toString()))
-                if (!usuario.user_program.isNullOrBlank()) add(Triple(Icons.Default.School, "Programa", usuario.user_program!!))
+                // La ficha solo existe para el aprendiz; el funcionario muestra su área.
+                if (fichaUsuario > 0 && !esFuncionario) add(Triple(Icons.Default.Numbers, "Ficha", fichaUsuario.toString()))
+                if (!usuario.user_program.isNullOrBlank()) {
+                    add(
+                        Triple(
+                            Icons.Default.School,
+                            if (esFuncionario) "Área" else "Programa",
+                            usuario.user_program!!
+                        )
+                    )
+                }
             }
             com.example.sennaccess.perfil.PerfilSenior(
                 fotoPath = usuario.profile_photo_path,
                 nombre = usuario.nombreCompleto,
-                rol = "Aprendiz",
+                rol = if (esFuncionario) "Funcionario" else "Aprendiz",
                 correo = usuario.user_email,
                 filas = filas,
                 onEditar = onEditar,
