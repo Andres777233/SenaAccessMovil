@@ -154,7 +154,7 @@ fun VistaValidarExcusa(onBack: () -> Unit, mostrarCabecera: Boolean = true) {
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             "Toca una excusa pendiente para autollenar su PIN.",
-            color = colors.textSecondary, fontSize = 11.sp, modifier = Modifier.fillMaxWidth(),
+            color = colors.textPrimary, fontSize = 13.sp, modifier = Modifier.fillMaxWidth(),
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
         Spacer(modifier = Modifier.height(12.dp))
@@ -171,13 +171,13 @@ fun VistaValidarExcusa(onBack: () -> Unit, mostrarCabecera: Boolean = true) {
                         Text(mensaje ?: "Salida autorizada", color = verdeMarca(), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     }
                     Spacer(modifier = Modifier.height(10.dp))
-                    Text(exitoNombre ?: ex.aprendiz?.nombreCompleto ?: "Aprendiz #${ex.fk_id_aprendiz}", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                    Text("Documento: ${ex.aprendiz?.user_identification ?: "—"} • ${ex.aprendiz?.user_email ?: ""}", color = colors.textSecondary, fontSize = 12.sp)
+                    Text(exitoNombre ?: ex.aprendiz?.nombreCompleto ?: "Aprendiz #${ex.fk_id_aprendiz}", color = colors.textPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+                    Text("Documento: ${ex.aprendiz?.user_identification ?: "—"} • ${ex.aprendiz?.user_email ?: ""}", color = colors.textPrimary, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(6.dp))
-                    Text(textoCreacionExcusa(ex), color = colors.textSecondary, fontSize = 12.sp)
-                    if (ex.usado_en != null) Text("Registrada: ${fechaLegible(ex.usado_en)}", color = colors.textSecondary, fontSize = 11.sp, modifier = Modifier.padding(top = 4.dp))
+                    Text(textoCreacionExcusa(ex), color = colors.textPrimary, fontSize = 14.sp)
+                    if (ex.usado_en != null) Text("Registrada: ${fechaLegible(ex.usado_en)}", color = colors.textPrimary, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp))
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("Autoriza la salida del aprendiz y actualiza el historial (Salida).", color = colors.textSecondary, fontSize = 11.sp)
+                    Text("Autoriza la salida del aprendiz y actualiza el historial (Salida).", color = colors.textPrimary, fontSize = 13.sp)
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
@@ -205,8 +205,8 @@ fun VistaValidarExcusa(onBack: () -> Unit, mostrarCabecera: Boolean = true) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        Text("EXCUSAS PENDIENTES", color = verdeMarca(), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp, modifier = Modifier.fillMaxWidth())
-        Text("Toca una para usar su PIN", color = colors.textSecondary, fontSize = 12.sp, modifier = Modifier.fillMaxWidth())
+        Text("EXCUSAS PENDIENTES", color = verdeMarca(), fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp, modifier = Modifier.fillMaxWidth())
+        Text("Toca una para usar su PIN", color = colors.textPrimary, fontSize = 13.sp, modifier = Modifier.fillMaxWidth())
         Spacer(modifier = Modifier.height(8.dp))
         if (pendientes.isEmpty()) {
             Box(modifier = Modifier.fillMaxWidth().superficiePlana(cornerRadius = RadioSena.md).padding(16.dp), contentAlignment = Alignment.Center) {
@@ -225,14 +225,16 @@ fun VistaValidarExcusa(onBack: () -> Unit, mostrarCabecera: Boolean = true) {
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             // Identidad legible: quién envía el permiso y de dónde.
+                            // Todo el texto va en color principal (blanco en oscuro)
+                            // para que portería lo lea sin esfuerzo.
                             Text(
                                 ex.aprendiz?.nombreCompleto ?: "Aprendiz #${ex.fk_id_aprendiz}",
                                 color = colors.textPrimary,
                                 fontWeight = FontWeight.ExtraBold,
-                                fontSize = 17.sp,
+                                fontSize = 18.sp,
                                 maxLines = 2
                             )
-                            Spacer(modifier = Modifier.height(2.dp))
+                            Spacer(modifier = Modifier.height(3.dp))
                             val documento = ex.aprendiz?.user_identification?.takeIf { it.isNotBlank() }
                             val ficha = ex.aprendiz?.user_coursenumber?.takeIf { it > 0 }
                             if (documento != null || ficha != null) {
@@ -241,28 +243,29 @@ fun VistaValidarExcusa(onBack: () -> Unit, mostrarCabecera: Boolean = true) {
                                         documento?.let { "Documento: $it" },
                                         ficha?.let { "Ficha: $it" }
                                     ).joinToString("  •  "),
-                                    color = colors.textSecondary,
-                                    fontSize = 13.sp,
+                                    color = colors.textPrimary,
+                                    fontSize = 14.sp,
                                     maxLines = 2
                                 )
                             }
                             Text(
                                 "Ambiente: ${ex.ambiente?.ambiente_nombre ?: "—"}",
-                                color = colors.textSecondary,
-                                fontSize = 13.sp,
+                                color = colors.textPrimary,
+                                fontSize = 14.sp,
                                 maxLines = 2
                             )
                             Text(
                                 "Instructor: ${ex.instructor?.nombreCompleto ?: "#${ex.fk_id_instructor}"}",
-                                color = colors.textSecondary,
-                                fontSize = 13.sp,
+                                color = colors.textPrimary,
+                                fontSize = 14.sp,
                                 maxLines = 2
                             )
                             ex.motivo?.takeIf { it.isNotBlank() }?.let { motivo ->
                                 Text(
                                     "Motivo: $motivo",
                                     color = colors.textPrimary,
-                                    fontSize = 13.sp,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
                                     maxLines = 3
                                 )
                             }
@@ -277,11 +280,11 @@ fun VistaValidarExcusa(onBack: () -> Unit, mostrarCabecera: Boolean = true) {
                                 letterSpacing = 3.sp,
                                 maxLines = 1
                             )
-                            Spacer(modifier = Modifier.height(2.dp))
+                            Spacer(modifier = Modifier.height(3.dp))
                             Text(
                                 textoVigencia(ex.expira_en, ahora),
-                                color = colors.textSecondary,
-                                fontSize = 12.sp,
+                                color = colors.textPrimary,
+                                fontSize = 13.sp,
                                 fontWeight = FontWeight.Medium
                             )
                         }

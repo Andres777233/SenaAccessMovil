@@ -18,7 +18,7 @@ App Android (Kotlin + Jetpack Compose, estilo vidrio verde) de SenaAccess: contr
 | Dato | Valor |
 |---|---|
 | applicationId / namespace | `com.example.sennaccess` |
-| Versión | `versionName 9.4` / `versionCode 23` (`app/build.gradle.kts`) |
+| Versión | `versionName 9.5` / `versionCode 24` (`app/build.gradle.kts`) |
 | SDK | minSdk 24, targetSdk 36, compileSdk 36.1 |
 | Toolchain | Gradle 9.3.1, AGP 9.1.1, Kotlin 2.2.10, Compose BOM 2026.02.01, **JDK 21** (auto-descarga con foojay: requiere red la primera vez) |
 | Red | Retrofit 2.11 + OkHttp 4.12 (logging) + Gson, Coil 2.6, CameraX 1.4.2 + MLKit 17.3, ZXing 3.5.3, Biometric 1.1.0 |
@@ -127,7 +127,7 @@ Ejecútalo al arrancar una sesión (es el control de coherencia entre este docum
 3. `find app/src/main/java -name "*.kt" | wc -l` → **109** (109 = 111 − 2 módulos muertos eliminados en la auditoría del 2026-10-21: `sugerencias` y `horarios`).
 4. `find app/src/main/java -name "RetrofitClient.kt" -o -name "SessionManager.kt" -o -name "MockData.kt" -o -name "HuellaCredentialStore.kt"` → **0 resultados** (nombres legacy prohibidos).
 5. `grep -n "BASE_URL_REMOTE" app/src/main/java/com/example/sennaccess/datos/red/ClienteApi.kt` → la URL de la sección "Contrato con la API".
-6. `grep -nE "versionName|versionCode" app/build.gradle.kts` → `9.4` / `23`.
+6. `grep -nE "versionName|versionCode" app/build.gradle.kts` → `9.5` / `24`.
 7. `grep -cE "@(GET|POST|PUT|DELETE|PATCH)" app/src/main/java/com/example/sennaccess/datos/red/ServicioApi.kt` → **70**.
 8. `cat local.properties` → `sdk.dir` válido; si falta, crearlo o usar `ANDROID_HOME` o Docker.
 9. `./gradlew assembleDebug` (o `docker compose run --rm sennaccess-movil`) → **BUILD SUCCESSFUL**.
@@ -322,3 +322,4 @@ Agentes en `.opencode/agent/`, skills en `.opencode/skill/*/SKILL.md` (todo vers
 - 2026-11-04 — Kit de firma portátil en `~/Escritorio/llaves-senaaccess/` (+ `.zip`): `release.keystore`, `debug.keystore` compartida (cert `BA:48:F0:B5…`, alias `androiddebugkey`, clave `android`), `keystore.properties`, `credenciales.txt`, `LEEME.md` e `instalar-llave.sh` (copia las 3 llaves a cualquier clon). Con esto cualquier PC compila con la misma firma y los APK se actualizan entre sí; verificado `assembleDebug` en ambos repos → misma huella debug. Nuevo `FIRMA.md` idéntico en los dos repos con el procedimiento y las huellas (sin contraseñas).
 
 - 2026-11-04 — v9.4 (code 23): registro público sin selector de vinculación (todos nacen aprendices y el superadmin cambia el rol); equipos con **Propio/Prestado** obligatorio y visible en las tarjetas; ambientes por **jornada** sin horas editables (Mañana 6:00–13:00, Tarde 13:00–18:00, Noche 18:00–22:00) con instructores en letra grande y arreglo del 422 al guardar (`detalleHttp` y sin resetear el estado); huella: la pregunta solo aparece si la cuenta no tiene huella (fin del "AHORA NO" permanente) y **Mi Huella** vuelve en Perfil → Seguridad; portería con la excusa legible (nombre, documento, ficha, ambiente, instructor, motivo, PIN 27sp). Web: QR del permiso (`SENA-EXCUSA:<pin>:<id>`) en la bandeja y en la tarjeta del aprendiz, y `AmbienteController` deriva las horas de la jornada. Nuevo `CREDENCIALES.md` con las cuentas de prueba verificadas.
+- 2026-11-04 — v9.5 (code 24): tarjeta de excusa de portería con todo el texto en color principal y más grande (nombre 18sp, documento/ficha/ambiente/instructor/motivo 14sp, vigencia 13sp, PIN 27sp verde) y `AvisoActualizacion` con dos modos: obligatorio solo si la instalada queda por debajo de `min_version_code`, opcional (con AHORA NO) cuando solo hay versión nueva; el APK se abre únicamente por HTTPS. Web: `/api/app/version` publica v9.5/code 24 hacia la página de descargas, así el aviso de actualizar aparece solo (se instala encima, sin desinstalar ni perder datos).

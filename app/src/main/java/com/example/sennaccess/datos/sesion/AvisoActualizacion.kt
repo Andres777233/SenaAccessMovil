@@ -33,15 +33,21 @@ fun AvisoActualizacion() {
     val colors = ColoresAppLocal.current
     var version by remember { mutableStateOf<RespuestaVersionApp?>(null) }
     var abierto by remember { mutableStateOf(false) }
+    var obligatoria by remember { mutableStateOf(false) }
 
     // Se comprueba al arrancar y cada 6 horas mientras la app siga abierta.
     LaunchedEffect(Unit) {
         while (isActive) {
             try {
                 val datos = ClienteApi.conServicio { it.versionApp() }
+                val instalada = BuildConfig.VERSION_CODE
+                val remota = datos.version_code ?: 0
                 val minimo = datos.min_version_code ?: 0
-                if (minimo > BuildConfig.VERSION_CODE) {
+                // Obligatoria solo si la instalada quedó por debajo del mínimo;
+                // si solo hay una versión nueva, se avisa y se puede posponer.
+                if (minimo > instalada || remota > instalada) {
                     version = datos
+                    obligatoria = minimo > instalada
                     abierto = true
                 }
             } catch (_: Exception) {
@@ -55,7 +61,7 @@ fun AvisoActualizacion() {
     if (abierto && datos != null) {
         val ctx = androidx.compose.ui.platform.LocalContext.current
         AlertDialog(
-            onDismissRequest = { /* obligatorio: no se puede cerrar */ },
+            onDismissRequest = { if (!obligatoria) abierto = false },
             containerColor = colors.surface,
             shape = RoundedCornerShape(20.dp),
             icon = {
@@ -77,7 +83,11 @@ fun AvisoActualizacion() {
             text = {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        datos.mensaje ?: "Hay una nueva versión de la app. Actualiza para continuar.",
+                        if (obligatoria) {
+                            datos.mensaje ?: "Hay una nueva versión de la app. Actualiza para continuar."
+                        } else {
+                            "Hay una nueva versión disponible. Puedes actualizar ahora (se instala encima, sin borrar datos) o hacerlo después."
+                        },
                         color = colors.textSecondary,
                         fontSize = 14.sp,
                         textAlign = TextAlign.Center
@@ -100,14 +110,26 @@ fun AvisoActualizacion() {
                 TextButton(
                     onClick = {
                         val url = datos.apk_url
-                        if (!url.isNullOrBlank()) {
+                        // Solo se abre el APK si viene por HTTPS.
+                        if (!url.isNullOrBlank() && url.startsWith("https://", ignoreCase = true)) {
                             try {
                                 ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                             } catch (_: Exception) { }
                         }
                     }
                 ) {
-                    Text("DESCARGAR ACTUALIZACIÓN", color = verdeMarca(), fontWeight = FontWeight.Bold)
+                    Text(
+                        if (obligatoria) "DESCARGAR ACTUALIZACIÓN" else "ACTUALIZAR",
+                        color = verdeMarca(),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = if (obligatoria) null else {
+                {
+                    TextButton(onClick = { abierto = false }) {
+                        Text("AHORA NO", color = colors.textSecondary, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         )
