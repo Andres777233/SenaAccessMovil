@@ -1,24 +1,9 @@
-# Credenciales de prueba — SenaAccess
+# Credenciales SenaAccess
 
-Una cuenta por rol (sin repetir), activas y verificadas contra el backend en
-producción:
-
-- **API**: `https://senaaccessweb-production-4c6e.up.railway.app/api/`
-- **Login**: `POST /api/login` con `user_email`, `user_password` y `device_id`.
-- Todas están **aprobadas** y **sin verificación en dos pasos**, para entrar de
-  una sola vez.
-
-| Correo | Contraseña | Rol | Para qué sirve |
-|---|---|---|---|
-| `admin@sena.edu.co` | `12345678` | **Superadmin** | Panel completo: usuarios (crear/editar/aprobar/rechazar y cambiar roles), ambientes, equipos, historial, predicción, novedades y notificaciones. |
-| `andres.vargas@gmail.com` | `12345678` | **Admin (portería)** | Operativa de portería: validar PIN/QR/invitado, equipos e historial del día. |
-| `alejandro@sena.edu.co` | `123456` | **Instructor** | Sus ambientes, aprendices, permisos de salida con PIN, novedades y equipos. |
-| `laura.medina@sena.edu.co` | `12345678` | **Aprendiz** | Historial, equipos, permisos de salida y carnet digital. |
-| `funcionario@sena.edu.co` | `12345678` | **Funcionario** | Panel del aprendiz sin permisos de salida (personal administrativo). |
-
-## Notas
-
-- El registro público crea **solo aprendices**: el Superadmin es quien cambia el
-  rol (Instructor, Admin, Funcionario, etc.) desde **Usuarios**.
-- Si una cuenta no entra, el Superadmin puede aprobarla o corregir su rol desde
-  **Usuarios** (bandejas Pendientes / Aprendices / Instructores / Admin).
+| Correo | Contraseña | Rol |
+|---|---|---|
+| admin@sena.edu.co | 12345678 | Superadmin |
+| andres.vargas@gmail.com | 12345678 | Admin (portería) |
+| alejandro@sena.edu.co | 123456 | Instructor |
+| laura.medina@sena.edu.co | 12345678 | Aprendiz |
+| funcionario@sena.edu.co | 12345678 | Funcionario |
