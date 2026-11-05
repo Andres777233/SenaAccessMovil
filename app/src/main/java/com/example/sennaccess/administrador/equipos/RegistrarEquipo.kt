@@ -71,6 +71,9 @@ fun VistaRegistrarEquipo(onBack: () -> Unit, onRegistrado: () -> Unit, adminMode
     var usuariosDisponibles by remember { mutableStateOf<List<UsuarioApi>>(emptyList()) }
     var cargandoDuenos by remember { mutableStateOf(false) }
     var errorDuenos by remember { mutableStateOf<String?>(null) }
+    // Propiedad del equipo: el admin/portería debe elegir explícitamente si el
+    // equipo es del usuario (Propio, viene de fuera) o del centro (Prestado).
+    var propiedad by remember { mutableStateOf<String?>(null) }
 
     // En modo admin se cargan los usuarios con rol Instructor/Aprendiz/Funcionario
     // (GET /admin/users). Invitados temporales excluidos: no son dueños
@@ -106,6 +109,7 @@ fun VistaRegistrarEquipo(onBack: () -> Unit, onRegistrado: () -> Unit, adminMode
 
     val datosValidos = marca.isNotBlank() && color.isNotBlank() &&
         serial.length == 5 && serial.all { it.isDigit() } &&
+        propiedad != null &&
         (!adminMode || dueno != null)
     val accesoriosValidos = if (llevaAccesorios == true) {
         tiposSeleccionados.isNotEmpty() && tiposSeleccionados.all { tipo ->
@@ -211,6 +215,30 @@ fun VistaRegistrarEquipo(onBack: () -> Unit, onRegistrado: () -> Unit, adminMode
                 }
             }
 
+            // ---- Propiedad del equipo ----
+            Spacer(modifier = Modifier.height(20.dp))
+            TituloSeccion("PROPIEDAD DEL EQUIPO")
+            Text(
+                "¿El equipo es del usuario (viene de fuera) o es del centro de formación?",
+                color = colors.textSecondary, fontSize = 13.sp
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            FilaSelector(
+                opciones = listOf("Propio", "Prestado"),
+                seleccionada = when (propiedad) { "Propio" -> 0; "Prestado" -> 1; else -> -1 },
+                onSeleccion = { idx -> propiedad = if (idx == 0) "Propio" else "Prestado" }
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                when (propiedad) {
+                    "Propio" -> "Propio: el equipo lo trae el usuario desde fuera."
+                    "Prestado" -> "Prestado: el equipo pertenece al centro de formación."
+                    else -> "Elige Propio o Prestado para poder registrar."
+                },
+                color = if (propiedad == null) verdeMarca() else colors.textSecondary,
+                fontSize = 12.sp
+            )
+
             // ---- ¿Lleva accesorios? ----
             Spacer(modifier = Modifier.height(20.dp))
             TituloSeccion("ACCESORIOS")
@@ -291,6 +319,7 @@ fun VistaRegistrarEquipo(onBack: () -> Unit, onRegistrado: () -> Unit, adminMode
                                 equipo_color = color.trim(),
                                 equipo_serial = serial,
                                 fk_id_usuario = if (adminMode) dueno?.id_usuario else null,
+                                equipo_propiedad = propiedad,
                                 equipo_accesorios = accesorios.ifEmpty { null }
                             )
                             if (adminMode) {

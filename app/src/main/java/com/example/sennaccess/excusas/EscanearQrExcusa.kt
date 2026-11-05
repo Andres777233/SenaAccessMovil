@@ -277,18 +277,23 @@ fun EscanearQrExcusa(mostrarCabecera: Boolean = true) {
                         FotoPerfil(
                             fotoPath = ex.aprendiz?.profile_photo_path,
                             nombre = nombre,
-                            tamano = 48.dp
+                            tamano = 56.dp
                         )
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(14.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(nombre, color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                            Text("CC $doc$ficha", color = colors.textSecondary, fontSize = 12.sp)
-                            Text(amb, color = colors.textSecondary, fontSize = 12.sp)
+                            Text(nombre, color = colors.textPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, maxLines = 2)
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text("Documento: $doc$ficha", color = colors.textPrimary, fontSize = 14.sp, maxLines = 2)
+                            Text("Ambiente: $amb", color = colors.textSecondary, fontSize = 14.sp, maxLines = 2)
+                            val instructorTxt = ex.instructor?.nombreCompleto
+                            if (!instructorTxt.isNullOrBlank()) {
+                                Text("Instructor: $instructorTxt", color = colors.textSecondary, fontSize = 14.sp, maxLines = 2)
+                            }
                         }
                     }
                     if (!ex.motivo.isNullOrBlank()) {
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text("Motivo: ${ex.motivo}", color = colors.textSecondary, fontSize = 12.sp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Motivo: ${ex.motivo}", color = colors.textPrimary, fontSize = 14.sp, maxLines = 4)
                     }
                     if (ex.usado_en != null) {
                         Text(

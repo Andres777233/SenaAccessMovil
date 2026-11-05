@@ -10,12 +10,38 @@ object Jornadas {
     const val NOCHE = "Noche"
     val TODAS = listOf(MANANA, TARDE, NOCHE)
 
-    // Hora automática al elegir jornada al crear un ambiente.
+    // Hora automática al elegir jornada. El horario NO se edita a mano: cada
+    // jornada tiene su franja fija y así no se guardan horas incoherentes.
     fun horasPara(jornada: String): Pair<String, String> = when (jornada.trim().lowercase()) {
-        "mañana", "manana" -> "06:00" to "12:00"
+        "mañana", "manana" -> "06:00" to "13:00"
         "tarde" -> "13:00" to "18:00"
         "noche", "nocturna" -> "18:00" to "22:00"
         else -> "13:00" to "18:00"
+    }
+
+    // Texto legible de la franja: "6 a.m. – 1 p.m.".
+    fun textoHorario(jornada: String?): String? {
+        if (normalizar(jornada) == null) return null
+        val (ini, fin) = horasPara(jornada!!)
+        return "${a12h(ini)} – ${a12h(fin)}"
+    }
+
+    // Convierte "13:00" o "13:00:00" a "1:00 p.m.".
+    fun a12h(hora: String?): String {
+        val limpia = horaCorta(hora) ?: return "—"
+        val h = limpia.substringBefore(":").toIntOrNull() ?: return limpia
+        val m = limpia.substringAfter(":", "00")
+        val sufijo = if (h < 12) "a.m." else "p.m."
+        val h12 = when { h == 0 -> 12; h > 12 -> h - 12; else -> h }
+        return if (m == "00") "$h12 $sufijo" else "$h12:$m $sufijo"
+    }
+
+    // El backend devuelve "13:00:00"; las pantallas necesitan "13:00".
+    fun horaCorta(hora: String?): String? {
+        val t = hora?.trim()?.takeIf { it.isNotBlank() } ?: return null
+        val partes = t.split(":")
+        if (partes.size < 2) return t
+        return "${partes[0].padStart(2, '0')}:${partes[1]}"
     }
 
     fun normalizar(jornada: String?): String? = when (jornada?.trim()?.lowercase()) {

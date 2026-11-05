@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.MeetingRoom
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -211,10 +212,20 @@ private fun AmbienteAdminCard(ambiente: Ambiente, onEditar: () -> Unit, onElimin
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(ambiente.ambiente_nombre ?: "Sin nombre", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp, maxLines = 1)
+                    Text(ambiente.ambiente_nombre ?: "Sin nombre", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp, maxLines = 1)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (!ambiente.ambiente_ubicacion.isNullOrBlank()) Text(ambiente.ambiente_ubicacion!!, color = colors.textSecondary, fontSize = 12.sp, maxLines = 1)
-                        if (!ambiente.ambiente_jornada.isNullOrBlank()) { Spacer(modifier = Modifier.width(8.dp)); Box(modifier = Modifier.clip(CircleShape).background(VerdeSena.copy(0.15f)).padding(horizontal = 8.dp, vertical = 3.dp)) { Text(ambiente.ambiente_jornada!!, color = verdeMarca(), fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1) } }
+                        val jornadaAmb = com.example.sennaccess.comun.Jornadas.normalizar(ambiente.ambiente_jornada)
+                        if (jornadaAmb != null) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Box(modifier = Modifier.clip(CircleShape).background(VerdeSena.copy(0.15f)).padding(horizontal = 9.dp, vertical = 3.dp)) {
+                                Text(jornadaAmb, color = verdeMarca(), fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                            }
+                            com.example.sennaccess.comun.Jornadas.textoHorario(jornadaAmb)?.let { franja ->
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(franja, color = colors.textSecondary, fontSize = 12.sp, maxLines = 1)
+                            }
+                        }
                     }
                 }
                 IconButton(onClick = onEditar, modifier = Modifier.size(44.dp)) { Icon(Icons.Default.Edit, contentDescription = "Editar ambiente", tint = verdeMarca(), modifier = Modifier.size(20.dp)) }
@@ -223,18 +234,42 @@ private fun AmbienteAdminCard(ambiente: Ambiente, onEditar: () -> Unit, onElimin
             Spacer(modifier = Modifier.height(10.dp))
             HorizontalDivider(color = colors.divider)
             Spacer(modifier = Modifier.height(10.dp))
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Icon(Icons.Default.Person, null, tint = verdeMarca(), modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                val nombres = ambiente.instructores?.takeIf { it.isNotEmpty() }?.joinToString(", ") { it.nombreCompleto } ?: "Sin instructor asignado"
-                Text(nombres, color = colors.textSecondary, fontSize = 12.sp, modifier = Modifier.weight(1f), maxLines = 2)
+            // Instructores responsables: nombre en letra grande + jornada.
+            val jornadaAmb = com.example.sennaccess.comun.Jornadas.normalizar(ambiente.ambiente_jornada)
+            val asignados = ambiente.instructores.orEmpty()
+            if (asignados.isEmpty()) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Default.Person, null, tint = colors.textSecondary, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Sin instructor asignado", color = colors.textSecondary, fontSize = 14.sp)
+                }
+            } else {
+                asignados.forEach { inst ->
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+                        Icon(Icons.Default.Person, null, tint = verdeMarca(), modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            inst.nombreCompleto,
+                            color = colors.textPrimary,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 15.sp,
+                            maxLines = 1,
+                            modifier = Modifier.weight(1f)
+                        )
+                        if (jornadaAmb != null) {
+                            Box(modifier = Modifier.clip(CircleShape).background(VerdeSena.copy(0.15f)).padding(horizontal = 9.dp, vertical = 3.dp)) {
+                                Text(jornadaAmb, color = verdeMarca(), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
             }
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Groups, null, tint = colors.textSecondary, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("${ambiente.aprendices_count ?: ambiente.aprendices?.size ?: 0} aprendices", color = colors.textSecondary, fontSize = 12.sp)
-                if (ambiente.ambiente_capacidad != null) { Spacer(modifier = Modifier.width(8.dp)); Text("• cap. ${ambiente.ambiente_capacidad}", color = colors.textSecondary, fontSize = 12.sp) }
+                Icon(Icons.Default.Groups, null, tint = colors.textSecondary, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("${ambiente.aprendices_count ?: ambiente.aprendices?.size ?: 0} aprendices", color = colors.textSecondary, fontSize = 13.sp)
+                if (ambiente.ambiente_capacidad != null) { Spacer(modifier = Modifier.width(8.dp)); Text("• cap. ${ambiente.ambiente_capacidad}", color = colors.textSecondary, fontSize = 13.sp) }
             }
     }
 }
@@ -250,21 +285,32 @@ private fun AmbienteFormDialog(ambiente: Ambiente?, instructoresDisponibles: Lis
     var nombre by remember { mutableStateOf(ambiente?.ambiente_nombre ?: "") }
     var capacidad by remember { mutableStateOf(ambiente?.ambiente_capacidad?.toString() ?: "") }
     var ubicacion by remember { mutableStateOf(ambiente?.ambiente_ubicacion ?: "") }
-    var jornada by remember { mutableStateOf(ambiente?.ambiente_jornada ?: "Tarde") }
-    // Horas automatizadas según jornada; el usuario puede ajustarlas a mano.
-    var horasAuto by remember { mutableStateOf(ambiente == null) }
-    var horaInicio by remember { mutableStateOf(ambiente?.hora_inicio ?: "13:00") }
-    var horaFin by remember { mutableStateOf(ambiente?.hora_fin ?: "18:00") }
+    // Jornada normalizada: si el registro viejo trae otra cosa, se deduce de la
+    // hora de inicio (o queda Tarde). El horario lo define la jornada.
+    var jornada by remember {
+        mutableStateOf(
+            com.example.sennaccess.comun.Jornadas.normalizar(ambiente?.ambiente_jornada)
+                ?: com.example.sennaccess.comun.Jornadas.normalizar(
+                    run {
+                        val h = com.example.sennaccess.comun.Jornadas.horaCorta(ambiente?.hora_inicio)
+                        when {
+                            h == null -> null
+                            h < "12:00" -> "Mañana"
+                            h < "18:00" -> "Tarde"
+                            else -> "Noche"
+                        }
+                    }
+                )
+                ?: "Tarde"
+        )
+    }
     var seleccionados by remember { mutableStateOf(ambiente?.instructores?.mapNotNull { it.id_usuario }?.toSet() ?: emptySet()) }
     var error by remember { mutableStateOf<String?>(null) }
     var guardando by remember { mutableStateOf(false) }
 
-    fun aplicarHorasAuto(j: String) {
-        if (!horasAuto) return
-        val (ini, fin) = com.example.sennaccess.comun.Jornadas.horasPara(j)
-        horaInicio = ini
-        horaFin = fin
-    }
+    // Horario fijo por jornada (no editable): mañana 6 a.m.–1 p.m., tarde
+    // 1–6 p.m., noche 6–10 p.m.
+    val horarioJornada = com.example.sennaccess.comun.Jornadas.textoHorario(jornada) ?: ""
 
     // Vista completa de edición: ocupa casi toda la pantalla como una
     // pantalla aparte, no un diálogo pequeño.
@@ -331,16 +377,33 @@ private fun AmbienteFormDialog(ambiente: Ambiente?, instructoresDisponibles: Lis
                 com.example.sennaccess.comun.diseno.DesplegableSena(
                     valor = jornada,
                     opciones = com.example.sennaccess.comun.Jornadas.TODAS,
-                    onElegir = { jornada = it; aplicarHorasAuto(it) },
+                    onElegir = { jornada = it },
                     label = "Jornada"
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedTextField(value = horaInicio, onValueChange = { horaInicio = it; horasAuto = false }, label = { Text("Hora inicio") }, placeholder = { Text("13:00") }, modifier = Modifier.weight(1f).campoVisible(), singleLine = true, shape = RoundedCornerShape(16.dp))
-                    OutlinedTextField(value = horaFin, onValueChange = { horaFin = it; horasAuto = false }, label = { Text("Hora fin") }, placeholder = { Text("18:00") }, modifier = Modifier.weight(1f).campoVisible(), singleLine = true, shape = RoundedCornerShape(16.dp))
+                // El horario lo fija la jornada: solo se muestra, no se edita.
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .superficiePlana(cornerRadius = RadioSena.md)
+                        .padding(horizontal = 14.dp, vertical = 12.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Schedule,
+                        contentDescription = null,
+                        tint = verdeMarca(),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Horario de la jornada", color = colors.textSecondary, fontSize = 11.sp)
+                        Text(horarioJornada, color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    }
                 }
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    if (horasAuto) "Horas automáticas según jornada; tócalas para personalizar." else "Horas personalizadas.",
+                    "La jornada define la hora de inicio y fin; no se edita a mano.",
                     color = colors.textSecondary, fontSize = 11.sp
                 )
                 Spacer(modifier = Modifier.height(12.dp))
@@ -396,22 +459,30 @@ private fun AmbienteFormDialog(ambiente: Ambiente?, instructoresDisponibles: Lis
                         if (capacidad.isNotBlank() && (capacidadNum == null || capacidadNum <= 0)) { error = "La capacidad debe ser un número mayor a 0"; return@Button }
                         guardando = true
                         error = null
+                        val (horaInicio, horaFin) = com.example.sennaccess.comun.Jornadas.horasPara(jornada)
                         val req = PeticionAmbiente(
                             ambiente_nombre = nombre.trim(),
                             ambiente_capacidad = capacidadNum,
                             ambiente_ubicacion = ubicacion.trim().ifBlank { null },
-                            ambiente_estado = "Activo",
+                            // Conserva el estado real del salón: editar instructores
+                            // no debe devolver un ambiente inactivo a "Activo".
+                            ambiente_estado = ambiente?.ambiente_estado ?: "Activo",
                             ambiente_jornada = jornada,
-                            hora_inicio = horaInicio.trim().ifBlank { null },
-                            hora_fin = horaFin.trim().ifBlank { null },
+                            hora_inicio = horaInicio,
+                            hora_fin = horaFin,
                             instructores = seleccionados.toList()
                         )
                         scope.launch {
                             try {
                                 if (ambiente == null) repo.createAmbiente(token, req) else repo.updateAmbiente(token, ambiente.id_ambiente!!, req)
                                 guardando = false; onGuardado()
-                            } catch (e: retrofit2.HttpException) { guardando = false; error = "Error ${e.code()}: ${e.message()}" }
-                            catch (e: Exception) { guardando = false; error = "Fallo de conexión: ${e.message}" }
+                            } catch (e: retrofit2.HttpException) {
+                                guardando = false
+                                error = com.example.sennaccess.comun.detalleHttp(e)
+                            } catch (e: Exception) {
+                                guardando = false
+                                error = "No se pudo conectar: ${e.message ?: "error de red"}"
+                            }
                         }
                     }, enabled = !guardando, colors = ButtonDefaults.buttonColors(containerColor = VerdeSena, contentColor = Color.Black), shape = RoundedCornerShape(16.dp), modifier = Modifier.weight(1f).height(52.dp).escalaPresion(pressedScale = 0.97f)) { if (guardando) CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(16.dp), strokeWidth = 2.dp) else Text(if (ambiente == null) "CREAR AMBIENTE" else "GUARDAR CAMBIOS", fontWeight = FontWeight.Bold) }
                 }

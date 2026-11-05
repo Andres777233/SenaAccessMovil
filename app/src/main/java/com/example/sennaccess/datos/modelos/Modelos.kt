@@ -234,10 +234,14 @@ data class EquipoIngreso(
     @SerializedName("equipo_serial") val equipo_serial: String? = null,
     @SerializedName("equipo_observations") val equipo_observations: String? = null,
     @SerializedName("equipo_accesorios") val equipo_accesorios: List<Accesorio>? = null,
+    // Propiedad del equipo: "Propio" (del usuario, viene de fuera) o "Prestado"
+    // (del centro de formación).
+    @SerializedName("equipo_propiedad") val equipo_propiedad: String? = null,
     @SerializedName("entry_datetime") val entry_datetime: String? = null,
     val user: UsuarioApi? = null
 ) {
     val marcaModelo: String get() = listOfNotNull(equipo_brand, equipo_model).joinToString(" ").ifBlank { "—" }
+    val esPropio: Boolean get() = equipo_propiedad.equals("Propio", ignoreCase = true)
 }
 
 // Accesorio declarado de un equipo.
@@ -256,6 +260,7 @@ data class PeticionEquipoIngreso(
     @SerializedName("equipo_serial") val equipo_serial: String,
     @SerializedName("equipo_observations") val equipo_observations: String? = null,
     @SerializedName("fk_id_usuario") val fk_id_usuario: Int? = null,
+    @SerializedName("equipo_propiedad") val equipo_propiedad: String? = null,
     @SerializedName("equipo_accesorios") val equipo_accesorios: List<Accesorio>? = null
 )
 

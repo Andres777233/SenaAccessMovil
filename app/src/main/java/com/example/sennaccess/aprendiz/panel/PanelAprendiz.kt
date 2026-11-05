@@ -689,6 +689,7 @@ fun ContenedorTabla(title: String, subtitle: String, content: @Composable Column
 fun PerfilAprendizView(estado: EstadoCarga<UsuarioApi>, onBack: () -> Unit, onReintentar: () -> Unit, onEditar: () -> Unit, onConfigurar2Fa: () -> Unit) {
     val colors = ColoresAppLocal.current
     val scrollState = rememberScrollState()
+    var verHuella by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -730,9 +731,14 @@ fun PerfilAprendizView(estado: EstadoCarga<UsuarioApi>, onBack: () -> Unit, onRe
                 correo = usuario.user_email,
                 filas = filas,
                 onEditar = onEditar,
-                onConfigurar2Fa = onConfigurar2Fa
+                onConfigurar2Fa = onConfigurar2Fa,
+                onGestionarHuella = { verHuella = true }
             )
             Spacer(modifier = Modifier.imePadding().height(96.dp))
         }
+    }
+
+    if (verHuella) {
+        com.example.sennaccess.biometria.DialogoMiHuella(onCerrar = { verHuella = false })
     }
 }

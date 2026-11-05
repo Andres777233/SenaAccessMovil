@@ -281,7 +281,13 @@ private fun TarjetaEquipoAdmin(eq: EquipoIngreso, onEliminar: () -> Unit) {
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
-        Text(eq.marcaModelo, color = colors.textSecondary, fontSize = 12.sp, maxLines = 2)
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Text(eq.marcaModelo, color = colors.textSecondary, fontSize = 12.sp, maxLines = 2, modifier = Modifier.weight(1f))
+            InsigniaSena(
+                texto = if (eq.esPropio) "Propio" else "Prestado",
+                tipo = if (eq.esPropio) TipoInsignia.EXITO else TipoInsignia.NEUTRO
+            )
+        }
     }
 }
 
@@ -312,6 +318,7 @@ fun TarjetaEquipoDetallada(eq: EquipoIngreso, mostrarDueno: Boolean = false) {
         FilaDetalleEquipo("Modelo", eq.equipo_model ?: "—")
         FilaDetalleEquipo("Color", eq.equipo_color ?: "—")
         FilaDetalleEquipo("Serial", eq.equipo_serial ?: "—")
+        FilaDetalleEquipo("Propiedad", if (eq.esPropio) "Propio (del usuario)" else "Prestado (del centro)")
         FilaDetalleEquipo("Fecha de ingreso", fechaLegible(eq.entry_datetime))
         if (!eq.equipo_observations.isNullOrBlank()) {
             FilaDetalleEquipo("Observaciones", eq.equipo_observations!!)

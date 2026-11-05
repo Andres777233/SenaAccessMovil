@@ -61,9 +61,8 @@ fun PantallaRegistro(onBackToLogin: () -> Unit, isDark: Boolean = true, onToggle
     val context = LocalContext.current
 
     var documentoTipo by rememberSaveable { mutableStateOf("CC") }
-    // Vinculación: aprendiz (por defecto) o funcionario (personal administrativo).
-    var vinculacion by rememberSaveable { mutableStateOf("aprendiz") }
-    val esFuncionario = vinculacion == "funcionario"
+    // El registro público siempre crea APRENDICES: el superadmin es quien
+    // cambia el rol después desde Usuarios.
     var identification by rememberSaveable { mutableStateOf("") }
     var name by rememberSaveable { mutableStateOf("") }
     var lastname by rememberSaveable { mutableStateOf("") }
@@ -114,7 +113,7 @@ fun PantallaRegistro(onBackToLogin: () -> Unit, isDark: Boolean = true, onToggle
                         fontWeight = FontWeight.ExtraBold
                     )
                     Text(
-                        text = "Aprendices y funcionarios • activación con aprobación",
+                        text = "Aprendices • activación con aprobación",
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.textSecondary
                     )
@@ -178,33 +177,11 @@ fun PantallaRegistro(onBackToLogin: () -> Unit, isDark: Boolean = true, onToggle
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // --- SECCIÓN 2: FORMACIÓN ACADÉMICA / INSTITUCIONAL ---
+                    // --- SECCIÓN 2: FORMACIÓN ACADÉMICA ---
                     EncabezadoSeccion(
-                        icon = if (esFuncionario) Icons.Default.Badge else Icons.Default.School,
-                        title = if (esFuncionario) "Información Institucional" else "Formación Académica"
+                        icon = Icons.Default.School,
+                        title = "Formación Académica"
                     )
-                    Text(
-                        text = "Tipo de Vinculación",
-                        color = colors.textSecondary,
-                        fontSize = 12.sp,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                        com.example.sennaccess.comun.diseno.FiltroSena(
-                            texto = "Aprendiz",
-                            seleccionado = !esFuncionario,
-                            onClick = { vinculacion = "aprendiz" },
-                            modifier = Modifier.weight(1f)
-                        )
-                        com.example.sennaccess.comun.diseno.FiltroSena(
-                            texto = "Funcionario",
-                            seleccionado = esFuncionario,
-                            onClick = { vinculacion = "funcionario" },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
                     CampoAcceso(
                         value = email,
                         onValueChange = { email = it },
@@ -212,52 +189,44 @@ fun PantallaRegistro(onBackToLogin: () -> Unit, isDark: Boolean = true, onToggle
                         keyboardType = KeyboardType.Email
                     )
                     Text(
-                        text = if (esFuncionario) {
-                            "Funcionario: usa tu correo institucional @sena.edu.co"
-                        } else {
-                            "Usa @gmail.com, @hotmail.com, @outlook.com o @soy.sena.edu.co"
-                        },
+                        text = "Usa @gmail.com, @hotmail.com, @outlook.com o @soy.sena.edu.co",
                         color = colors.textSecondary,
                         fontSize = 12.sp,
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
                     )
-                    if (!esFuncionario) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        CampoAcceso(
-                            value = courseNumber,
-                            onValueChange = { courseNumber = it },
-                            label = "Número de Ficha",
-                            keyboardType = KeyboardType.Number
-                        )
-                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    CampoAcceso(
+                        value = courseNumber,
+                        onValueChange = { courseNumber = it },
+                        label = "Número de Ficha",
+                        keyboardType = KeyboardType.Number
+                    )
                     Spacer(modifier = Modifier.height(12.dp))
                     CampoAcceso(
                         value = program,
                         onValueChange = { program = it },
-                        label = if (esFuncionario) "Área / Dependencia" else "Programa de Formación"
+                        label = "Programa de Formación"
                     )
-                    if (!esFuncionario) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        DesplegableSena(
-                            valor = jornada,
-                            opciones = Jornadas.TODAS,
-                            onElegir = { jornada = it },
-                            label = "Jornada (lunes a viernes)"
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        DesplegableSena(
-                            valor = jornadaSabado,
-                            opciones = Jornadas.TODAS,
-                            onElegir = { jornadaSabado = it },
-                            label = "Jornada de los sábados"
-                        )
-                        Text(
-                            text = "Si los sábados estudias en otra jornada, elígela aquí.",
-                            color = colors.textSecondary,
-                            fontSize = 12.sp,
-                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
-                        )
-                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    DesplegableSena(
+                        valor = jornada,
+                        opciones = Jornadas.TODAS,
+                        onElegir = { jornada = it },
+                        label = "Jornada (lunes a viernes)"
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    DesplegableSena(
+                        valor = jornadaSabado,
+                        opciones = Jornadas.TODAS,
+                        onElegir = { jornadaSabado = it },
+                        label = "Jornada de los sábados"
+                    )
+                    Text(
+                        text = "Si los sábados estudias en otra jornada, elígela aquí.",
+                        color = colors.textSecondary,
+                        fontSize = 12.sp,
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+                    )
 
                     Spacer(modifier = Modifier.height(24.dp))
 
@@ -318,7 +287,7 @@ fun PantallaRegistro(onBackToLogin: () -> Unit, isDark: Boolean = true, onToggle
                                 return@BotonPrimarioNeon
                             }
                             if (program.trim().isBlank()) {
-                                errorMensaje = if (esFuncionario) "Escribe tu área o dependencia." else "Escribe tu programa de formación."
+                                errorMensaje = "Escribe tu programa de formación."
                                 return@BotonPrimarioNeon
                             }
                             val correoLimpio = email.trim().lowercase()
@@ -326,21 +295,12 @@ fun PantallaRegistro(onBackToLogin: () -> Unit, isDark: Boolean = true, onToggle
                                 errorMensaje = "Escribe tu correo electrónico."
                                 return@BotonPrimarioNeon
                             }
-                            val dominiosOk = buildList {
-                                addAll(listOf("@gmail.com", "@hotmail.com", "@outlook.com", "@soy.sena.edu.co"))
-                                if (esFuncionario) add("@sena.edu.co")
-                            }
+                            val dominiosOk = listOf("@gmail.com", "@hotmail.com", "@outlook.com", "@soy.sena.edu.co")
                             if (dominiosOk.none { correoLimpio.endsWith(it) }) {
-                                errorMensaje = if (esFuncionario) {
-                                    "El correo debe ser institucional (@sena.edu.co) o @gmail.com, @hotmail.com, @outlook.com."
-                                } else {
-                                    "El correo debe ser @gmail.com, @hotmail.com, @outlook.com o @soy.sena.edu.co."
-                                }
+                                errorMensaje = "El correo debe ser @gmail.com, @hotmail.com, @outlook.com o @soy.sena.edu.co."
                                 return@BotonPrimarioNeon
                             }
-                            // El funcionario no cursa ficha de formación: viaja en 0
-                            // y el servidor la guarda como nula.
-                            val ficha = if (esFuncionario) 0 else courseNumber.trim().toIntOrNull()
+                            val ficha = courseNumber.trim().toIntOrNull()
                             if (ficha == null) {
                                 errorMensaje = "El número de ficha debe ser un valor numérico."
                                 return@BotonPrimarioNeon
@@ -377,9 +337,9 @@ fun PantallaRegistro(onBackToLogin: () -> Unit, isDark: Boolean = true, onToggle
                                                     user_program = program.trim(),
                                                     user_documento_tipo = documentoTipo,
                                                     user_telefono = telefono.trim().ifBlank { null },
-                                                    role = vinculacion,
-                                                    user_jornada = if (esFuncionario) null else jornada,
-                                                    user_jornada_sabado = if (esFuncionario) null else jornadaSabado
+                                                    role = "aprendiz",
+                                                    user_jornada = jornada,
+                                                    user_jornada_sabado = jornadaSabado
                                                 )
                                             )
                                             enviando = false

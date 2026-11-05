@@ -36,15 +36,19 @@ object AlmacenHuella {
     private fun claveDecision(email: String) =
         "no_preguntar_" + email.trim().lowercase()
 
-    // "Ahora no" persistido por cuenta: no volver a ofrecer la huella en este
-    // teléfono salvo cuenta nueva, reinstalación o borrado de la huella.
+    // "Ahora no" solo aplica a este inicio de sesión: la huella se ofrece de
+    // nuevo mientras la cuenta NO tenga una huella registrada. Así nadie queda
+    // sin poder registrarla nunca (antes el descarte era permanente).
     fun noPreguntarMas(context: Context, email: String) {
-        prefsAjustes(context).edit().putBoolean(claveDecision(email), true).apply()
+        prefsAjustes(context).edit().remove(claveDecision(email)).apply()
     }
 
     // True si se puede ofrecer registrar la huella a esta cuenta.
-    fun preguntarHuella(context: Context, email: String): Boolean =
-        !prefsAjustes(context).getBoolean(claveDecision(email), false)
+    fun preguntarHuella(context: Context, email: String): Boolean = !hayGuardadaPara(context, email)
+
+    // Indica si hay credenciales cifradas para ese correo exacto.
+    fun hayGuardadaPara(context: Context, email: String): Boolean =
+        hayGuardada(context) && obtenerDueno(context).equals(email.trim(), ignoreCase = true)
 
     private fun nuevoCipher(): Cipher = Cipher.getInstance(
         KeyProperties.KEY_ALGORITHM_AES + "/" +
@@ -56,17 +60,22 @@ object AlmacenHuella {
         val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
         (keyStore.getEntry(ALIAS, null) as? KeyStore.SecretKeyEntry)?.let { return it.secretKey }
         val generador = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
-        generador.init(
-            KeyGenParameterSpec.Builder(
-                ALIAS,
-                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
-            )
-                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                .setUserAuthenticationRequired(true)
-                .setInvalidatedByBiometricEnrollment(true)
-                .build()
+        val constructor = KeyGenParameterSpec.Builder(
+            ALIAS,
+            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
         )
+            .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+            .setUserAuthenticationRequired(true)
+            .setInvalidatedByBiometricEnrollment(true)
+        // Exige biometría fuerte explícitamente (auth por uso) en Android 11+.
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            constructor.setUserAuthenticationParameters(
+                0,
+                KeyProperties.AUTH_BIOMETRIC_STRONG
+            )
+        }
+        generador.init(constructor.build())
         return generador.generateKey()
     }
 
@@ -107,15 +116,16 @@ object AlmacenHuella {
 
     // Cifra y guarda el correo y la clave del usuario, más el dueño en claro
     // (el correo no es secreto) para no usar la huella de otra cuenta.
-    fun guardar(context: Context, cipher: Cipher, email: String, password: String) {
+    // Devuelve true solo si quedó realmente escrito en el dispositivo.
+    fun guardar(context: Context, cipher: Cipher, email: String, password: String): Boolean {
         val datos = cipher.doFinal("$email\n$password".toByteArray(Charsets.UTF_8))
-        prefs(context).edit()
+        val ok = prefs(context).edit()
             .putString(KEY_CIFRADO, Base64.encodeToString(datos, Base64.NO_WRAP))
             .putString(KEY_IV, Base64.encodeToString(cipher.iv, Base64.NO_WRAP))
             .putString(KEY_DUENO, email.trim().lowercase())
-            .apply()
-        // Al registrar se olvida el "ahora no" previo de esta cuenta.
-        prefsAjustes(context).edit().remove(claveDecision(email)).apply()
+            .commit()
+        if (ok) prefsAjustes(context).edit().remove(claveDecision(email)).apply()
+        return ok && hayGuardadaPara(context, email)
     }
 
     // Correo dueño de la huella guardada, o null si no hay.

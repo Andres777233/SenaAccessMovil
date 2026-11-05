@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -135,6 +136,7 @@ fun PerfilSenior(
     filas: List<Triple<ImageVector, String, String>>,
     onEditar: () -> Unit,
     onConfigurar2Fa: () -> Unit,
+    onGestionarHuella: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val colors = ColoresAppLocal.current
@@ -304,6 +306,49 @@ fun PerfilSenior(
                         tint = colors.textSecondary,
                         modifier = Modifier.size(20.dp)
                     )
+                }
+                if (onGestionarHuella != null) {
+                    androidx.compose.material3.HorizontalDivider(
+                        color = colors.divider,
+                        modifier = Modifier.padding(horizontal = 14.dp)
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .clickable { onGestionarHuella() }
+                            .padding(horizontal = 12.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .background(VerdeSena.copy(alpha = 0.12f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Fingerprint, null, tint = verdeMarca(), modifier = Modifier.size(20.dp))
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Ingreso con huella",
+                                color = colors.textPrimary,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = "Entra sin escribir la contraseña en este teléfono",
+                                color = colors.textSecondary,
+                                fontSize = 12.sp
+                            )
+                        }
+                        Icon(
+                            Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = colors.textSecondary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
         }

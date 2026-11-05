@@ -142,9 +142,41 @@ fun VistaDetalleAmbiente(
                         @OptIn(ExperimentalLayoutApi::class)
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             ambiente.ambiente_ubicacion?.takeIf { it.isNotBlank() }?.let { ChipAmbiente(it) }
-                            ambiente.ambiente_jornada?.takeIf { it.isNotBlank() }?.let { ChipAmbiente(it) }
-                            val horario = listOfNotNull(ambiente.hora_inicio, ambiente.hora_fin).joinToString("–")
-                            if (horario.isNotBlank()) ChipAmbiente(horario)
+                            com.example.sennaccess.comun.Jornadas.normalizar(ambiente.ambiente_jornada)?.let { ChipAmbiente(it) }
+                            com.example.sennaccess.comun.Jornadas.textoHorario(ambiente.ambiente_jornada)?.let { ChipAmbiente(it) }
+                        }
+                    }
+                }
+                // Instructores responsables del salón: nombre y jornada en letra
+                // grande y legible.
+                val jornadaAmb = com.example.sennaccess.comun.Jornadas.normalizar(ambiente.ambiente_jornada)
+                val asignados = ambiente.instructores.orEmpty()
+                if (asignados.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Text(
+                        "INSTRUCTORES RESPONSABLES",
+                        color = colors.textSecondary, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        asignados.forEachIndexed { i, inst ->
+                            if (i > 0) HorizontalDivider(color = colors.border, modifier = Modifier.padding(vertical = 6.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                                Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(VerdeSena.copy(0.15f)), contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.Person, null, tint = verdeMarca(), modifier = Modifier.size(20.dp))
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text(
+                                    inst.nombreCompleto,
+                                    color = colors.textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 16.sp,
+                                    maxLines = 1, modifier = Modifier.weight(1f)
+                                )
+                                if (jornadaAmb != null) {
+                                    Box(modifier = Modifier.clip(RoundedCornerShape(50)).background(VerdeSena.copy(0.15f)).padding(horizontal = 10.dp, vertical = 4.dp)) {
+                                        Text(jornadaAmb, color = verdeMarca(), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
                         }
                     }
                 }

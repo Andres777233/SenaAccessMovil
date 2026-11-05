@@ -290,7 +290,11 @@ fun PantallaAcceso(
                                                     val credenciales = try {
                                                         AlmacenHuella.leer(context, seguro)
                                                     } catch (e: Exception) {
-                                                        huellaError = "No se pudieron leer tus credenciales. Inténtalo de nuevo."
+                                                        // La llave guardada ya no sirve (se enroló otra
+                                                        // huella o se restauró el teléfono): se limpia
+                                                        // para poder registrar de nuevo.
+                                                        AlmacenHuella.borrarTodo(context)
+                                                        huellaError = "Tu huella guardada ya no es válida en este teléfono. Ingresa con tu contraseña y regístrala de nuevo."
                                                         return@authenticate
                                                     }
                                                     loginDesdeHuella = true
@@ -405,19 +409,24 @@ fun PantallaAcceso(
                                                 cryptoObject = BiometricPrompt.CryptoObject(cipher),
                                                 onSuccess = { result ->
                                                     huellaOcupado = false
+                                                    val correoGuardar = res.user?.user_email ?: email.trim()
                                                     try {
                                                         val seguro = result.cryptoObject?.cipher
                                                         if (seguro == null) {
                                                             huellaError = "No se pudo activar la huella. Regístrala desde tu perfil."
-                                                        } else {
-                                                            AlmacenHuella.guardar(
+                                                        } else if (!AlmacenHuella.guardar(
                                                                 context,
                                                                 seguro,
-                                                                res.user?.user_email ?: email.trim(),
+                                                                correoGuardar,
                                                                 password
                                                             )
+                                                        ) {
+                                                            huellaError = "No se pudo guardar la huella en este teléfono. Inténtalo desde Perfil."
+                                                        } else {
+                                                            huellaError = null
                                                         }
                                                     } catch (e: Exception) {
+                                                        huellaError = "No se pudo guardar la huella: ${e.message ?: "error del sensor"}. Regístrala desde Perfil."
                                                     }
                                                     viewModel.reset()
                                                     onLoginSuccess(res.role ?: "")

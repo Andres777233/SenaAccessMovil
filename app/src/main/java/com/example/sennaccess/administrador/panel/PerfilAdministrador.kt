@@ -40,6 +40,7 @@ fun ContenidoPerfilAdmin(
 ) {
     val colors = ColoresAppLocal.current
     val scrollState = rememberScrollState()
+    var verHuella by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -70,10 +71,15 @@ fun ContenidoPerfilAdmin(
                 correo = null,
                 filas = filas,
                 onEditar = onEditar,
-                onConfigurar2Fa = onConfigurar2Fa
+                onConfigurar2Fa = onConfigurar2Fa,
+                onGestionarHuella = { verHuella = true }
             )
             Spacer(modifier = Modifier.height(24.dp))
             Spacer(modifier = Modifier.imePadding().height(96.dp))
         }
+    }
+
+    if (verHuella) {
+        com.example.sennaccess.biometria.DialogoMiHuella(onCerrar = { verHuella = false })
     }
 }

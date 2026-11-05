@@ -224,26 +224,66 @@ fun VistaValidarExcusa(onBack: () -> Unit, mostrarCabecera: Boolean = true) {
                             .padding(horizontal = 14.dp, vertical = 12.dp)
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(ex.aprendiz?.nombreCompleto ?: "Aprendiz #${ex.fk_id_aprendiz}", color = colors.textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, maxLines = 1)
-                            Text(textoCreacionExcusa(ex), color = colors.textSecondary, fontSize = 11.sp)
+                            // Identidad legible: quién envía el permiso y de dónde.
+                            Text(
+                                ex.aprendiz?.nombreCompleto ?: "Aprendiz #${ex.fk_id_aprendiz}",
+                                color = colors.textPrimary,
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 17.sp,
+                                maxLines = 2
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            val documento = ex.aprendiz?.user_identification?.takeIf { it.isNotBlank() }
+                            val ficha = ex.aprendiz?.user_coursenumber?.takeIf { it > 0 }
+                            if (documento != null || ficha != null) {
+                                Text(
+                                    listOfNotNull(
+                                        documento?.let { "Documento: $it" },
+                                        ficha?.let { "Ficha: $it" }
+                                    ).joinToString("  •  "),
+                                    color = colors.textSecondary,
+                                    fontSize = 13.sp,
+                                    maxLines = 2
+                                )
+                            }
+                            Text(
+                                "Ambiente: ${ex.ambiente?.ambiente_nombre ?: "—"}",
+                                color = colors.textSecondary,
+                                fontSize = 13.sp,
+                                maxLines = 2
+                            )
+                            Text(
+                                "Instructor: ${ex.instructor?.nombreCompleto ?: "#${ex.fk_id_instructor}"}",
+                                color = colors.textSecondary,
+                                fontSize = 13.sp,
+                                maxLines = 2
+                            )
+                            ex.motivo?.takeIf { it.isNotBlank() }?.let { motivo ->
+                                Text(
+                                    "Motivo: $motivo",
+                                    color = colors.textPrimary,
+                                    fontSize = 13.sp,
+                                    maxLines = 3
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
                             // El PIN es el dato que portería necesita leer y
                             // dictar: va grande, no perdido en 12sp.
                             Text(
                                 "PIN ${ex.pin ?: "—"}",
                                 color = verdeMarca(),
-                                fontSize = 20.sp,
+                                fontSize = 27.sp,
                                 fontWeight = FontWeight.ExtraBold,
-                                letterSpacing = 2.sp,
-                                maxLines = 1,
-                                modifier = Modifier.padding(top = 3.dp)
+                                letterSpacing = 3.sp,
+                                maxLines = 1
                             )
+                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 textoVigencia(ex.expira_en, ahora),
                                 color = colors.textSecondary,
-                                fontSize = 11.sp,
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium
                             )
-                            Text("Instructor: ${ex.instructor?.nombreCompleto ?: "#${ex.fk_id_instructor}"}", color = colors.textSecondary, fontSize = 10.sp, maxLines = 1)
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         InsigniaExcusa(ex.estado)

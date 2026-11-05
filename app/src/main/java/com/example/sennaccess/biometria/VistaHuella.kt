@@ -8,8 +8,11 @@ package com.example.sennaccess.biometria
 
 import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Visibility
@@ -270,5 +273,54 @@ fun MiSeccionHuella() {
                 }
             }
         )
+    }
+}
+
+// Vista de "Mi huella" en un diálogo a pantalla completa, para abrirla desde
+// Perfil → Seguridad sin salir de la pantalla de perfil.
+@Composable
+fun DialogoMiHuella(onCerrar: () -> Unit) {
+    val colors = ColoresAppLocal.current
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onCerrar,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            color = colors.surface,
+            shape = RoundedCornerShape(24.dp),
+            modifier = Modifier
+                .fillMaxWidth(0.94f)
+                .fillMaxHeight(0.9f)
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp)
+                ) {
+                    Icon(Icons.Default.Fingerprint, null, tint = verdeMarca(), modifier = Modifier.size(22.dp))
+                    Spacer(Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Mi huella", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 19.sp)
+                        Text(
+                            "Ingreso rápido en este teléfono",
+                            color = colors.textSecondary, fontSize = 12.sp
+                        )
+                    }
+                    IconButton(onClick = onCerrar, modifier = Modifier.size(44.dp)) {
+                        Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = colors.textSecondary)
+                    }
+                }
+                HorizontalDivider(color = colors.divider)
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 18.dp, vertical = 16.dp)
+                        .imePadding()
+                ) {
+                    MiSeccionHuella()
+                }
+            }
+        }
     }
 }
