@@ -290,11 +290,10 @@ fun PantallaAcceso(
                                                     val credenciales = try {
                                                         AlmacenHuella.leer(context, seguro)
                                                     } catch (e: Exception) {
-                                                        // La llave guardada ya no sirve (se enroló otra
-                                                        // huella o se restauró el teléfono): se limpia
-                                                        // para poder registrar de nuevo.
-                                                        AlmacenHuella.borrarTodo(context)
-                                                        huellaError = "Tu huella guardada ya no es válida en este teléfono. Ingresa con tu contraseña y regístrala de nuevo."
+                                                        // La llave guardada ya no sirve: se conserva la
+                                                        // credencial marcada para que el usuario pueda
+                                                        // registrarla otra vez sin perder la cuenta.
+                                                        huellaError = "Tu huella guardada necesita registrarse de nuevo en este teléfono. Entra con tu contraseña y acepta el registro."
                                                         return@authenticate
                                                     }
                                                     loginDesdeHuella = true

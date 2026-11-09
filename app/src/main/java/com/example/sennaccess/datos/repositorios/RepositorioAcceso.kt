@@ -1,10 +1,13 @@
 package com.example.sennaccess.datos.repositorios
 
+import com.example.sennaccess.datos.modelos.PeticionPinPorteria
 import com.example.sennaccess.datos.modelos.PeticionValidarAcceso
 import com.example.sennaccess.datos.modelos.PeticionValidarCarnet
 import com.example.sennaccess.datos.modelos.PeticionValidarCodigoAcceso
 import com.example.sennaccess.datos.modelos.PeticionValidarPin
 import com.example.sennaccess.datos.modelos.EstadoPuerta
+import com.example.sennaccess.datos.modelos.RespuestaPinPorteria
+import com.example.sennaccess.datos.modelos.RespuestaQrPorteria
 import com.example.sennaccess.datos.modelos.RespuestaValidarAcceso
 import com.example.sennaccess.datos.modelos.RespuestaValidarCarnet
 import com.example.sennaccess.datos.modelos.RespuestaValidarCodigoAcceso
@@ -17,6 +20,16 @@ class RepositorioAcceso {
     // saber si la persona ya está dentro hoy.
     suspend fun estado(token: String): EstadoPuerta =
         ClienteApi.conServicio { it.getEstadoAcceso("Bearer $token") }
+
+    // QR rotativo de portería: entrada o salida.
+    suspend fun qrPorteria(token: String, tipo: String): RespuestaQrPorteria =
+        ClienteApi.conServicio { it.getQrPorteria("Bearer $token", tipo) }
+
+    // PIN de 6 dígitos para dictar en portería.
+    suspend fun generarPinPorteria(token: String, tipo: String): RespuestaPinPorteria =
+        ClienteApi.conServicio {
+            it.generarPinPorteria("Bearer $token", PeticionPinPorteria(tipo))
+        }
 
     suspend fun validar(token: String, qrPayload: String): RespuestaValidarAcceso =
         ClienteApi.conServicio { it.validarAcceso("Bearer $token", PeticionValidarAcceso(qrPayload)) }

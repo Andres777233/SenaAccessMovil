@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material3.*
@@ -137,6 +138,16 @@ fun ContenidoEquiposAdmin(
                     label = { Text(rolesFiltro[idx], fontSize = 12.sp) }
                 )
             }
+            if (busqueda.isNotBlank() || filtroRol != 0) {
+                item {
+                    FilterChip(
+                        selected = true,
+                        onClick = { busqueda = ""; filtroRol = 0 },
+                        label = { Text("Limpiar", fontSize = 12.sp) },
+                        trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(15.dp)) }
+                    )
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(14.dp))
@@ -161,6 +172,13 @@ fun ContenidoEquiposAdmin(
                         eq.marcaModelo.contains(q, ignoreCase = true) ||
                         eq.equipo_serial?.contains(q, ignoreCase = true) == true)
                 }
+                Text(
+                    "${filtrados.size} de ${items.size} equipos",
+                    color = colors.textSecondary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
                 if (filtrados.isEmpty()) {
                     VistaVacia(
                         icono = Icons.Default.Devices,

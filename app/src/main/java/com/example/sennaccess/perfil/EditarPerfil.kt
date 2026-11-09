@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.ZoomIn
@@ -176,6 +177,14 @@ fun VistaEditarPerfil(
                         .padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    Text(
+                        "FOTO DE PERFIL",
+                        color = verdeMarca(),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.6.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
                     Box(
                         modifier = Modifier
                             .size(96.dp)
@@ -224,7 +233,7 @@ fun VistaEditarPerfil(
                     .superficiePlana(cornerRadius = RadioVidrio)
                     .padding(20.dp)
             ) {
-                EtiquetaPerfil("Datos personales")
+                EtiquetaPerfil("Datos personales", Icons.Default.Person)
                 Spacer(modifier = Modifier.height(8.dp))
                 campoPerfil(identificacion, { identificacion = it }, "Número de Identificación")
                 Spacer(modifier = Modifier.height(12.dp))
@@ -325,7 +334,7 @@ fun VistaEditarPerfil(
                     .superficiePlana(cornerRadius = RadioVidrio)
                     .padding(20.dp)
             ) {
-                EtiquetaPerfil("Seguridad")
+                EtiquetaPerfil("Seguridad", Icons.Default.Shield)
                 Text(
                     "Solo si quieres cambiar tu contraseña.",
                     color = colors.textSecondary,
@@ -590,15 +599,29 @@ private fun campoPerfil(value: String, onValueChange: (String) -> Unit, label: S
 
 // Etiqueta de sección en editar perfil: eyebrow verde + jerarquía.
 @Composable
-private fun EtiquetaPerfil(texto: String) {
-    Text(
-        text = texto.uppercase(),
-        color = verdeMarca(),
-        fontSize = 11.sp,
-        fontWeight = FontWeight.Bold,
-        letterSpacing = 1.6.sp,
-        modifier = Modifier.fillMaxWidth()
-    )
+private fun EtiquetaPerfil(texto: String, icono: androidx.compose.ui.graphics.vector.ImageVector = Icons.Default.Person) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(28.dp)
+                .clip(RoundedCornerShape(9.dp))
+                .background(VerdeSena.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icono, null, tint = verdeMarca(), modifier = Modifier.size(15.dp))
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = texto.uppercase(),
+            color = verdeMarca(),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.6.sp
+        )
+    }
 }
 
 // Campo bloqueado de solo lectura (ficha/programa en el perfil propio).

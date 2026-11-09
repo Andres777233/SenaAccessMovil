@@ -45,8 +45,6 @@ fun PuertaAcceso(onEntrar: () -> Unit, onSalir: () -> Unit) {
     var error by remember { mutableStateOf<String?>(null) }
     var verificando by remember { mutableStateOf(false) }
     var mensajeExito by remember { mutableStateOf<String?>(null) }
-    var pinManual by remember { mutableStateOf("") }
-    var validandoPin by remember { mutableStateOf(false) }
 
     fun verificar(silenciosoAlEntrar: Boolean = false, alEntrar: (() -> Unit)? = null) {
         val token = GestorSesion.token ?: run {
@@ -99,32 +97,6 @@ fun PuertaAcceso(onEntrar: () -> Unit, onSalir: () -> Unit) {
         }
     }
 
-    fun validarPin() {
-        val token = GestorSesion.token
-        if (token == null || validandoPin) return
-        if (pinManual.length != 6) {
-            error = "Ingresa los 6 dígitos del PIN."
-            return
-        }
-        scope.launch {
-            validandoPin = true
-            error = null
-            try {
-                val resp = repoAcceso.validarPin(token, pinManual.trim())
-                pinManual = ""
-                alMarcar(resp.message ?: "Movimiento registrado.")
-            } catch (e: retrofit2.HttpException) {
-                error = com.example.sennaccess.comun.detalleHttp(e)
-                mensajeExito = null
-            } catch (e: Exception) {
-                error = "No se pudo conectar al servidor."
-                mensajeExito = null
-            } finally {
-                validandoPin = false
-            }
-        }
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -158,38 +130,7 @@ fun PuertaAcceso(onEntrar: () -> Unit, onSalir: () -> Unit) {
                 mostrarCabecera = false,
                 onExito = ::alMarcar
             )
-            Spacer(modifier = Modifier.height(12.dp))
-            // Sin cámara: PIN de 6 dígitos dictado en portería.
-            OutlinedTextField(
-                value = pinManual,
-                onValueChange = { pinManual = it.filter(Char::isDigit).take(6) },
-                label = { Text("PIN de portería (6 dígitos)") },
-                placeholder = { Text("• • • • • •") },
-                modifier = Modifier.fillMaxWidth().campoVisible(),
-                shape = RoundedCornerShape(16.dp),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                textStyle = TextStyle(
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 6.sp,
-                    textAlign = TextAlign.Center
-                )
-            )
             Spacer(modifier = Modifier.height(8.dp))
-            OutlinedButton(
-                onClick = ::validarPin,
-                enabled = pinManual.length == 6 && !validandoPin,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                if (validandoPin) {
-                    CircularProgressIndicator(color = com.example.sennaccess.comun.tema.verdeMarca(), modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                } else {
-                    Text("Validar PIN")
-                }
-            }
-            Spacer(modifier = Modifier.height(4.dp))
             if (mensajeExito != null) {
                 // Confirmación breve antes de entrar al panel.
                 Box(

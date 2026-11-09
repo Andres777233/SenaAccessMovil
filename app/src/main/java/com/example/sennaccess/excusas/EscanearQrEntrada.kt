@@ -15,6 +15,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,6 +32,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.TextStyle
@@ -78,12 +80,27 @@ fun EscanearQrEntrada(mostrarCabecera: Boolean = true) {
     ) { concedido -> permisoCamara = concedido }
 
     val detenerAnalisis = remember { mutableStateOf(false) }
+    val proveedorCamara = remember { mutableStateOf<ProcessCameraProvider?>(null) }
     var cargando by remember { mutableStateOf(false) }
     var errorQr by remember { mutableStateOf<String?>(null) }
     var errorValidar by remember { mutableStateOf<String?>(null) }
     var exito by remember { mutableStateOf<UsuarioCodigoAcceso?>(null) }
     var mensaje by remember { mutableStateOf<String?>(null) }
     var pin by remember { mutableStateOf("") }
+    var modo by remember { mutableIntStateOf(0) }
+
+    // Libera la cámara al salir o al pasar al PIN: sin esto el preview
+    // seguía bindeado y chocaba con la siguiente pestaña del validador.
+    DisposableEffect(lifecycleOwner) {
+        onDispose {
+            try { proveedorCamara.value?.unbindAll() } catch (_: Exception) { }
+        }
+    }
+    LaunchedEffect(modo) {
+        if (modo != 0) {
+            try { proveedorCamara.value?.unbindAll() } catch (_: Exception) { }
+        }
+    }
 
     val scanner = remember {
         BarcodeScanning.getClient(
@@ -176,132 +193,179 @@ fun EscanearQrEntrada(mostrarCabecera: Boolean = true) {
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-        if (permisoCamara) {
-            Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f), contentAlignment = Alignment.Center) {
-                AndroidView(
-                    factory = { ctx ->
-                        PreviewView(ctx).apply {
-                            val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
-                            cameraProviderFuture.addListener({
-                                val cameraProvider = cameraProviderFuture.get()
-                                val preview = Preview.Builder().build().also { p ->
-                                    p.setSurfaceProvider(this.surfaceProvider)
-                                }
-                                val analysis = ImageAnalysis.Builder()
-                                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                                    .build()
-                                analysis.setAnalyzer(
-                                    ContextCompat.getMainExecutor(ctx)
-                                ) { imageProxy ->
-                                    if (detenerAnalisis.value || cargando) {
-                                        imageProxy.close()
-                                        return@setAnalyzer
-                                    }
-                                    val media = imageProxy.image
-                                    if (media == null) {
-                                        imageProxy.close()
-                                        return@setAnalyzer
-                                    }
-                                    val input = InputImage.fromMediaImage(
-                                        media, imageProxy.imageInfo.rotationDegrees
-                                    )
-                                    scanner.process(input)
-                                        .addOnSuccessListener { barcodes ->
-                                            val raw = barcodes.firstOrNull {
-                                                !it.rawValue.isNullOrBlank()
-                                            }?.rawValue
-                                            if (raw != null) {
-                                                detenerAnalisis.value = true
-                                                alEscanear(raw)
-                                            }
-                                        }
-                                        .addOnCompleteListener { imageProxy.close() }
-                                }
-                                try {
-                                    cameraProvider.unbindAll()
-                                    cameraProvider.bindToLifecycle(
-                                        lifecycleOwner,
-                                        CameraSelector.DEFAULT_BACK_CAMERA,
-                                        preview,
-                                        analysis
-                                    )
-                                } catch (_: Exception) { }
-                            }, ContextCompat.getMainExecutor(ctx))
-                        }
-                    },
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(colors.surfaceVariant.copy(alpha = 0.4f))
+                .padding(4.dp)
+        ) {
+            listOf("CÁMARA" to 0, "ESCRIBIR PIN" to 1).forEach { (texto, indice) ->
+                val activo = modo == indice
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f)
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(colors.surface)
-                )
-                MarcoEscanerEntrada(modifier = Modifier.fillMaxWidth().aspectRatio(1f))
-            }
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(
-                if (cargando) "Validando código..." else "Apunta al QR del carnet o al código de la web",
-                color = colors.textSecondary,
-                fontSize = 13.sp,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-        } else {
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    "La cámara está desactivada. Permite su uso para escanear el QR.",
-                    color = colors.textSecondary,
-                    fontSize = 14.sp,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(14.dp))
-                BotonPrimarioNeon(
-                    text = "Activar cámara",
-                    icon = Icons.Default.CameraAlt,
-                    onClick = { launcherPermiso.launch(Manifest.permission.CAMERA) }
-                )
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (activo) verdeMarca().copy(alpha = 0.16f) else Color.Transparent)
+                        .clickable { modo = indice; errorValidar = null }
+                        .padding(vertical = 10.dp)
+                ) {
+                    Icon(
+                        imageVector = if (indice == 0) Icons.Default.CameraAlt else Icons.Default.Keyboard,
+                        contentDescription = null,
+                        tint = if (activo) verdeMarca() else colors.textSecondary,
+                        modifier = Modifier.size(17.dp)
+                    )
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text(
+                        texto,
+                        color = if (activo) colors.textPrimary else colors.textSecondary,
+                        fontSize = 11.sp,
+                        fontWeight = if (activo) FontWeight.Bold else FontWeight.Medium,
+                        maxLines = 1
+                    )
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
-        Text(
-            "O digita el PIN de 6 dígitos del usuario",
-            color = colors.textPrimary,
-            fontWeight = FontWeight.Bold,
-            fontSize = 14.sp
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = pin,
-            onValueChange = { texto ->
-                if (texto.length <= 6 && texto.all { it.isDigit() }) {
-                    pin = texto
-                    errorValidar = null
+        Spacer(modifier = Modifier.height(12.dp))
+
+        if (modo == 0) {
+            if (permisoCamara) {
+                Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f), contentAlignment = Alignment.Center) {
+                    AndroidView(
+                        factory = { ctx ->
+                            PreviewView(ctx).apply {
+                                val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
+                                cameraProviderFuture.addListener({
+                                    val cameraProvider = cameraProviderFuture.get()
+                                    proveedorCamara.value = cameraProvider
+                                    val preview = Preview.Builder().build().also { p ->
+                                        p.setSurfaceProvider(this.surfaceProvider)
+                                    }
+                                    val analysis = ImageAnalysis.Builder()
+                                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                                        .build()
+                                    analysis.setAnalyzer(
+                                        ContextCompat.getMainExecutor(ctx)
+                                    ) { imageProxy ->
+                                        if (detenerAnalisis.value || cargando) {
+                                            imageProxy.close()
+                                            return@setAnalyzer
+                                        }
+                                        val media = imageProxy.image
+                                        if (media == null) {
+                                            imageProxy.close()
+                                            return@setAnalyzer
+                                        }
+                                        val input = InputImage.fromMediaImage(
+                                            media, imageProxy.imageInfo.rotationDegrees
+                                        )
+                                        scanner.process(input)
+                                            .addOnSuccessListener { barcodes ->
+                                                val raw = barcodes.firstOrNull {
+                                                    !it.rawValue.isNullOrBlank()
+                                                }?.rawValue
+                                                if (raw != null) {
+                                                    detenerAnalisis.value = true
+                                                    alEscanear(raw)
+                                                }
+                                            }
+                                            .addOnCompleteListener { imageProxy.close() }
+                                    }
+                                    try {
+                                        cameraProvider.unbindAll()
+                                        cameraProvider.bindToLifecycle(
+                                            lifecycleOwner,
+                                            CameraSelector.DEFAULT_BACK_CAMERA,
+                                            preview,
+                                            analysis
+                                        )
+                                    } catch (_: Exception) { }
+                                }, ContextCompat.getMainExecutor(ctx))
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1f)
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(colors.surface)
+                    )
+                    MarcoEscanerEntrada(modifier = Modifier.fillMaxWidth().aspectRatio(1f))
                 }
-            },
-            label = { Text("PIN o código del usuario (web)") },
-            placeholder = { Text("• • • • • •") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth().campoVisible(),
-            textStyle = TextStyle(
-                fontSize = 28.sp,
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    if (cargando) "Validando código..." else "Apunta al QR del carnet o al código de la web",
+                    color = colors.textSecondary,
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            } else {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        "La cámara está desactivada. Permite su uso para escanear el QR.",
+                        color = colors.textSecondary,
+                        fontSize = 14.sp,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(14.dp))
+                    BotonPrimarioNeon(
+                        text = "Activar cámara",
+                        icon = Icons.Default.CameraAlt,
+                        onClick = { launcherPermiso.launch(Manifest.permission.CAMERA) }
+                    )
+                }
+            }
+        } else {
+            Text(
+                "PIN de 6 dígitos del código web",
+                color = colors.textPrimary,
                 fontWeight = FontWeight.Bold,
-                letterSpacing = 8.sp,
-                textAlign = TextAlign.Center
+                fontSize = 14.sp
             )
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        BotonPrimarioNeon(
-            text = "Validar PIN",
-            icon = Icons.Default.Keyboard,
-            onClick = { validar(pinTexto = pin) },
-            enabled = pin.length == 6 && !cargando,
-            loading = cargando,
-            modifier = Modifier.fillMaxWidth()
-        )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                "Es el mismo código que el usuario ve en su pantalla. También sirve el QR del carnet.",
+                color = colors.textSecondary,
+                fontSize = 12.sp
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = pin,
+                onValueChange = { texto ->
+                    if (texto.length <= 6 && texto.all { it.isDigit() }) {
+                        pin = texto
+                        errorValidar = null
+                    }
+                },
+                label = { Text("PIN del código web") },
+                placeholder = { Text("• • • • • •") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth().campoVisible(),
+                textStyle = TextStyle(
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 8.sp,
+                    textAlign = TextAlign.Center
+                )
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            BotonPrimarioNeon(
+                text = "Validar PIN",
+                icon = Icons.Default.Keyboard,
+                onClick = { validar(pinTexto = pin) },
+                enabled = pin.length == 6 && !cargando,
+                loading = cargando,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
         if (cargando) {

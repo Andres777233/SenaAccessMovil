@@ -18,12 +18,12 @@ App Android (Kotlin + Jetpack Compose, estilo vidrio verde) de SenaAccess: contr
 | Dato | Valor |
 |---|---|
 | applicationId / namespace | `com.example.sennaccess` |
-| Versión | `versionName 9.5` / `versionCode 24` (`app/build.gradle.kts`) |
+| Versión | `versionName 9.6` / `versionCode 25` (`app/build.gradle.kts`) |
 | SDK | minSdk 24, targetSdk 36, compileSdk 36.1 |
 | Toolchain | Gradle 9.3.1, AGP 9.1.1, Kotlin 2.2.10, Compose BOM 2026.02.01, **JDK 21** (auto-descarga con foojay: requiere red la primera vez) |
 | Red | Retrofit 2.11 + OkHttp 4.12 (logging) + Gson, Coil 2.6, CameraX 1.4.2 + MLKit 17.3, ZXing 3.5.3, Biometric 1.1.0 |
-| Tamaño | 109 archivos `.kt` en 12 paquetes, todos en español (el contrato de API conserva inglés en `@SerializedName`, endpoints y Manifest) |
-| Contrato | El móvil declara **70** endpoints (`datos/red/ServicioApi.kt`) frente a **83** rutas del backend |
+| Tamaño | 110 archivos `.kt` en 12 paquetes, todos en español (el contrato de API conserva inglés en `@SerializedName`, endpoints y Manifest) |
+| Contrato | El móvil declara **76** endpoints (`datos/red/ServicioApi.kt`) frente a **83** rutas del backend |
 
 ## Mapa del repo (`app/src/main/java/com/example/sennaccess/`)
 
@@ -85,7 +85,7 @@ En el backend los `roles.rol_name` son `Superadmin`, `Admin`, `Instructor`, `Apr
 - **Base**: `https://senaaccessweb-production-4c6e.up.railway.app/api/` (`datos/red/ClienteApi.kt:17`).
 - **Errores del API**: toda ruta `/api/*` inexistente responde **404 JSON** y sin token **401 JSON** (nunca HTML ni 500): el móvil puede usar `detalleHttp` sin sorpresas.
 - **Huella digital**: el móvil usa biometría **local** (`BiometricPrompt` + Keystore AES-256-GCM; la biometría nunca sale del dispositivo). La **web** ya tiene su equivalente con **WebAuthn/passkey** (`/api/huellas/*`), por si se quiere paridad total en algún momento.
-- **Endpoints**: **70** en `datos/red/ServicioApi.kt` (fuente de verdad del contrato del móvil) frente a **83** rutas en el backend (`routes/api.php`).
+- **Endpoints**: **76** en `datos/red/ServicioApi.kt` (fuente de verdad del contrato del móvil) frente a **83** rutas en el backend (`routes/api.php`).
 - **Auth**: `Bearer` (Sanctum) + `device_id` (2FA solo reta fuera del dispositivo confiable).
 - **2FA**: `/2fa/activar|desactivar|estado-config|pendientes|aprobar|validar-codigo|estado/{id}|decidir`; el correo (Brevo) trae deep link `senaaccess://2fa` / `https://.../2fa` con botones SÍ/NO.
 - **Errores**: JSON con `message`; la app los muestra con `detalleHttp`.
@@ -124,11 +124,11 @@ Ejecútalo al arrancar una sesión (es el control de coherencia entre este docum
 
 1. `git rev-parse --show-toplevel` → debe imprimir la raíz; `git status -sb` → rama `v1.8-merge` y sin cambios sin commitear.
 2. `ls app/src/main/java/com/example/sennaccess` → 12 paquetes: `administrador, aplicacion, aprendiz, asistente, autenticacion, biometria, comun, datos, excusas, instructor, perfil, portero`.
-3. `find app/src/main/java -name "*.kt" | wc -l` → **109** (109 = 111 − 2 módulos muertos eliminados en la auditoría del 2026-10-21: `sugerencias` y `horarios`).
+3. `find app/src/main/java -name "*.kt" | wc -l` → **110** (108 previos + `portero/QrPorteria.kt` y `excusas/ValidarExcusaCompleta.kt`).
 4. `find app/src/main/java -name "RetrofitClient.kt" -o -name "SessionManager.kt" -o -name "MockData.kt" -o -name "HuellaCredentialStore.kt"` → **0 resultados** (nombres legacy prohibidos).
 5. `grep -n "BASE_URL_REMOTE" app/src/main/java/com/example/sennaccess/datos/red/ClienteApi.kt` → la URL de la sección "Contrato con la API".
-6. `grep -nE "versionName|versionCode" app/build.gradle.kts` → `9.5` / `24`.
-7. `grep -cE "@(GET|POST|PUT|DELETE|PATCH)" app/src/main/java/com/example/sennaccess/datos/red/ServicioApi.kt` → **70**.
+6. `grep -nE "versionName|versionCode" app/build.gradle.kts` → `9.6` / `25`.
+7. `grep -cE "@(GET|POST|PUT|DELETE|PATCH)" app/src/main/java/com/example/sennaccess/datos/red/ServicioApi.kt` → **76**.
 8. `cat local.properties` → `sdk.dir` válido; si falta, crearlo o usar `ANDROID_HOME` o Docker.
 9. `./gradlew assembleDebug` (o `docker compose run --rm sennaccess-movil`) → **BUILD SUCCESSFUL**.
 10. `grep -A8 "fun normalizar" app/src/main/java/com/example/sennaccess/datos/sesion/RolSeguro.kt` → `superadmin`, `admin`, `instructor`, `aprendiz`, `invitado`.
@@ -323,3 +323,4 @@ Agentes en `.opencode/agent/`, skills en `.opencode/skill/*/SKILL.md` (todo vers
 
 - 2026-11-04 — v9.4 (code 23): registro público sin selector de vinculación (todos nacen aprendices y el superadmin cambia el rol); equipos con **Propio/Prestado** obligatorio y visible en las tarjetas; ambientes por **jornada** sin horas editables (Mañana 6:00–13:00, Tarde 13:00–18:00, Noche 18:00–22:00) con instructores en letra grande y arreglo del 422 al guardar (`detalleHttp` y sin resetear el estado); huella: la pregunta solo aparece si la cuenta no tiene huella (fin del "AHORA NO" permanente) y **Mi Huella** vuelve en Perfil → Seguridad; portería con la excusa legible (nombre, documento, ficha, ambiente, instructor, motivo, PIN 27sp). Web: QR del permiso (`SENA-EXCUSA:<pin>:<id>`) en la bandeja y en la tarjeta del aprendiz, y `AmbienteController` deriva las horas de la jornada. Nuevo `CREDENCIALES.md` con las cuentas de prueba verificadas.
 - 2026-11-04 — v9.5 (code 24): tarjeta de excusa de portería con todo el texto en color principal y más grande (nombre 18sp, documento/ficha/ambiente/instructor/motivo 14sp, vigencia 13sp, PIN 27sp verde) y `AvisoActualizacion` con dos modos: obligatorio solo si la instalada queda por debajo de `min_version_code`, opcional (con AHORA NO) cuando solo hay versión nueva; el APK se abre únicamente por HTTPS. Web: `/api/app/version` publica v9.5/code 24 hacia la página de descargas, así el aviso de actualizar aparece solo (se instala encima, sin desinstalar ni perder datos).
+- 2026-11-08 — v9.6 (code 25): portería con 5.º tab QR (rotativo entrada/salida + PIN), Validar con 3 pestañas (Excusa con cámara/PIN y bandeja de pendientes, Invitado, Web), puerta sin PIN duplicado y notificaciones que abren su vista (cuenta pendiente incluida); fotos por usuario arregladas, huella v2 sin llave auth-per-use (migra la v1 y no borra credenciales), perfil vista+edición rediseñado, filtros con contador/limpiar y carnet con QR `{app,id_usuario}` sin datos personales. `assembleDebug` + `testDebugUnitTest` OK (APK 46.509.567 B, md5 ff39f914); publicado en QR-MOVIL como v9.6 y `/api/app/version` actualizado; sin celular conectado (pendiente instalar en moto g86).

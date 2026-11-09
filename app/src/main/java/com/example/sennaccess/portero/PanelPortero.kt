@@ -171,7 +171,14 @@ fun PanelPortero(
                         onReintentar = viewModel::cargarNotificaciones,
                         onMarcarLeida = viewModel::marcarLeida,
                         onMarcarTodasLeidas = viewModel::marcarTodasLeidas,
-                        onBack = { subScreen = null }
+                        onBack = { subScreen = null },
+                        onAbrir = { notificacion ->
+                            when (notificacion.notification_type) {
+                                "equipo" -> { currentTab = "EQUIPOS"; subScreen = null }
+                                "seguridad" -> { subScreen = "PERFIL"; editandoPerfil = false }
+                                else -> subScreen = null
+                            }
+                        }
                     )
                     else -> when (currentTab) {
                         "INICIO" -> VistaPorteroInicio(
@@ -183,6 +190,7 @@ fun PanelPortero(
                             onReintentar = { viewModel.cargarResumen(); viewModel.cargarHistorial() }
                         )
                         "VALIDAR" -> VistaValidarUnificada(onBack = { currentTab = "INICIO" })
+                        "QR" -> VistaQrPorteria()
                         "EQUIPOS" -> ContenidoEquiposAdmin(
                             estado = equipos,
                             onReintentar = viewModel::cargarEquipos,
@@ -203,6 +211,7 @@ fun PanelPortero(
             items = listOf(
                 ElementoNavegacion("INICIO", Icons.Default.Home, "Inicio"),
                 ElementoNavegacion("VALIDAR", Icons.Default.VpnKey, "Validar"),
+                ElementoNavegacion("QR", Icons.Default.QrCode2, "QR"),
                 ElementoNavegacion("EQUIPOS", Icons.Default.Devices, "Equipos"),
                 ElementoNavegacion("HISTORIAL", Icons.Default.History, "Historial")
             ),

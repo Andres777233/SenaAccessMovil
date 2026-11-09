@@ -185,6 +185,22 @@ fun ContenidoUsuarios(
     }
 }
 
+// Bandeja de solicitudes accesible desde una notificación
+// "cuenta_pendiente": reutiliza la vista privada de usuarios.
+@Composable
+fun ContenidoSolicitudesPendientes(
+    onBack: () -> Unit,
+    viewModel: ModeloUsuarios = viewModel()
+) {
+    val pendientes by viewModel.pendientes.collectAsState()
+    LaunchedEffect(Unit) { viewModel.cargarPendientes() }
+    VistaSolicitudesPendientes(
+        pendientes = pendientes,
+        viewModel = viewModel,
+        onBack = onBack
+    )
+}
+
 @Composable
 private fun MenuUsuarios(
     estado: EstadoCarga<List<UsuarioApi>>,

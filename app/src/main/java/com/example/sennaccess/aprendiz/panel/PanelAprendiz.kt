@@ -215,7 +215,14 @@ fun PanelAprendiz(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggleTh
                         onReintentar = viewModel::cargarNotificaciones,
                         onMarcarLeida = viewModel::marcarLeida,
                         onMarcarTodasLeidas = viewModel::marcarTodasLeidas,
-                        onBack = { currentView = "DASHBOARD" }
+                        onBack = { currentView = "DASHBOARD" },
+                        onAbrir = { notificacion ->
+                            currentView = when (notificacion.notification_type) {
+                                "equipo" -> "COMPROBANTES"
+                                "seguridad" -> "PERFIL"
+                                else -> "DASHBOARD"
+                            }
+                        }
                     )
 
                 }
@@ -511,7 +518,7 @@ fun TarjetaBienvenida(
             }
         }
         Spacer(modifier = Modifier.width(14.dp))
-        FotoPerfil(fotoPath = fotoPath, nombre = nombre, tamano = 64.dp)
+        FotoPerfil(fotoPath = fotoPath, nombre = nombre, tamano = 64.dp, esPropio = true)
     }
 }
 

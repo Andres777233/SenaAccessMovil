@@ -60,6 +60,9 @@ import com.example.sennaccess.datos.modelos.RespuestaPrediccion
 import com.example.sennaccess.datos.modelos.RespuestaEquipo
 import com.example.sennaccess.datos.modelos.RespuestaIngresos
 import com.example.sennaccess.datos.modelos.RespuestaMensaje
+import com.example.sennaccess.datos.modelos.PeticionPinPorteria
+import com.example.sennaccess.datos.modelos.RespuestaPinPorteria
+import com.example.sennaccess.datos.modelos.RespuestaQrPorteria
 import com.example.sennaccess.datos.modelos.PeticionValidarAcceso
 import com.example.sennaccess.datos.modelos.PeticionValidarCarnet
 import com.example.sennaccess.datos.modelos.PeticionValidarCodigoAcceso
@@ -390,6 +393,20 @@ interface ServicioApi {
     // ---- Estado de la puerta: entrada de hoy y último movimiento ----
     @GET("acceso/estado")
     suspend fun getEstadoAcceso(@Header("Authorization") auth: String): EstadoPuerta
+
+    // ---- QR rotativo que portería proyecta (entrada/salida) ----
+    @GET("acceso/qr/{tipo}")
+    suspend fun getQrPorteria(
+        @Header("Authorization") auth: String,
+        @Path("tipo") tipo: String
+    ): RespuestaQrPorteria
+
+    // PIN de 6 dígitos que portería dicta cuando no hay cámara.
+    @POST("admin/pines-acceso")
+    suspend fun generarPinPorteria(
+        @Header("Authorization") auth: String,
+        @Body body: PeticionPinPorteria
+    ): RespuestaPinPorteria
 
     // ---- QR de acceso de portería (entrada/salida al historial) ----
     @POST("acceso/validar")

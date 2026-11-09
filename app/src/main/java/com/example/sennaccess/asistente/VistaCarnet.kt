@@ -55,15 +55,13 @@ fun VistaCarnet(perfilEstado: EstadoCarga<UsuarioApi>, onBack: () -> Unit) {
     var aviso by remember { mutableStateOf<String?>(null) }
     var esError by remember { mutableStateOf(false) }
 
+    // El QR del carnet solo lleva el identificador interno firmado por el
+    // servidor; nombre, documento, correo, teléfono, ficha y programa se
+    // consultan allá y nunca viajan dentro del código.
     val contenidoQr = remember(usuario) {
         JSONObject()
-            .put("tipo", "SENA_ACCESS")
-            .put("id", usuario?.id_usuario)
-            .put("nombre", usuario?.nombreCompleto)
-            .put("email", usuario?.user_email)
-            .put("documento", usuario?.user_identification)
-            .put("ficha", usuario?.user_coursenumber)
-            .put("rol", usuario?.role?.rol_name)
+            .put("app", "SENA_ACCESS")
+            .put("id_usuario", usuario?.id_usuario ?: GestorSesion.userId)
             .toString()
     }
     val qr = remember(contenidoQr) { generarImagenQr(contenidoQr, 640) }

@@ -42,6 +42,7 @@ import com.example.sennaccess.administrador.accesos.ContenidoAccesoAprendices
 import com.example.sennaccess.administrador.accesos.ContenidoAccesoInstructores
 import com.example.sennaccess.administrador.usuarios.ContenidoActualizarUsuario
 import com.example.sennaccess.administrador.usuarios.ContenidoCrearUsuario
+import com.example.sennaccess.administrador.usuarios.ContenidoSolicitudesPendientes
 import com.example.sennaccess.administrador.usuarios.ContenidoUsuarios
 
 @Composable
@@ -124,6 +125,7 @@ fun PanelAdministrador(
             PantallaAdmin.ACCESO_APRENDICES -> subScreen = PantallaAdmin.ACCESO_APRENDICES
             PantallaAdmin.ACCESO_INSTRUCTORES -> subScreen = PantallaAdmin.ACCESO_INSTRUCTORES
             PantallaAdmin.NOTIFICACIONES -> subScreen = PantallaAdmin.NOTIFICACIONES
+            PantallaAdmin.PENDIENTES -> subScreen = PantallaAdmin.PENDIENTES
             PantallaAdmin.AMBIENTES -> { currentTab = "AMBIENTES"; subScreen = null }
             PantallaAdmin.ESCANEAR_QR -> subScreen = PantallaAdmin.ESCANEAR_QR
             PantallaAdmin.PREDICCION -> subScreen = PantallaAdmin.PREDICCION
@@ -230,6 +232,18 @@ fun PanelAdministrador(
                         onReintentar = viewModel::cargarNotificaciones,
                         onMarcarLeida = viewModel::marcarLeida,
                         onMarcarTodasLeidas = viewModel::marcarTodasLeidas,
+                        onBack = { subScreen = null },
+                        onAbrir = { notificacion ->
+                            when (notificacion.notification_type) {
+                                "cuenta_pendiente" -> subScreen = PantallaAdmin.PENDIENTES
+                                "novedad" -> { currentTab = "NOVEDADES"; subScreen = null }
+                                "seguridad" -> { subScreen = PantallaAdmin.PERFIL; editandoPerfil = false }
+                                "equipo" -> { currentTab = "USUARIOS"; subScreen = null }
+                                else -> subScreen = null
+                            }
+                        }
+                    )
+                    PantallaAdmin.PENDIENTES -> ContenidoSolicitudesPendientes(
                         onBack = { subScreen = null }
                     )
                     PantallaAdmin.ESCANEAR_QR -> EscanearQrInvitado(onVolver = { subScreen = null })

@@ -513,6 +513,26 @@ data class RespuestaValidarCarnet(
     @SerializedName("usuario") val usuario: UsuarioCodigoAcceso? = null
 )
 
+// ---- QR rotativo de portería (entrada/salida) ----
+// Payload firmado que se proyecta en recepción y rota cada 30 s.
+data class RespuestaQrPorteria(
+    @SerializedName("qr_payload") val qr_payload: String? = null,
+    @SerializedName("tipo") val tipo: String? = null,
+    @SerializedName("ventana_seg") val ventana_seg: Int? = null,
+    @SerializedName("expira_en") val expira_en: Long? = null
+)
+
+// PIN corto que portería dicta cuando alguien no puede escanear el QR.
+data class PeticionPinPorteria(
+    @SerializedName("tipo") val tipo: String
+)
+
+data class RespuestaPinPorteria(
+    @SerializedName("pin") val pin: String? = null,
+    @SerializedName("tipo") val tipo: String? = null,
+    @SerializedName("expira_en") val expira_en: String? = null
+)
+
 data class RespuestaValidarCodigoAcceso(
     @SerializedName("message") val message: String? = null,
     @SerializedName("usuario") val usuario: UsuarioCodigoAcceso? = null,

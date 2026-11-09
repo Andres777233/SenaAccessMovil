@@ -206,6 +206,9 @@ fun VistaNovedades(
             FiltroSena(texto = "Todas", seleccionado = filtroLectura == 0, onClick = { filtroLectura = 0 })
             FiltroSena(texto = "Nuevas", seleccionado = filtroLectura == 1, onClick = { filtroLectura = 1 })
             FiltroSena(texto = "Leídas", seleccionado = filtroLectura == 2, onClick = { filtroLectura = 2 })
+            if (filtroLectura != 0) {
+                FiltroSena(texto = "Limpiar", seleccionado = false, onClick = { filtroLectura = 0 })
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -254,7 +257,7 @@ fun VistaNovedades(
                         )
                     } else {
                         LaunchedEffect(visibles) { idsVisibles = visibles.mapNotNull { it.id_novedad }.toSet() }
-                        Text("RECIENTES • ${visibles.size}", color = colors.textSecondary, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp)
+                        Text("RECIENTES • ${visibles.size} de ${items.size}", color = colors.textSecondary, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp)
                         Spacer(modifier = Modifier.height(8.dp))
                         Column(verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.fillMaxWidth()) {
                             visibles.forEachIndexed { i, n ->

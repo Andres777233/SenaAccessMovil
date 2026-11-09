@@ -16,9 +16,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -50,7 +53,8 @@ fun VistaNotificaciones(
     onReintentar: () -> Unit,
     onMarcarLeida: (Int) -> Unit,
     onMarcarTodasLeidas: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onAbrir: (Notificacion) -> Unit = {}
 ) {
     val colors = ColoresAppLocal.current
     val scrollState = rememberScrollState()
@@ -106,7 +110,12 @@ fun VistaNotificaciones(
                         if (i > 0) HorizontalDivider(color = colors.divider, modifier = Modifier.padding(horizontal = 12.dp))
                         TarjetaNotificacion(
                             notificacion = notificacion,
-                            onClick = { if (notificacion.is_read != true) notificacion.id_notificacion?.let(onMarcarLeida) }
+                            onClick = {
+                                if (notificacion.is_read != true) {
+                                    notificacion.id_notificacion?.let(onMarcarLeida)
+                                }
+                                onAbrir(notificacion)
+                            }
                         )
                     }
                 }
@@ -124,8 +133,11 @@ private fun TarjetaNotificacion(notificacion: Notificacion, onClick: () -> Unit)
     val icono = when (tipo) {
         "novedad" -> Icons.Default.WarningAmber
         "equipo" -> Icons.Default.Devices
+        "cuenta_pendiente" -> Icons.Default.PersonAdd
+        "seguridad" -> Icons.Default.Shield
         else -> Icons.Default.Info
     }
+    val tieneDestino = tipo in listOf("novedad", "equipo", "cuenta_pendiente", "seguridad")
     // Fila plana con riel de estado: punto verde si es nueva. La superficie
     // la pone el GrupoSeccion padre; las nuevas llevan borde lateral verde.
     Row(
@@ -168,6 +180,15 @@ private fun TarjetaNotificacion(notificacion: Notificacion, onClick: () -> Unit)
             Text(fechaRelativa(notificacion.created_at), color = colors.textSecondary, fontSize = 11.sp)
             Spacer(modifier = Modifier.height(4.dp))
             Text(notificacion.notification_body ?: "—", color = colors.textSecondary, fontSize = 12.sp, lineHeight = 16.sp)
+        }
+        if (tieneDestino) {
+            Spacer(modifier = Modifier.width(6.dp))
+            Icon(
+                Icons.Default.ChevronRight,
+                contentDescription = "Abrir",
+                tint = colors.textSecondary,
+                modifier = Modifier.size(18.dp)
+            )
         }
     }
 }

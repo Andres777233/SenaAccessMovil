@@ -45,8 +45,8 @@ android {
         applicationId = "com.example.sennaccess"
         minSdk = 24
         targetSdk = 36
-        versionCode = 24
-        versionName = "9.5"
+        versionCode = 25
+        versionName = "9.6"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

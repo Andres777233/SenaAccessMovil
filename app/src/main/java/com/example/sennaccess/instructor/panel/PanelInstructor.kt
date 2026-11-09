@@ -235,7 +235,15 @@ fun PanelInstructor(onCerrarSesion: () -> Unit, isDark: Boolean = true, onToggle
                         onReintentar = viewModel::cargarNotificaciones,
                         onMarcarLeida = viewModel::marcarLeida,
                         onMarcarTodasLeidas = viewModel::marcarTodasLeidas,
-                        onBack = { currentView = "DASHBOARD" }
+                        onBack = { currentView = "DASHBOARD" },
+                        onAbrir = { notificacion ->
+                            currentView = when (notificacion.notification_type) {
+                                "novedad" -> "NOVEDADES"
+                                "equipo" -> "MIS_EQUIPOS"
+                                "seguridad" -> "PERFIL"
+                                else -> "DASHBOARD"
+                            }
+                        }
                     )
 
                 }

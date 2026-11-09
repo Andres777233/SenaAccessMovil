@@ -29,15 +29,30 @@ import com.example.sennaccess.comun.tema.ColoresAppLocal
 import com.example.sennaccess.comun.tema.VerdeSena
 import com.example.sennaccess.comun.tema.verdeMarca
 @Composable
-fun FotoPerfil(fotoPath: String?, nombre: String, tamano: Dp = 80.dp) {
+fun FotoPerfil(
+    fotoPath: String?,
+    nombre: String,
+    tamano: Dp = 80.dp,
+    // Solo el avatar propio usa la foto en sesión (recién guardada). En las
+    // listas de otras personas nunca se pisa su foto con la del usuario actual.
+    esPropio: Boolean = false
+) {
     val colors = ColoresAppLocal.current
     val context = LocalContext.current
-    // Prioridad a la foto recién guardada en sesión: cambio instantáneo sin
-    // esperar el GET /user. El ?v= rompe la caché vieja de Coil.
-    val efectiva = GestorSesion.userPhoto?.takeIf { it.isNotBlank() } ?: fotoPath
+    val efectiva = if (esPropio) {
+        GestorSesion.userPhoto?.takeIf { it.isNotBlank() } ?: fotoPath
+    } else {
+        fotoPath
+    }
     val base = GestorSesion.fotoUrl(efectiva)
     val version = GestorSesion.photoVersion
-    val url = base?.let { if (it.contains("?")) "$it&v=$version" else "$it?v=$version" }
+    val url = base?.let {
+        if (esPropio) {
+            if (it.contains("?")) "$it&v=$version" else "$it?v=$version"
+        } else {
+            it
+        }
+    }
     Box(
         modifier = Modifier
             .size(tamano)

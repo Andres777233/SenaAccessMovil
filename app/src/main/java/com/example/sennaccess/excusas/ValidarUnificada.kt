@@ -43,10 +43,9 @@ private data class PestanaValidar(
 )
 
 private val PESTANAS = listOf(
-    PestanaValidar(Icons.Default.Keyboard, "PIN", "PIN de 4 dígitos de la excusa: lo genera el instructor para autorizar la salida."),
-    PestanaValidar(Icons.Default.QrCodeScanner, "Excusa", "Escanea el QR del permiso del aprendiz para registrar su salida."),
-    PestanaValidar(Icons.Default.QrCodeScanner, "Invitado", "Escanea el QR de un invitado. Sirve una sola vez y caduca a la hora."),
-    PestanaValidar(Icons.Default.QrCodeScanner, "Web", "Escanea el carnet o digita el PIN de 6 dígitos que el usuario generó en la web.")
+    PestanaValidar(Icons.Default.QrCodeScanner, "Excusa", "Escanea el QR del permiso o escribe el PIN de 4 dígitos. Las pendientes llegan en tiempo real."),
+    PestanaValidar(Icons.Default.QrCodeScanner, "Invitado", "Escanea el QR de un invitado o escribe su código. Sirve una sola vez."),
+    PestanaValidar(Icons.Default.QrCodeScanner, "Web", "Escanea el carnet o escribe el PIN de 6 dígitos que el usuario generó en la web.")
 )
 
 @Composable
@@ -68,7 +67,7 @@ fun VistaValidarUnificada(onBack: () -> Unit) {
                     fontSize = 21.sp
                 )
                 Text(
-                    "Un solo lugar para permisos, invitados y códigos de la web.",
+                    "Permisos, invitados y códigos de la web, cada uno con cámara o PIN.",
                     color = colors.textSecondary,
                     fontSize = 12.sp
                 )
@@ -134,9 +133,8 @@ fun VistaValidarUnificada(onBack: () -> Unit) {
         Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
             key(tab) {
                 when (tab) {
-                    0 -> VistaValidarExcusa(onBack = onBack, mostrarCabecera = false)
-                    1 -> EscanearQrExcusa(mostrarCabecera = false)
-                    2 -> EscanearQrInvitado(onVolver = onBack, mostrarCabecera = false)
+                    0 -> VistaValidarExcusaCompleta(onBack = onBack, mostrarCabecera = false)
+                    1 -> EscanearQrInvitado(onVolver = onBack, mostrarCabecera = false)
                     else -> EscanearQrEntrada(mostrarCabecera = false)
                 }
             }
