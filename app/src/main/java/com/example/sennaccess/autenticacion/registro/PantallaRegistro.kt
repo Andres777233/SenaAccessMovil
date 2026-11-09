@@ -305,8 +305,8 @@ fun PantallaRegistro(onBackToLogin: () -> Unit, isDark: Boolean = true, onToggle
                                 errorMensaje = "El número de ficha debe ser un valor numérico."
                                 return@BotonPrimarioNeon
                             }
-                            if (!AutenticacionBiometrica.isAvailable(context, forCrypto = true)) {
-                                errorMensaje = "Tu dispositivo no tiene huella fuerte registrada. Regístrala en Ajustes para poder crear tu cuenta."
+                            if (!AutenticacionBiometrica.isAvailable(context)) {
+                                errorMensaje = "Tu dispositivo no tiene huella configurada. Regístrala en Ajustes para poder crear tu cuenta."
                                 return@BotonPrimarioNeon
                             }
                             val activity = context as? FragmentActivity

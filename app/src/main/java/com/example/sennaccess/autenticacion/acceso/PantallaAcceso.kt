@@ -263,14 +263,18 @@ fun PantallaAcceso(
                                 huellaError = null
                                 errorRol = null
                                 when {
-                                    !AutenticacionBiometrica.isAvailable(context, forCrypto = true) ->
+                                    !AutenticacionBiometrica.isAvailable(context) ->
                                         huellaError = "Tu dispositivo no tiene huella configurada. Regístrala en Ajustes del sistema."
                                     !AlmacenHuella.hayGuardada(context) ->
                                         huellaError = "Aún no tienes una huella registrada. Inicia sesión con tu contraseña y acepta registrarla."
                                     else -> {
-                                        val cipher = AlmacenHuella.prepararDescifrado(context)
                                         val activity = AutenticacionBiometrica.activityDe(context)
-                                        if (cipher == null || activity == null) {
+                                        // v1 usaba una llave auth-per-use y necesita el
+                                        // CryptoObject; v2 ya es una llave estable y
+                                        // descifra después de la huella.
+                                        val usarCrypto = AlmacenHuella.versionGuardada(context) < 2
+                                        val cipherV1 = if (usarCrypto) AlmacenHuella.prepararDescifrado(context) else null
+                                        if (activity == null || (usarCrypto && cipherV1 == null)) {
                                             huellaError = "Tu huella se desvinculó. Inicia sesión con tu contraseña y regístrala de nuevo."
                                         } else {
                                             huellaOcupado = true
@@ -279,10 +283,14 @@ fun PantallaAcceso(
                                                 activity = activity,
                                                 title = "Ingresa con tu huella",
                                                 subtitle = "Confirma tu identidad para entrar a SenaAccess",
-                                                cryptoObject = BiometricPrompt.CryptoObject(cipher),
+                                                cryptoObject = cipherV1?.let { BiometricPrompt.CryptoObject(it) },
                                                 onSuccess = { result ->
                                                     huellaOcupado = false
-                                                    val seguro = result.cryptoObject?.cipher
+                                                    val seguro = if (usarCrypto) {
+                                                        result.cryptoObject?.cipher
+                                                    } else {
+                                                        AlmacenHuella.prepararDescifrado(context)
+                                                    }
                                                     if (seguro == null) {
                                                         huellaError = "No se pudo verificar tu huella. Inténtalo de nuevo."
                                                         return@authenticate
@@ -399,30 +407,27 @@ fun PantallaAcceso(
                                             return@Button
                                         }
                                         try {
-                                            val cipher = AlmacenHuella.prepararCifradoSeguro()
                                             huellaOcupado = true
                                             AutenticacionBiometrica.authenticate(
                                                 activity = activity,
                                                 title = "Registra tu huella",
                                                 subtitle = "Toca el sensor para proteger tus credenciales",
-                                                cryptoObject = BiometricPrompt.CryptoObject(cipher),
-                                                onSuccess = { result ->
+                                                cryptoObject = null,
+                                                onSuccess = { _ ->
                                                     huellaOcupado = false
                                                     val correoGuardar = res.user?.user_email ?: email.trim()
                                                     try {
-                                                        val seguro = result.cryptoObject?.cipher
-                                                        if (seguro == null) {
-                                                            huellaError = "No se pudo activar la huella. Regístrala desde tu perfil."
-                                                        } else if (!AlmacenHuella.guardar(
+                                                        val seguro = AlmacenHuella.prepararCifradoSeguro()
+                                                        huellaError = if (AlmacenHuella.guardar(
                                                                 context,
                                                                 seguro,
                                                                 correoGuardar,
                                                                 password
                                                             )
                                                         ) {
-                                                            huellaError = "No se pudo guardar la huella en este teléfono. Inténtalo desde Perfil."
+                                                            null
                                                         } else {
-                                                            huellaError = null
+                                                            "No se pudo guardar la huella en este teléfono. Inténtalo desde Perfil."
                                                         }
                                                     } catch (e: Exception) {
                                                         huellaError = "No se pudo guardar la huella: ${e.message ?: "error del sensor"}. Regístrala desde Perfil."

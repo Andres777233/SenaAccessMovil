@@ -96,6 +96,9 @@ object AlmacenHuella {
     // Llave vieja: solo se lee para migrar credenciales existentes.
     private fun obtenerLlaveV1(): SecretKey? = llaveExistente(ALIAS_V1)
 
+    // Versión del formato guardado (1 = llave vieja auth-per-use, 2 = estable).
+    fun versionGuardada(context: Context): Int = prefs(context).getInt(KEY_VERSION, 1)
+
     // Indica si hay credenciales cifradas válidas en este dispositivo.
     fun hayGuardada(context: Context): Boolean {
         val prefs = prefs(context)

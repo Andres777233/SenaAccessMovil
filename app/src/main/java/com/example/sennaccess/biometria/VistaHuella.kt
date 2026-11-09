@@ -149,7 +149,7 @@ fun MiSeccionHuella() {
                         correo == null -> errorMensaje = "Inicia sesión para registrar tu huella."
                         password.isBlank() -> errorMensaje = "Escribe tu contraseña actual."
                         password != confirmarPassword -> errorMensaje = "Las contraseñas no coinciden."
-                        !AutenticacionBiometrica.isAvailable(context, forCrypto = true) ->
+                        !AutenticacionBiometrica.isAvailable(context) ->
                             errorMensaje = "Tu dispositivo no tiene huella configurada."
                         else -> {
                             ocupado = true
@@ -178,20 +178,15 @@ fun MiSeccionHuella() {
                                 try {
                                     val activity = AutenticacionBiometrica.activityDe(context)
                                         ?: throw IllegalStateException("Sin actividad")
-                                    val cipher = AlmacenHuella.prepararCifradoSeguro()
                                     AutenticacionBiometrica.authenticate(
                                         activity = activity,
                                         title = "Registra tu huella",
                                         subtitle = "Toca el sensor",
-                                        cryptoObject = BiometricPrompt.CryptoObject(cipher),
-                                        onSuccess = { result ->
+                                        cryptoObject = null,
+                                        onSuccess = { _ ->
                                             ocupado = false
                                             try {
-                                                val seguro = result.cryptoObject?.cipher
-                                                if (seguro == null) {
-                                                    errorMensaje = "No se pudo activar la huella. Inténtalo de nuevo."
-                                                    return@authenticate
-                                                }
+                                                val seguro = AlmacenHuella.prepararCifradoSeguro()
                                                 AlmacenHuella.guardar(
                                                     context,
                                                     seguro,
@@ -217,8 +212,7 @@ fun MiSeccionHuella() {
                                     )
                                 } catch (e: Throwable) {
                                     ocupado = false
-                                    AlmacenHuella.borrarLlave()
-                                    errorMensaje = "Se renovó tu llave de seguridad. Toca REGISTRAR de nuevo y pon tu huella."
+                                    errorMensaje = "No se pudo registrar la huella: ${e.message ?: "error del sensor"}. Inténtalo de nuevo."
                                 }
                             }
                         }
