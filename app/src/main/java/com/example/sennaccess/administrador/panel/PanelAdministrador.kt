@@ -238,7 +238,7 @@ fun PanelAdministrador(
                                 "cuenta_pendiente" -> subScreen = PantallaAdmin.PENDIENTES
                                 "novedad" -> { currentTab = "NOVEDADES"; subScreen = null }
                                 "seguridad" -> { subScreen = PantallaAdmin.PERFIL; editandoPerfil = false }
-                                "equipo" -> { currentTab = "USUARIOS"; subScreen = null }
+                                "equipo" -> { currentTab = "INICIO"; subScreen = null }
                                 else -> subScreen = null
                             }
                         }
