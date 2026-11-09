@@ -66,6 +66,24 @@ android {
                 "proguard-rules.pro"
             )
         }
+        // Build de compatibilidad: no es debuggable y no pasa por R8, pero se
+        // firma con la llave debug para instalarse encima de la app existente.
+        // Sirve cuando un equipo rechaza el APK debug o falla al extraer libs.
+        create("compat") {
+            initWith(getByName("release"))
+            isMinifyEnabled = false
+            isShrinkResources = false
+            isDebuggable = false
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+        }
+    }
+    packaging {
+        // Extrae las librerías nativas al instalar. Es el modo más compatible
+        // en equipos que rechazan las libs empaquetadas sin comprimir.
+        jniLibs {
+            useLegacyPackaging = true
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
