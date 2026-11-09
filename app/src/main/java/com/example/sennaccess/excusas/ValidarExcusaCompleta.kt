@@ -203,6 +203,26 @@ fun VistaValidarExcusaCompleta(onBack: () -> Unit, mostrarCabecera: Boolean = tr
                 fontSize = 12.sp
             )
             Spacer(modifier = Modifier.height(12.dp))
+        } else {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    "Pendientes en tiempo real",
+                    color = colors.textSecondary,
+                    fontSize = 11.sp,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(
+                    onClick = { scope.launch { cargarPendientes() } },
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(Icons.Default.Refresh, contentDescription = "Recargar pendientes", tint = colors.textSecondary)
+                }
+            }
+            Spacer(modifier = Modifier.height(4.dp))
         }
 
         Row(
